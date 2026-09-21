@@ -114,10 +114,10 @@ Supported statuses: `completed`, `failed`, `pending`. Supported sources: `self_r
 AI agent → Monologue skill → POST /api/actions → validation + dedupe → SQLite
                                                                   ├─ Feed
                                                                   ├─ Filters + search
-                                                                  └─ Projects
+                                                                  └─ Action details
 ```
 
-Next.js renders the feed and projects views directly from one SQLite database through Prisma. The API uses the same validation and query layer. There are no accounts, hosted services, queues, or integrations to configure.
+Next.js renders the feed directly from one SQLite database through Prisma. The API uses the same validation and query layer. There are no accounts, hosted services, queues, or integrations to configure.
 
 ## Development checks
 

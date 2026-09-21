@@ -25,24 +25,25 @@ function dayGroup(date: Date) {
 export default async function Home({ searchParams }: { searchParams: SearchParams }) {
   const raw = await searchParams;
   const params = Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, single(value)])) as Record<string, string | undefined>;
-  const filters = { agent: params.agent, category: params.category, status: params.status, system: params.system, project: params.project, from: params.from, to: params.to, search: params.search };
-  const [actions, agents, systems, projects] = await Promise.all([
+  const filters = { agent: params.agent, category: params.category, status: params.status, system: params.system, from: params.from, to: params.to, search: params.search };
+  const [actions, agents, systems] = await Promise.all([
     listActions(filters),
     db.action.findMany({ select: { agentName: true }, distinct: ["agentName"], orderBy: { agentName: "asc" } }),
     db.action.findMany({ select: { system: true }, distinct: ["system"], orderBy: { system: "asc" } }),
-    db.action.findMany({ where: { project: { not: null } }, select: { project: true }, distinct: ["project"], orderBy: { project: "asc" } }),
   ]);
   const groups = actions.reduce<Record<string, typeof actions>>((all, action) => { (all[dayGroup(action.occurredAt)] ??= []).push(action); return all; }, {});
   const detail = params.action ? await db.action.findUnique({ where: { id: params.action } }) : null;
   const cleanParams = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => { if (value && key !== "action") cleanParams.set(key, value); });
+  ["agent", "category", "status", "system", "from", "to", "search"].forEach((key) => {
+    if (params[key]) cleanParams.set(key, params[key]);
+  });
   const queryString = cleanParams.toString();
 
   return <>
     <Header />
     <main className="page-shell">
       <section className="intro"><span className="kicker">What changed?</span><h1>The things your agents<br /><em>actually did.</em></h1><p>One calm timeline of real-world actions—without the noise.</p></section>
-      <Filters params={params} options={{ agents: agents.map((x) => x.agentName), systems: systems.map((x) => x.system), projects: projects.flatMap((x) => x.project ? [x.project] : []) }} />
+      <Filters params={params} options={{ agents: agents.map((x) => x.agentName), systems: systems.map((x) => x.system) }} />
       <div className="feed-summary"><span>{actions.length} {actions.length === 1 ? "action" : "actions"}</span><span className="live-dot">Live feed</span></div>
       <section className="feed" aria-label="Agent actions">
         {actions.length === 0 && <div className="empty"><Inbox size={30} /><h2>No actions found</h2><p>Try widening your filters or send a new action to the API.</p><Link href="/">Clear filters</Link></div>}

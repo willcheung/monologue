@@ -27,7 +27,6 @@ export function ActionCard({ action, queryString = "" }: { action: Action; query
         <div className="action-meta">
           <span>{action.system}</span><i>·</i>
           <span><Clock3 size={13} />{timeLabel(action.occurredAt)}</span>
-          {action.project && <><i>·</i><span className="project-pill">{action.project}</span></>}
           {action.value != null && <><i>·</i><span className="amount">{money(action.value, action.currency ?? "USD")}</span></>}
         </div>
       </div>

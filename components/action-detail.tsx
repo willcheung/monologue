@@ -12,7 +12,6 @@ export function ActionDetail({ action, closeHref }: { action: Action; closeHref:
     ["Agent", action.agentName], ["Verb", action.verb], ["System", action.system],
     ["Status", action.status], ["Time", dateTime(action.occurredAt)],
     ["Object", [action.objectType, action.objectName].filter(Boolean).join(" · ") || null],
-    ["Project", action.project],
     ["Amount", action.value != null ? new Intl.NumberFormat("en-US", { style: "currency", currency: action.currency ?? "USD" }).format(action.value) : null],
     ["Source", action.source.replace("_", " ")],
   ].filter(([, value]) => value);
