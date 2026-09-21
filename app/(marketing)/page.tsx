@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import { CopySetupButton } from "@/components/copy-setup-button";
 import { Header } from "@/components/header";
+import { RotatingActionHeadline } from "@/components/rotating-action-headline";
 import { isCloudMode } from "@/lib/runtime";
 
 const examples = [
@@ -19,7 +20,7 @@ export default function MarketingPage() {
       <section className="hero">
         <div className="hero-copy">
           <span className="kicker">Your agent feed</span>
-          <h1>See what your AI agents<br /><em>did.</em></h1>
+          <RotatingActionHeadline />
           <p>Emails sent. Code pushed. Purchases made. One simple feed for the things your agents change.</p>
           <div className="hero-actions">
             <Link className="primary-button hero-primary" href={startHref}>{cloud ? "Try it free" : "Open your feed"}<ArrowRight size={17} /></Link>
