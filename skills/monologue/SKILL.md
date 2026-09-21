@@ -1,7 +1,7 @@
 ---
 name: monologue
 description: Report external state changes to a Monologue feed.
-version: 1.2.2
+version: 1.2.3
 ---
 
 # Monologue
@@ -22,7 +22,7 @@ Setup should happen once. Connect automatically when no key is configured:
 
 1. Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`.
 2. Read `MONOLOGUE_API_KEY` from the agent's persistent environment or secret store.
-3. If it is missing, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.2"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
+3. If it is missing, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.3"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
 4. Keep the returned `deviceCode` private. Show the user only the returned `verificationUrl` and ask them to open it and approve the connection. Do not show or repeat any API key.
 5. Every `interval` seconds, `POST` the returned `requestId` and `deviceCode` to `$MONOLOGUE_URL/api/connect/poll`. A `202` response means approval is still pending. Stop when the request succeeds, expires, or ten minutes pass.
 6. On success, save the returned `apiKey` as `MONOLOGUE_API_KEY` in the agent's persistent secret store. Never print, display, log, or send it in ordinary chat.
@@ -71,6 +71,17 @@ Report after the external action is attempted:
 - Use `pending` when the outcome cannot be determined.
 
 Report one event for the resulting external action, not its intermediate steps. Supply a stable `externalId` when the external system provides one so retries are safely deduplicated.
+
+## Completion check
+
+Before giving the user a final response after work that may have changed external state:
+
+1. Identify each distinct external system whose state changed.
+2. Report each meaningful resulting change. Do not collapse changes in different systems into one event. For example, pushing code to GitHub and deploying it on Vercel are two events.
+3. When several low-level operations produce one outcome in the same system, report the outcome once instead of reporting every intermediate step.
+4. Do not report the request that sends an event to Monologue; otherwise reporting would create a loop.
+
+Perform this check after the user's primary task is complete. A failed Monologue request must not change or delay that task's outcome.
 
 ## Send the event
 
