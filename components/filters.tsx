@@ -5,14 +5,14 @@ import { CATEGORIES, STATUSES, categoryPresentation } from "@/lib/constants";
 type Options = { agents: string[]; systems: string[] };
 type Params = Record<string, string | undefined>;
 
-export function Filters({ options, params }: { options: Options; params: Params }) {
+export function Filters({ options, params, basePath = "/feed" }: { options: Options; params: Params; basePath?: string }) {
   const activeCount = ["agent", "category", "status", "system", "from", "to"].filter((key) => params[key]).length;
   return (
     <form className="filters" method="get">
       <div className="search-box">
         <Search size={18} />
         <input name="search" defaultValue={params.search} placeholder="Search actions, agents, systems…" aria-label="Search actions" />
-        {params.search && <Link href="/" aria-label="Clear search"><X size={16} /></Link>}
+        {params.search && <Link href={basePath} aria-label="Clear search"><X size={16} /></Link>}
       </div>
       <details className="filter-menu" open={activeCount > 0}>
         <summary><SlidersHorizontal size={17} /> Filters {activeCount > 0 && <b>{activeCount}</b>}</summary>
@@ -23,7 +23,7 @@ export function Filters({ options, params }: { options: Options; params: Params 
           <label>Status<select name="status" defaultValue={params.status ?? ""}><option value="">All statuses</option>{STATUSES.map((x) => <option key={x}>{x}</option>)}</select></label>
           <label>From<input type="date" name="from" defaultValue={params.from} /></label>
           <label>To<input type="date" name="to" defaultValue={params.to} /></label>
-          <div className="filter-actions"><button type="submit">Apply filters</button><Link href="/">Clear</Link></div>
+          <div className="filter-actions"><button type="submit">Apply filters</button><Link href={basePath}>Clear</Link></div>
         </div>
       </details>
     </form>

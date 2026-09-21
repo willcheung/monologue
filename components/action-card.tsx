@@ -12,8 +12,8 @@ function money(value: number, currency = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
 }
 
-export function ActionCard({ action, queryString = "" }: { action: Action; queryString?: string }) {
-  const href = `/?${queryString ? `${queryString}&` : ""}action=${action.id}`;
+export function ActionCard({ action, queryString = "", basePath = "/feed" }: { action: Action; queryString?: string; basePath?: string }) {
+  const href = `${basePath}?${queryString ? `${queryString}&` : ""}action=${action.id}`;
   const category = categoryPresentation(action.category);
   return (
     <Link href={href} scroll={false} className={`action-card ${action.status === "failed" ? "is-failed" : ""}`}>

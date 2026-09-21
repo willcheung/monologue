@@ -31,6 +31,7 @@ Set a private key in `.env`:
 
 ```dotenv
 DATABASE_URL="file:./monologue.db"
+MONOLOGUE_MODE="single-user"
 MONOLOGUE_API_KEY="replace-this-with-a-long-random-value"
 MONOLOGUE_URL="http://localhost:3000"
 ```
@@ -43,7 +44,7 @@ npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The SQLite file lives at `prisma/monologue.db` and is ignored by git.
+Open [http://localhost:3000](http://localhost:3000) for the website or [http://localhost:3000/feed](http://localhost:3000/feed) for the feed. The SQLite file lives at `prisma/monologue.db` and is ignored by git.
 
 ## Send a test action
 
@@ -72,10 +73,10 @@ The response is `{"success":true,"id":"..."}` and the action appears at the top 
 
 ## Connect an agent
 
-The portable skill is in [`skills/monologue`](skills/monologue). Once this repository has a public URL, agents compatible with the common Skills CLI can install it conceptually with:
+The portable skill is in [`skills/monologue`](skills/monologue). Agents compatible with the common Skills CLI can install it with:
 
 ```bash
-npx skills add <github-repo> --skill monologue
+npx skills add https://github.com/willcheung/monologue --skill monologue
 ```
 
 For manual installation, copy the whole `skills/monologue` directory into your agent's skills directory. Copying only `skills/monologue/SKILL.md` also works when the agent will POST directly rather than use the helper. Give the agent `MONOLOGUE_URL` and `MONOLOGUE_API_KEY` in its environment.
@@ -94,6 +95,32 @@ python3 skills/monologue/scripts/report-action.py \
 ```
 
 Reporting is best-effort. The helper exits cleanly if Monologue is unavailable so it never breaks the agent's primary task.
+
+## Hosted mode and Google sign-in
+
+Monologue keeps the website, hosted product, API, and skill in this repository. Single-user mode uses the local SQLite file and `MONOLOGUE_API_KEY`. Cloud mode adds Google sign-in, personal workspaces, revocable agent keys, and a hosted SQLite-compatible Turso database.
+
+Set these variables for cloud mode:
+
+```dotenv
+MONOLOGUE_MODE="cloud"
+BETTER_AUTH_SECRET="replace-with-at-least-32-random-characters"
+BETTER_AUTH_URL="https://your-domain.com"
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+TURSO_DATABASE_URL="libsql://..."
+TURSO_AUTH_TOKEN="..."
+```
+
+Create a Google OAuth web client and register this exact callback URL:
+
+```text
+https://your-domain.com/api/auth/callback/google
+```
+
+Google sign-in requests only `openid`, `email`, and `profile`. It does not grant Monologue access to Gmail, Calendar, Drive, or other Google services. New users are taken to `/welcome`, where they can create an agent key and install the skill. Returning users go to `/feed`.
+
+See [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md) for repository boundaries, tenant isolation rules, and the production rollout plan.
 
 ## API
 

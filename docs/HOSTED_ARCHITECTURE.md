@@ -1,6 +1,26 @@
 # Hosted Monologue architecture
 
-This document is the source of truth for where Monologue code belongs and how the open-source and hosted versions stay together. It describes the planned hosted architecture; authentication, workspaces, and hosted persistence are not implemented yet.
+This document is the source of truth for where Monologue code belongs and how the open-source and hosted versions stay together.
+
+## Implementation status
+
+Implemented in the application:
+
+- public website at `/` and product feed at `/feed`
+- single-user and cloud runtime modes
+- workspace-scoped actions and deduplication
+- hashed, revocable cloud agent keys
+- Better Auth browser sessions and Google sign-in
+- first-run onboarding and agent-key management
+- local SQLite and hosted libSQL/Turso database connections
+
+Still required before a public hosted launch:
+
+- choose and connect the production domain
+- create the production Turso database and apply the committed schema
+- create Google OAuth credentials and register the production callback
+- add production environment variables and a stable staging environment
+- complete an end-to-end Google sign-in and hosted agent ingestion test
 
 ## Repository policy
 
