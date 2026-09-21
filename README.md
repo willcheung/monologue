@@ -120,6 +120,17 @@ https://your-domain.com/api/auth/callback/google
 
 Google sign-in requests only `openid`, `email`, and `profile`. It does not grant Monologue access to Gmail, Calendar, Drive, or other Google services. New users are taken to `/welcome`, where they can create an agent key and install the skill. Returning users go to `/feed`.
 
+For a Vercel deployment backed by Turso:
+
+```bash
+vercel link
+vercel integration add tursocloud/database
+vercel env pull .env.local
+npm run db:migrate:turso
+```
+
+Choose a Turso region close to the Vercel Function region. Add the remaining cloud-mode variables in Vercel, then deploy with `vercel --prod`. Apply committed Turso migrations before deploying code that depends on them; the migration runner records checksums and safely skips migrations already applied.
+
 See [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md) for repository boundaries, tenant isolation rules, and the production rollout plan.
 
 ## API

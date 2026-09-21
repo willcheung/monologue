@@ -6,6 +6,8 @@ import { isCloudMode } from "@/lib/runtime";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export default async function WelcomePage() {
   const context = await getWorkspaceContext();
   if (!context) redirect("/sign-in");

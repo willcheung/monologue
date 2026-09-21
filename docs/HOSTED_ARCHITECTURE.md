@@ -174,6 +174,7 @@ Do not add teams, invitations, billing, or enterprise authentication to this fir
 - Run lint, typecheck, tests, and a production build before merging.
 - Commit schema migrations with the code that depends on them.
 - Deploy production from `main` only after its database migration succeeds.
+- Pull the linked Vercel environment and run `npm run db:migrate:turso` before deploying code that depends on a new schema. The runner records checksums in `_monologue_migrations` and refuses edited migrations.
 - Tag meaningful open-source releases; the skill ships from the same tag as the compatible API.
 
 ## When a new repository is justified

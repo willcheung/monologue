@@ -5,6 +5,8 @@ import { isCloudMode } from "@/lib/runtime";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export default async function AgentKeysPage() {
   if (!isCloudMode()) redirect("/welcome");
   const context = await getWorkspaceContext();

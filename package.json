@@ -5,17 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:migrate": "prisma migrate deploy",
+    "db:migrate:turso": "node --env-file=.env.local --import tsx scripts/migrate-turso.ts",
     "db:seed": "node --env-file=.env --import tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.5",
+    "@libsql/client": "0.8.1",
     "@prisma/adapter-libsql": "^6.12.0",
     "@prisma/client": "6.12.0",
     "better-auth": "^1.7.5",
