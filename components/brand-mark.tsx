@@ -1,13 +1,21 @@
 export function BrandMark({ className = "" }: { className?: string }) {
   return (
     <span className={`brand-mark ${className}`.trim()} aria-hidden="true">
-      <svg viewBox="0 0 120 120" role="presentation">
-        <rect x="8" y="9" width="104" height="104" rx="30" fill="#20201d" />
-        <rect x="5" y="5" width="104" height="104" rx="30" fill="#ff6b45" />
-        <path d="M25 70V35c0-7 8-10 12-4l15 25 15-25c4-6 12-3 12 4v20c0 10 5 15 14 15" fill="none" stroke="#fffaf3" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="95" cy="70" r="5" fill="#20201d" />
-        <rect x="15" y="83" width="84" height="17" rx="8.5" fill="#20201d" />
-        <text x="57" y="95" textAnchor="middle" fill="#fffaf3" fontFamily="Arial, sans-serif" fontSize="9.5" fontWeight="700" letterSpacing="0.65">MONOLOGUE</text>
+      <svg viewBox="0 0 1024 1024" role="presentation">
+        <rect x="78" y="84" width="896" height="896" rx="238" fill="#20201d" />
+        <rect x="54" y="46" width="896" height="896" rx="238" fill="#ff6b45" />
+        <path d="M550 297C695 297 644 494 772 494M622 494H772M550 691C695 691 644 494 772 494" fill="none" stroke="#fffaf3" strokeWidth="68" strokeLinecap="round" />
+        <rect x="146" y="210" width="440" height="174" rx="87" fill="#fffaf3" />
+        <circle cx="236" cy="297" r="43" fill="#20201d" />
+        <rect x="316" y="271" width="182" height="52" rx="26" fill="#ff6b45" />
+        <rect x="146" y="407" width="512" height="174" rx="87" fill="#fffaf3" />
+        <circle cx="236" cy="494" r="43" fill="#20201d" />
+        <rect x="316" y="468" width="254" height="52" rx="26" fill="#ff6b45" />
+        <rect x="146" y="604" width="440" height="174" rx="87" fill="#fffaf3" />
+        <circle cx="236" cy="691" r="43" fill="#20201d" />
+        <rect x="316" y="665" width="182" height="52" rx="26" fill="#ff6b45" />
+        <circle cx="790" cy="494" r="91" fill="#fffaf3" />
+        <circle cx="790" cy="494" r="46" fill="#20201d" />
       </svg>
     </span>
   );

@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { isCloudMode } from "@/lib/runtime";
 import { BrandMark } from "./brand-mark";
 import { SignOutButton } from "./sign-out-button";
 
 export function Header({ product = false, signedIn = false }: { product?: boolean; signedIn?: boolean }) {
+  const cloud = isCloudMode();
   return (
     <header className="site-header">
       <div className="header-inner">
@@ -18,7 +20,7 @@ export function Header({ product = false, signedIn = false }: { product?: boolea
           </> : <>
             <a href="#how-it-works">How it works</a>
             <a href="https://github.com/willcheung/monologue">GitHub</a>
-            <Link className="nav-cta" href="/feed">Open feed</Link>
+            <Link className="nav-cta" href={cloud ? "/sign-in" : "/feed"}>{cloud ? "Try free" : "Open feed"}</Link>
           </>}
         </nav>
       </div>
