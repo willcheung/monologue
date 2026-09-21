@@ -12,11 +12,14 @@ export type KeyRecord = {
 };
 
 const AGENT_SETUP_URL = "https://www.monologue.events/agent-setup/SKILL.md";
+const INSTALL_PROMPT = `Read and execute ${AGENT_SETUP_URL}`;
 
 export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboarding?: boolean; initialKeys?: KeyRecord[] }) {
   const [keys, setKeys] = useState<KeyRecord[]>(initialKeys);
   const [name, setName] = useState("My first agent");
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [keyRevealed, setKeyRevealed] = useState(false);
+  const [copied, setCopied] = useState<"key" | "install" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +32,7 @@ export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboar
 
   async function createKey(event: React.FormEvent) {
     event.preventDefault();
-    setBusy(true); setError(null); setNewKey(null);
+    setBusy(true); setError(null); setNewKey(null); setKeyRevealed(false); setCopied(null);
     const response = await fetch("/api/keys", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -39,6 +42,12 @@ export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboar
     if (!response.ok) setError(body.error ?? "Could not create the key");
     else { setNewKey(body.key.key); await loadKeys(); }
     setBusy(false);
+  }
+
+  async function copy(value: string, type: "key" | "install") {
+    await navigator.clipboard.writeText(value);
+    setCopied(type);
+    window.setTimeout(() => setCopied(null), 1800);
   }
 
   async function revokeKey(id: string) {
@@ -62,13 +71,21 @@ export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboar
     </form>
     {error && <p className="form-error">{error}</p>}
     {newKey && <div className="new-key">
-      <strong>Copy this key now</strong>
-      <p>For your safety, Monologue will not show it again.</p>
-      <code>{newKey}</code>
-      <button type="button" onClick={() => navigator.clipboard.writeText(newKey)}>Copy key</button>
-      <div className="install-config"><span>Tell your agent</span><pre>{`Read and execute ${AGENT_SETUP_URL}\n\nMONOLOGUE_API_KEY=${newKey}`}</pre></div>
-      <button type="button" onClick={() => navigator.clipboard.writeText(`Read and execute ${AGENT_SETUP_URL}\n\nMONOLOGUE_API_KEY=${newKey}`)}>Copy agent setup</button>
+      <strong>Save this key now</strong>
+      <p>Store it as <code>MONOLOGUE_API_KEY</code> through your agent&apos;s secure Connect or secrets screen. Never paste it into regular chat. Monologue will not show it again.</p>
+      <code className="secret-value">{keyRevealed ? newKey : `${newKey.slice(0, 9)}${"•".repeat(24)}`}</code>
+      <div className="secret-actions">
+        <button type="button" onClick={() => copy(newKey, "key")}>{copied === "key" ? "Copied key" : "Copy key"}</button>
+        <button className="quiet-button" type="button" onClick={() => setKeyRevealed((value) => !value)}>{keyRevealed ? "Hide" : "Reveal"}</button>
+        <button className="quiet-button" type="button" onClick={() => setNewKey(null)}>I&apos;ve saved it</button>
+      </div>
     </div>}
+    <div className="install-config">
+      <span>Install the skill</span>
+      <pre>{INSTALL_PROMPT}</pre>
+      <p>This prompt is public and safe to paste. It never includes your API key.</p>
+      <button type="button" onClick={() => copy(INSTALL_PROMPT, "install")}>{copied === "install" ? "Copied install prompt" : "Copy install prompt"}</button>
+    </div>
     {keys.length > 0 && <div className="key-list">{keys.map((key) => <div className="key-row" key={key.id}>
       <div><strong>{key.name}</strong><span>{key.prefix}•••• · {key.revokedAt ? "Revoked" : key.lastUsedAt ? "Used recently" : "Never used"}</span></div>
       {!key.revokedAt && <button type="button" disabled={busy} onClick={() => revokeKey(key.id)}>Revoke</button>}
