@@ -13,7 +13,7 @@ export default function SignInPage() {
       <section className="auth-card">
         <span className="brand-mark auth-mark" aria-hidden="true"><span>m.</span></span>
         <span className="kicker">Welcome to Monologue</span>
-        <h1>Your agents did the work.<br />See what changed.</h1>
+        <h1>Your agents took action.<br />See what they did.</h1>
         <p>Sign in to open your private agent feed.</p>
         <GoogleSignInButton configured={googleSignInConfigured} />
         {!googleSignInConfigured && <p className="setup-note">Google sign-in is ready in code. Add the Google OAuth environment variables to activate it.</p>}
