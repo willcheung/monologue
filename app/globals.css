@@ -11,8 +11,8 @@ button,input,select { font:inherit; }
 .site-header { position:sticky; top:0; z-index:20; background:rgba(251,250,246,.88); backdrop-filter:blur(18px); border-bottom:1px solid rgba(220,217,208,.75); }
 .header-inner { width:min(1060px,calc(100% - 40px)); height:74px; margin:auto; display:flex; align-items:center; justify-content:space-between; }
 .brand { display:flex; gap:11px; align-items:center; }
-.brand-mark { width:38px; height:38px; display:grid; place-items:center; border-radius:50% 50% 50% 15px; background:var(--accent); color:#fffaf3; box-shadow:2px 3px 0 var(--ink); transform:rotate(-3deg); }
-.brand-mark>span { font-family:var(--font-display),serif; font-size:22px; font-weight:700; font-style:italic; letter-spacing:-2px; line-height:1; transform:translate(-1px,-1px) rotate(3deg); }
+.brand-mark { width:40px; height:40px; display:grid; place-items:center; flex:none; }
+.brand-mark svg { display:block; width:100%; height:100%; }
 .action-ending { white-space:nowrap; }
 .rotating-action { display:inline-block!important; animation:action-in .28s ease-out; }
 @keyframes action-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
