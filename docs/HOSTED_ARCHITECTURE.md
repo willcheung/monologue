@@ -58,6 +58,8 @@ Route groups organize code without appearing in public URLs. The intended routes
 
 ```text
 /                    marketing homepage
+/privacy             hosted-service privacy policy
+/terms               hosted-service terms of service
 /sign-in             create an account or return to Monologue
 /welcome             first-run agent setup
 /feed                authenticated action feed
