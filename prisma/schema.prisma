@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Action {
+  id          String   @id @default(cuid())
+  agentName   String
+  agentId     String?
+  verb        String
+  summary     String
+  category    String
+  status      String
+  system      String
+  objectType  String?
+  objectName  String?
+  project     String?
+  externalId  String?
+  value       Float?
+  currency    String?
+  url         String?
+  source      String   @default("self_reported")
+  metadata    Json?
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([agentName, system, externalId])
+  @@index([occurredAt])
+  @@index([agentName])
+  @@index([category])
+  @@index([status])
+  @@index([system])
+  @@index([project])
+}
