@@ -4,15 +4,19 @@ import { AlertCircle, ArrowUpRight } from "lucide-react";
 import { ActionIcon } from "./action-icon";
 import { categoryPresentation } from "@/lib/constants";
 
-function timeLabel(date: Date) {
-  return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(date);
+function timeLabel(date: Date, localTime: boolean) {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    ...(!localTime && { timeZone: "UTC" }),
+  }).format(new Date(date));
 }
 
 function money(value: number, currency = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
 }
 
-export function ActionCard({ action, queryString = "", basePath = "/feed" }: { action: Action; queryString?: string; basePath?: string }) {
+export function ActionCard({ action, queryString = "", basePath = "/feed", localTime = false }: { action: Action; queryString?: string; basePath?: string; localTime?: boolean }) {
   const href = `${basePath}?${queryString ? `${queryString}&` : ""}action=${action.id}`;
   const category = categoryPresentation(action.category);
   return (
@@ -29,7 +33,7 @@ export function ActionCard({ action, queryString = "", basePath = "/feed" }: { a
         <p>{action.summary}</p>
         <div className="action-meta">
           <span>{action.system}</span><i>·</i>
-          <span><span className="time-emoji" role="img" aria-label="Time">🕒</span>{timeLabel(action.occurredAt)}</span>
+          <span><span className="time-emoji" role="img" aria-label="Time">🕒</span>{timeLabel(action.occurredAt, localTime)}</span>
           {action.value != null && <><i>·</i><span className="amount">{money(action.value, action.currency ?? "USD")}</span></>}
         </div>
       </div>

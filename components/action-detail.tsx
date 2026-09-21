@@ -1,11 +1,18 @@
+"use client";
+
 import type { Action } from "@prisma/client";
 import Link from "next/link";
 import { ExternalLink, X } from "lucide-react";
 import { ActionIcon } from "./action-icon";
 import { categoryPresentation } from "@/lib/constants";
+import { useBrowserTime } from "@/lib/use-browser-time";
 
-function dateTime(date: Date) {
-  return new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeStyle: "short" }).format(date);
+function dateTime(date: Date, localTime: boolean) {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "long",
+    timeStyle: "short",
+    ...(!localTime && { timeZone: "UTC" }),
+  }).format(new Date(date));
 }
 
 function metadataLabel(key: string) {
@@ -24,10 +31,11 @@ function isUrl(value: unknown): value is string {
 }
 
 export function ActionDetail({ action, closeHref }: { action: Action; closeHref: string }) {
+  const localTime = useBrowserTime();
   const category = categoryPresentation(action.category);
   const rows = [
     ["Agent", action.agentName], ["Verb", action.verb], ["System", action.system],
-    ["Status", action.status], ["Time", dateTime(action.occurredAt)],
+    ["Status", action.status], ["Time", dateTime(action.occurredAt, localTime)],
     ["Object", [action.objectType, action.objectName].filter(Boolean).join(" · ") || null],
     ["Amount", action.value != null ? new Intl.NumberFormat("en-US", { style: "currency", currency: action.currency ?? "USD" }).format(action.value) : null],
     ["Source", action.source.replace("_", " ")],
