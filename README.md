@@ -104,6 +104,21 @@ Both routes require `Authorization: Bearer <MONOLOGUE_API_KEY>`.
 
 `externalId` is optional. When supplied, the tuple `(agentName, system, externalId)` is unique and retry-safe. No fuzzy deduplication is performed.
 
+Use `url` for the action's primary destination—the commit, order, event, payment, or other changed object. Use the free-form `metadata` JSON object for provider-specific details and secondary links:
+
+```json
+{
+  "url": "https://amazon.com/orders/7741",
+  "metadata": {
+    "orderNumber": "113-4820917-7741",
+    "quantity": 2,
+    "receiptUrl": "https://amazon.com/orders/7741/invoice"
+  }
+}
+```
+
+The detail drawer presents the primary URL as an “Open in…” button and formats metadata as readable rows.
+
 Supported categories: `communication`, `calendar`, `purchase`, `reservation`, `finance`, `code`, `file`, `task`, `account`, `crm`, `database`, `deployment`, `form`, `other`.
 
 Supported statuses: `completed`, `failed`, `pending`. Supported sources: `self_reported`, `verified`, `observed`.
