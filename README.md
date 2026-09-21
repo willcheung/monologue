@@ -73,11 +73,13 @@ The response is `{"success":true,"id":"..."}` and the action appears at the top 
 
 ## Connect an agent
 
-For the fastest setup, give an agent this instruction and then provide a dedicated API key from `/settings/keys`:
+For the fastest setup, give an agent this instruction:
 
 ```text
 Read and execute https://www.monologue.events/agent-setup/SKILL.md
 ```
+
+The agent starts a short-lived connection request and gives you a secure Monologue link. Sign in and approve it. Monologue creates a dedicated API key behind the scenes and returns it directly to the agent, so there is no key to copy or paste. The agent must support persistent secret storage. Manual one-time key creation remains available at `/settings/keys` for Muse, custom connectors, and advanced setups.
 
 The portable skill is also in [`skills/monologue`](skills/monologue). Agents compatible with the common Skills CLI can install it with:
 
@@ -85,7 +87,7 @@ The portable skill is also in [`skills/monologue`](skills/monologue). Agents com
 npx skills add https://github.com/willcheung/monologue --skill monologue
 ```
 
-For manual installation, copy the whole `skills/monologue` directory into your agent's skills directory. Copying only `skills/monologue/SKILL.md` also works when the agent will POST directly rather than use the helper. Give the agent `MONOLOGUE_URL` and `MONOLOGUE_API_KEY` in its environment.
+For manual installation, copy the whole `skills/monologue` directory into your agent's skills directory. Copying only `skills/monologue/SKILL.md` also works when the agent will POST directly rather than use the helper. In local single-user mode, give the agent `MONOLOGUE_URL` and `MONOLOGUE_API_KEY` in its environment.
 
 After any installation method, confirm `monologue` appears in the agent's available-skills list. Reload skills or start a new session when the agent builds that list at session start. Installation is not complete until the skill is discoverable.
 
@@ -126,7 +128,7 @@ Create a Google OAuth web client and register this exact callback URL:
 https://www.monologue.events/api/auth/callback/google
 ```
 
-Google sign-in requests only `openid`, `email`, and `profile`. It does not grant Monologue access to Gmail, Calendar, Drive, or other Google services. New users are taken to `/welcome`, where they can create an agent key and install the skill. Returning users go to `/feed`.
+Google sign-in requests only `openid`, `email`, and `profile`. It does not grant Monologue access to Gmail, Calendar, Drive, or other Google services. New users are taken to `/welcome`, where they can copy the setup prompt. An agent connection link returns them to Monologue to approve automatic key creation. Returning users go to `/feed`.
 
 For a Vercel deployment backed by Turso:
 
@@ -147,6 +149,14 @@ Both routes require `Authorization: Bearer <MONOLOGUE_API_KEY>`.
 
 - `POST /api/actions` validates and creates an action. Required fields: `agentName`, `verb`, `summary`, `category`, `status`, and `system`.
 - `GET /api/actions` returns newest first and accepts `agent`, `category`, `status`, `system`, `project`, `from`, `to`, and `search` query parameters.
+
+Hosted automatic connection uses three short-lived endpoints:
+
+- `POST /api/connect/request` starts a ten-minute connection request for an agent.
+- `POST /api/connect/approve` requires a signed-in browser session and approves that request for the user's workspace.
+- `POST /api/connect/poll` lets the requesting agent claim its generated key exactly once after approval.
+
+Only hashes of the device and approval codes are stored. The long-lived API key is created at claim time, returned once to the agent, and then stored by Monologue only as a hash.
 
 `externalId` is optional. When supplied, the tuple `(agentName, system, externalId)` is unique and retry-safe. No fuzzy deduplication is performed.
 

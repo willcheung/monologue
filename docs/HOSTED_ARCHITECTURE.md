@@ -12,6 +12,7 @@ Implemented in the application:
 - hashed, revocable cloud agent keys
 - Better Auth browser sessions and Google sign-in
 - first-run onboarding and agent-key management
+- short-lived, no-copy agent connection approval
 - local SQLite and hosted libSQL/Turso database connections
 - production deployment at `https://www.monologue.events`
 - public agent bootstrap skill at `/agent-setup/SKILL.md`
@@ -62,10 +63,12 @@ Route groups organize code without appearing in public URLs. The intended routes
 /terms               hosted-service terms of service
 /sign-in             create an account or return to Monologue
 /welcome             first-run agent setup
+/connect             approve a short-lived agent connection
 /feed                authenticated action feed
 /settings/keys       create, name, rotate, and revoke agent keys
 /api/auth/*           browser authentication
 /api/actions          agent ingestion and authenticated action reads
+/api/connect/*        request, approve, and claim an automatic agent connection
 ```
 
 Until that migration is implemented, the existing `/` feed and current directory structure remain valid.
@@ -161,10 +164,13 @@ Security invariants:
 1. A visitor clicks **Start your agent feed**.
 2. They continue with Google.
 3. Monologue creates their personal workspace.
-4. `/welcome` generates the first agent key and shows it once.
-5. The page provides the skill installation command and the two required environment variables.
-6. The user sends a test action.
-7. The new action appears in `/feed`.
+4. `/welcome` provides the public skill installation prompt.
+5. The agent creates a short-lived connection request and gives the user an approval link.
+6. The signed-in user approves the named agent. The browser never receives or displays its API key.
+7. The agent claims the generated key once and stores it in its own secure secret store.
+8. The first reported action appears in `/feed`.
+
+Manual key creation remains in `/settings/keys` for connectors that cannot complete the automatic flow. Connection requests store only hashed device and approval codes, expire after ten minutes, and create the long-lived key only when the approved agent claims it.
 
 Do not add teams, invitations, billing, or enterprise authentication to this first hosted flow.
 

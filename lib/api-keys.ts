@@ -12,12 +12,26 @@ function safeEqual(left: string, right: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export async function createWorkspaceApiKey(workspaceId: string, name: string) {
+export function prepareWorkspaceApiKey(workspaceId: string, name: string) {
   const key = `mlg_live_${randomBytes(24).toString("base64url")}`;
+  const normalizedName = name.trim() || "My agent";
+  return {
+    key,
+    data: {
+      workspaceId,
+      name: normalizedName,
+      prefix: key.slice(0, 16),
+      keyHash: hashKey(key),
+    },
+  };
+}
+
+export async function createWorkspaceApiKey(workspaceId: string, name: string) {
+  const prepared = prepareWorkspaceApiKey(workspaceId, name);
   const record = await db.apiKey.create({
-    data: { workspaceId, name: name.trim() || "My agent", prefix: key.slice(0, 16), keyHash: hashKey(key) },
+    data: prepared.data,
   });
-  return { id: record.id, key, prefix: record.prefix, name: record.name, createdAt: record.createdAt };
+  return { id: record.id, key: prepared.key, prefix: record.prefix, name: record.name, createdAt: record.createdAt };
 }
 
 export async function authenticateApiRequest(request: Request) {

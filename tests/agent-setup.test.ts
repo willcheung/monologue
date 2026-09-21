@@ -12,5 +12,9 @@ describe("hosted agent setup", () => {
     expect(response.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
     expect(await response.text()).toBe(canonical);
     expect(canonical).toContain("https://www.monologue.events/api/actions");
+    expect(canonical).toContain("/api/connect/request");
+    expect(canonical).toContain("/api/connect/poll");
+    expect(canonical).toContain("Show the user only the returned `verificationUrl`");
+    expect(canonical).not.toContain("required_environment_variables");
   });
 });

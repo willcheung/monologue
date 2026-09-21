@@ -48,7 +48,7 @@ export default function MarketingPage() {
       <section className="steps-section">
         <span className="kicker">Up and running quickly</span>
         <h2>Connect any agent in three steps.</h2>
-        <ol><li><span>1</span><div><strong>Create your feed</strong><p>Sign in and get a private agent key.</p></div></li><li><span>2</span><div><strong>Install the skill</strong><p>Add the portable Monologue skill to Codex, Claude, Hermes, or your own agent.</p></div></li><li><span>3</span><div><strong>See what changes</strong><p>Consequential actions appear in one readable timeline.</p></div></li></ol>
+        <ol><li><span>1</span><div><strong>Give your agent one prompt</strong><p>It installs Monologue and gives you a secure connection link.</p></div></li><li><span>2</span><div><strong>Approve the connection</strong><p>Sign in once. There are no keys to copy or paste.</p></div></li><li><span>3</span><div><strong>See what changes</strong><p>Consequential actions appear in one readable timeline.</p></div></li></ol>
         <Link className="primary-button" href={startHref}>{cloud ? "Start your feed" : "Try the local feed"}<ArrowRight size={17} /></Link>
       </section>
     </main>

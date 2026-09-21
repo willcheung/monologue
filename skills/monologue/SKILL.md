@@ -1,12 +1,7 @@
 ---
 name: monologue
 description: Report external state changes to a Monologue feed.
-version: 1.0.0
-required_environment_variables:
-  - name: MONOLOGUE_API_KEY
-    prompt: Monologue agent API key
-    help: Create a key at https://www.monologue.events/settings/keys
-    required_for: reporting actions
+version: 1.1.0
 ---
 
 # Monologue
@@ -23,12 +18,15 @@ After installation:
 2. If the agent builds its skill index when a session starts, reload skills or start a new session.
 3. Do not consider setup complete until the skill is discoverable. If the agent has no skill discovery system, add a persistent instruction to load this skill after external state-changing actions.
 
-Setup should happen once:
+Setup should happen once. Connect automatically when no key is configured:
 
 1. Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`.
 2. Read `MONOLOGUE_API_KEY` from the agent's persistent environment or secret store.
-3. If it is missing, ask the user once to create an agent key at `https://www.monologue.events/settings/keys` and add it through the agent's secure Connect or secrets screen. Never ask the user to paste a key into ordinary chat.
-4. Keep using the stored key. Do not ask for it again unless it is missing or Monologue returns `401 Unauthorized`, which means the key was revoked, replaced, or entered incorrectly.
+3. If it is missing, `POST` `{"agentName":"<this agent's name>"}` to `$MONOLOGUE_URL/api/connect/request`.
+4. Keep the returned `deviceCode` private. Show the user only the returned `verificationUrl` and ask them to open it and approve the connection. Do not show or repeat any API key.
+5. Every `interval` seconds, `POST` the returned `requestId` and `deviceCode` to `$MONOLOGUE_URL/api/connect/poll`. A `202` response means approval is still pending. Stop when the request succeeds, expires, or ten minutes pass.
+6. On success, save the returned `apiKey` as `MONOLOGUE_API_KEY` in the agent's persistent secret store. Never print, display, log, or send it in ordinary chat. If the agent cannot securely store secrets, direct the user to the manual-key option at `https://www.monologue.events/settings/keys`.
+7. Keep using the stored key. Do not reconnect unless it is missing or Monologue returns `401 Unauthorized`, which means the key was revoked or replaced.
 
 Never commit, log, display, repeat, or include the key in an action payload.
 

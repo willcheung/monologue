@@ -14,7 +14,7 @@ export type KeyRecord = {
 const AGENT_SETUP_URL = "https://www.monologue.events/agent-setup/SKILL.md";
 const INSTALL_PROMPT = `Read and execute ${AGENT_SETUP_URL}`;
 
-export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboarding?: boolean; initialKeys?: KeyRecord[] }) {
+export function ApiKeyManager({ initialKeys = [] }: { initialKeys?: KeyRecord[] }) {
   const [keys, setKeys] = useState<KeyRecord[]>(initialKeys);
   const [name, setName] = useState("My first agent");
   const [newKey, setNewKey] = useState<string | null>(null);
@@ -62,16 +62,15 @@ export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboar
   }
 
   return <div className="key-manager">
-    {onboarding && <div className="step-number">1</div>}
-    <h2>{onboarding ? "Create an agent key" : "Agent keys"}</h2>
-    <p>Give each agent its own key. You can revoke a key without affecting the others.</p>
+    <h2>Manual agent keys</h2>
+    <p>Most people won&apos;t need these. Create one for Muse, a custom connector, or another agent that asks for a key directly. Each new key is shown once.</p>
     <form className="key-form" onSubmit={createKey}>
       <label>Agent name<input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} required /></label>
-      <button type="submit" disabled={busy}>{busy ? "Working…" : "Create key"}</button>
+      <button type="submit" disabled={busy}>{busy ? "Working…" : "Create manual key"}</button>
     </form>
     {error && <p className="form-error">{error}</p>}
     {newKey && <div className="new-key">
-      <strong>Connect once</strong>
+      <strong>Your new key</strong>
       <p>Save this as <code>MONOLOGUE_API_KEY</code> through your agent&apos;s secure Connect or secrets screen. Your agent will keep using it, so you should not need to enter it again. Never paste it into regular chat. Monologue will not show it again.</p>
       <code className="secret-value">{keyRevealed ? newKey : `${newKey.slice(0, 9)}${"•".repeat(24)}`}</code>
       <div className="secret-actions">
@@ -83,7 +82,7 @@ export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboar
     <div className="install-config">
       <span>Install the skill</span>
       <pre>{INSTALL_PROMPT}</pre>
-      <p>This prompt is public and safe to paste. It installs the instructions but never includes your API key.</p>
+      <p>This is the easier option. The prompt is public and safe to paste; your agent will give you a private approval link and connect without showing a key.</p>
       <button type="button" onClick={() => copy(INSTALL_PROMPT, "install")}>{copied === "install" ? "Copied install prompt" : "Copy install prompt"}</button>
     </div>
     {keys.length > 0 && <div className="key-list">{keys.map((key) => <div className="key-row" key={key.id}>

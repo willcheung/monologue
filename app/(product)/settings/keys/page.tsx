@@ -17,5 +17,5 @@ export default async function AgentKeysPage() {
     orderBy: { createdAt: "desc" },
   });
   const initialKeys = keys.map((key) => ({ ...key, createdAt: key.createdAt.toISOString(), lastUsedAt: key.lastUsedAt?.toISOString() ?? null, revokedAt: key.revokedAt?.toISOString() ?? null }));
-  return <><Header product signedIn /><main className="settings-shell"><span className="kicker">Settings</span><h1>Connect your agents.</h1><ApiKeyManager initialKeys={initialKeys} /></main></>;
+  return <><Header product signedIn /><main className="settings-shell"><span className="kicker">Settings</span><h1>Agent connections.</h1><p className="setup-lede">Connected agents appear below. You can revoke their access or create a manual key for advanced setups.</p><ApiKeyManager initialKeys={initialKeys} /></main></>;
 }

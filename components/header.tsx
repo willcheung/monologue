@@ -13,7 +13,7 @@ export function Header({ product = false, signedIn = false }: { product?: boolea
         <nav className="header-nav" aria-label="Main navigation">
           {product ? <>
             <Link href="/feed">Feed</Link>
-            {signedIn && <Link href="/settings/keys">Agent keys</Link>}
+            {signedIn && <Link href="/settings/keys">Connections</Link>}
             {signedIn && <SignOutButton />}
           </> : <>
             <a href="#how-it-works">How it works</a>

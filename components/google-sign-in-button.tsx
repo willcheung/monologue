@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
-export function GoogleSignInButton({ configured }: { configured: boolean }) {
+export function GoogleSignInButton({ configured, callbackURL = "/feed" }: { configured: boolean; callbackURL?: string }) {
   const [loading, setLoading] = useState(false);
 
   async function signIn() {
     setLoading(true);
     const result = await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/feed",
-      newUserCallbackURL: "/welcome",
-      errorCallbackURL: "/sign-in?error=google",
+      callbackURL,
+      newUserCallbackURL: callbackURL,
+      errorCallbackURL: `/sign-in?error=google&next=${encodeURIComponent(callbackURL)}`,
     });
     if (result?.error) setLoading(false);
   }

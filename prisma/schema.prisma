@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Action {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   agentName   String
   agentId     String?
   verb        String
@@ -24,10 +24,10 @@ model Action {
   value       Float?
   currency    String?
   url         String?
-  source      String   @default("self_reported")
+  source      String    @default("self_reported")
   metadata    Json?
-  occurredAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
+  occurredAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -41,14 +41,15 @@ model Action {
 }
 
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  ownerId   String?  @unique
-  owner     User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  actions   Action[]
-  apiKeys   ApiKey[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String            @id @default(cuid())
+  name             String
+  ownerId          String?           @unique
+  owner            User?             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  actions          Action[]
+  apiKeys          ApiKey[]
+  agentConnections AgentConnection[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model ApiKey {
@@ -65,14 +66,31 @@ model ApiKey {
   @@index([workspaceId, createdAt])
 }
 
+model AgentConnection {
+  id               String     @id @default(cuid())
+  agentName        String
+  deviceCodeHash   String     @unique
+  approvalCodeHash String     @unique
+  status           String     @default("pending")
+  workspaceId      String?
+  workspace        Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  expiresAt        DateTime
+  approvedAt       DateTime?
+  claimedAt        DateTime?
+  createdAt        DateTime   @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([expiresAt])
+}
+
 model User {
-  id            String      @id
+  id            String     @id
   name          String
-  email         String      @unique
-  emailVerified Boolean     @default(false)
+  email         String     @unique
+  emailVerified Boolean    @default(false)
   image         String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   sessions      Session[]
   accounts      Account[]
   workspace     Workspace?
