@@ -27,7 +27,7 @@ export default async function WelcomePage() {
         <div className="step-number">1</div><h2>Use your local API key</h2>
         <p>Your key is the <code>MONOLOGUE_API_KEY</code> value in this project&apos;s <code>.env</code> file.</p>
       </div>}
-      <div className="setup-step"><div className="step-number">2</div><h2>Install the Monologue skill</h2><pre>npx skills add https://github.com/willcheung/monologue --skill monologue</pre><p>Or copy <code>skills/monologue</code> into your agent&apos;s skill directory.</p></div>
+      <div className="setup-step"><div className="step-number">2</div><h2>Tell your agent</h2><pre>Read and execute https://www.monologue.events/agent-setup/SKILL.md</pre><p>The setup file is portable across agents. For local installation, you can still copy <code>skills/monologue</code> into the agent&apos;s skill directory.</p></div>
       <div className="setup-step"><div className="step-number">3</div><h2>Let the first action arrive</h2><p>The skill reports only external state changes. Research, browsing, drafts, and internal work stay out of your feed.</p></div>
       <Link className="primary-button" href="/feed">Open my feed →</Link>
     </main>

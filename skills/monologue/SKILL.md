@@ -7,6 +7,12 @@ description: Report consequential external state changes made by an AI agent to 
 
 Report an event to Monologue only when your action causes an external state change on the user's behalf.
 
+## Setup
+
+Treat these as persistent instructions for this agent. If your environment supports installing skills, save this skill as `monologue`.
+
+Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`. Read `MONOLOGUE_API_KEY` from the environment or secret store. If the key is missing, ask the user to create one at `https://www.monologue.events/settings/keys` and provide it securely. Never commit, log, or include the key in an action payload.
+
 Use this test:
 
 > If something outside this agent is now different because of what you did, report it. Otherwise, do not report it.
@@ -42,11 +48,11 @@ Report one event for the resulting external action, not its intermediate steps. 
 
 ## Send the event
 
-Read `MONOLOGUE_URL` and `MONOLOGUE_API_KEY` from the environment. POST JSON to `$MONOLOGUE_URL/api/actions` with `Authorization: Bearer $MONOLOGUE_API_KEY`.
+POST JSON to `$MONOLOGUE_URL/api/actions` with `Authorization: Bearer $MONOLOGUE_API_KEY`. When `MONOLOGUE_URL` is unset, POST to `https://www.monologue.events/api/actions`.
 
 Required fields are `agentName`, `verb`, `summary`, `category`, `status`, and `system`. Valid categories are `communication`, `calendar`, `purchase`, `reservation`, `finance`, `code`, `file`, `task`, `account`, `crm`, `database`, `deployment`, `form`, and `other`. Use `source: self_reported` unless another source is explicitly known.
 
-Prefer the dependency-free helper:
+Call the endpoint directly in any environment. When this skill was installed from the Monologue repository, the dependency-free helper is also available:
 
 ```bash
 python3 scripts/report-action.py \

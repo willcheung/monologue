@@ -13,14 +13,14 @@ Implemented in the application:
 - Better Auth browser sessions and Google sign-in
 - first-run onboarding and agent-key management
 - local SQLite and hosted libSQL/Turso database connections
+- production deployment at `https://www.monologue.events`
+- public agent bootstrap skill at `/agent-setup/SKILL.md`
+- production Turso schema, Google sign-in, and end-to-end hosted ingestion
 
-Still required before a public hosted launch:
+Still required as the hosted product expands:
 
-- choose and connect the production domain
-- create the production Turso database and apply the committed schema
-- create Google OAuth credentials and register the production callback
-- add production environment variables and a stable staging environment
-- complete an end-to-end Google sign-in and hosted agent ingestion test
+- complete public OAuth branding and move the Google app beyond test users
+- add a stable staging environment with an isolated database and OAuth client
 
 ## Repository policy
 
@@ -134,7 +134,7 @@ Expected Google OAuth redirect URIs:
 ```text
 http://localhost:3000/api/auth/callback/google
 https://staging.example.com/api/auth/callback/google
-https://example.com/api/auth/callback/google
+https://www.monologue.events/api/auth/callback/google
 ```
 
 Replace the example domains once the Monologue domain is selected. Redirect URIs must match exactly, including scheme, host, path, and trailing-slash behavior. Use separate OAuth clients for local/staging and production when practical so credentials and consent configuration remain isolated.

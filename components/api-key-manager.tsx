@@ -11,6 +11,8 @@ export type KeyRecord = {
   revokedAt: string | null;
 };
 
+const AGENT_SETUP_URL = "https://www.monologue.events/agent-setup/SKILL.md";
+
 export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboarding?: boolean; initialKeys?: KeyRecord[] }) {
   const [keys, setKeys] = useState<KeyRecord[]>(initialKeys);
   const [name, setName] = useState("My first agent");
@@ -64,7 +66,8 @@ export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboar
       <p>For your safety, Monologue will not show it again.</p>
       <code>{newKey}</code>
       <button type="button" onClick={() => navigator.clipboard.writeText(newKey)}>Copy key</button>
-      <div className="install-config"><span>Agent environment</span><pre>{`MONOLOGUE_URL=${window.location.origin}\nMONOLOGUE_API_KEY=${newKey}`}</pre></div>
+      <div className="install-config"><span>Tell your agent</span><pre>{`Read and execute ${AGENT_SETUP_URL}\n\nMONOLOGUE_API_KEY=${newKey}`}</pre></div>
+      <button type="button" onClick={() => navigator.clipboard.writeText(`Read and execute ${AGENT_SETUP_URL}\n\nMONOLOGUE_API_KEY=${newKey}`)}>Copy agent setup</button>
     </div>}
     {keys.length > 0 && <div className="key-list">{keys.map((key) => <div className="key-row" key={key.id}>
       <div><strong>{key.name}</strong><span>{key.prefix}•••• · {key.revokedAt ? "Revoked" : key.lastUsedAt ? "Used recently" : "Never used"}</span></div>
