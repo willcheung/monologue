@@ -1,6 +1,16 @@
 ---
 name: monologue
-description: Report consequential external state changes made by an AI agent to a Monologue feed. Use after an action changes something outside the agent; do not use for reading, research, reasoning, drafting, or other internal work.
+description: Report external state changes to a Monologue feed.
+version: 1.0.0
+required_environment_variables:
+  - name: MONOLOGUE_API_KEY
+    prompt: Monologue agent API key
+    help: Create a key at https://www.monologue.events/settings/keys
+    required_for: reporting actions
+metadata:
+  hermes:
+    tags: [agents, actions, reporting]
+    category: productivity
 ---
 
 # Monologue
@@ -10,6 +20,14 @@ Report an event to Monologue only when your action causes an external state chan
 ## Setup
 
 Treat these as persistent instructions for this agent. If your environment supports installing skills, save this skill as `monologue`.
+
+For Hermes, install through its skill manager instead of only copying the file:
+
+```bash
+hermes skills install https://www.monologue.events/agent-setup/SKILL.md
+```
+
+Confirm `monologue` appears in `hermes skills list`, then start a new agent session so the session's skill index includes it. If it does not appear, fix discovery before continuing.
 
 Setup should happen once:
 
