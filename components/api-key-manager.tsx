@@ -71,8 +71,8 @@ export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboar
     </form>
     {error && <p className="form-error">{error}</p>}
     {newKey && <div className="new-key">
-      <strong>Save this key now</strong>
-      <p>Store it as <code>MONOLOGUE_API_KEY</code> through your agent&apos;s secure Connect or secrets screen. Never paste it into regular chat. Monologue will not show it again.</p>
+      <strong>Connect once</strong>
+      <p>Save this as <code>MONOLOGUE_API_KEY</code> through your agent&apos;s secure Connect or secrets screen. Your agent will keep using it, so you should not need to enter it again. Never paste it into regular chat. Monologue will not show it again.</p>
       <code className="secret-value">{keyRevealed ? newKey : `${newKey.slice(0, 9)}${"•".repeat(24)}`}</code>
       <div className="secret-actions">
         <button type="button" onClick={() => copy(newKey, "key")}>{copied === "key" ? "Copied key" : "Copy key"}</button>
@@ -83,7 +83,7 @@ export function ApiKeyManager({ onboarding = false, initialKeys = [] }: { onboar
     <div className="install-config">
       <span>Install the skill</span>
       <pre>{INSTALL_PROMPT}</pre>
-      <p>This prompt is public and safe to paste. It never includes your API key.</p>
+      <p>This prompt is public and safe to paste. It installs the instructions but never includes your API key.</p>
       <button type="button" onClick={() => copy(INSTALL_PROMPT, "install")}>{copied === "install" ? "Copied install prompt" : "Copy install prompt"}</button>
     </div>
     {keys.length > 0 && <div className="key-list">{keys.map((key) => <div className="key-row" key={key.id}>

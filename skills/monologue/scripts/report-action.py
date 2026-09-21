@@ -4,6 +4,7 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -12,6 +13,23 @@ CATEGORIES = (
     "communication", "calendar", "purchase", "reservation", "finance", "code",
     "file", "task", "account", "crm", "database", "deployment", "form", "other",
 )
+
+
+def keychain_api_key():
+    """Read the optional Codex-specific macOS Keychain entry without printing it."""
+    if sys.platform != "darwin":
+        return None
+    try:
+        result = subprocess.run(
+            ["security", "find-generic-password", "-a", "codex", "-s", "events.monologue.api-key", "-w"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        return result.stdout.strip() or None
+    except (FileNotFoundError, subprocess.SubprocessError):
+        return None
 
 
 def arguments():
@@ -37,10 +55,10 @@ def arguments():
 
 def main():
     args = arguments()
-    base_url = os.environ.get("MONOLOGUE_URL")
-    api_key = os.environ.get("MONOLOGUE_API_KEY")
-    if not base_url or not api_key:
-        print("Monologue: skipped (MONOLOGUE_URL or MONOLOGUE_API_KEY is missing)", file=sys.stderr)
+    base_url = os.environ.get("MONOLOGUE_URL", "https://www.monologue.events")
+    api_key = os.environ.get("MONOLOGUE_API_KEY") or keychain_api_key()
+    if not api_key:
+        print("Monologue: skipped (MONOLOGUE_API_KEY is missing)", file=sys.stderr)
         return 0
 
     payload = {key: value for key, value in vars(args).items() if value is not None and key != "metadata"}

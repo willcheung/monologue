@@ -11,7 +11,16 @@ Report an event to Monologue only when your action causes an external state chan
 
 Treat these as persistent instructions for this agent. If your environment supports installing skills, save this skill as `monologue`.
 
-Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`. Read `MONOLOGUE_API_KEY` from the environment or secret store. If the key is missing, ask the user to create one at `https://www.monologue.events/settings/keys` and provide it securely. Never commit, log, or include the key in an action payload.
+Setup should happen once:
+
+1. Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`.
+2. Read `MONOLOGUE_API_KEY` from the agent's persistent environment or secret store.
+3. If it is missing, ask the user once to create an agent key at `https://www.monologue.events/settings/keys` and add it through the agent's secure Connect or secrets screen. Never ask the user to paste a key into ordinary chat.
+4. Keep using the stored key. Do not ask for it again unless it is missing or Monologue returns `401 Unauthorized`, which means the key was revoked, replaced, or entered incorrectly.
+
+Never commit, log, display, repeat, or include the key in an action payload.
+
+For Codex on macOS, the helper also supports a key stored in macOS Keychain with service `events.monologue.api-key` and account `codex`. It reads that entry only when `MONOLOGUE_API_KEY` is unset and never prints the secret.
 
 Use this test:
 
