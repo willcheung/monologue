@@ -63,11 +63,11 @@ export function ApiKeyManager({ initialKeys = [] }: { initialKeys?: KeyRecord[] 
   }
 
   return <div className="key-manager">
-    <h2>Manual agent keys</h2>
-    <p>Most people won&apos;t need these. Create one for Muse, a custom connector, or another agent that asks for a key directly. Each new key is shown once.</p>
+    <h2>API keys</h2>
+    <p>For custom connectors or agents that can&apos;t connect automatically. Each new key is shown once.</p>
     <form className="key-form" onSubmit={createKey}>
       <label>Agent name<input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} required /></label>
-      <button type="submit" disabled={busy}>{busy ? "Working…" : "Create manual key"}</button>
+      <button type="submit" disabled={busy}>{busy ? "Working…" : "Create API key"}</button>
     </form>
     {error && <p className="form-error">{error}</p>}
     {newKey && <div className="new-key">

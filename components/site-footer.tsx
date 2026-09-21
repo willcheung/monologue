@@ -5,7 +5,7 @@ export function SiteFooter() {
   return (
     <footer>
       <span>Monologue</span>
-      <p>Your agent feed.</p>
+      <p>Your agent feed. Created by a Vibe Coding Dad.</p>
       <nav className="footer-links" aria-label="Legal and project links">
         <Link href="/privacy">Privacy</Link>
         <Link href="/terms">Terms</Link>

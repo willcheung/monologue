@@ -79,7 +79,7 @@ For the fastest setup, give an agent this instruction:
 Read and execute https://www.monologue.events/agent-setup/SKILL.md
 ```
 
-The agent starts a short-lived connection request and gives you a secure Monologue link. Sign in and approve it. Monologue creates a stable Agent record and a dedicated write-only API key behind the scenes, then returns the key directly to the agent, so there is nothing to copy or paste. The agent must support persistent secret storage. Manual one-time keys with read and write access remain available at `/settings/keys` for Muse, custom connectors, and advanced setups.
+The agent starts a short-lived connection request and gives you a secure Monologue link. Sign in and approve it. Monologue creates a stable Agent record and a dedicated write-only API key behind the scenes, then returns the key directly to the agent, so there is nothing to copy or paste. The agent must support persistent secret storage. API keys with read and write access remain available at `https://www.monologue.events/sign-in?next=%2Fsettings%2Fkeys` for custom connectors and agents that cannot store a key automatically.
 
 The portable skill is also in [`skills/monologue`](skills/monologue). Agents compatible with the common Skills CLI can install it with:
 

@@ -15,10 +15,10 @@ export function Header({ product = false, signedIn = false }: { product?: boolea
         <nav className="header-nav" aria-label="Main navigation">
           {product ? <>
             <Link href="/feed">Feed</Link>
-            {signedIn && <Link href="/settings/keys">Connections</Link>}
+            {signedIn && <Link href="/settings/keys">Agents</Link>}
             {signedIn && <SignOutButton />}
           </> : <>
-            <a href="#how-it-works">How it works</a>
+            <Link href="/#how-it-works">How it works</Link>
             <a href="https://github.com/willcheung/monologue">GitHub</a>
             <Link className="nav-cta" href={cloud ? "/sign-in" : "/feed"}>{cloud ? "Try free" : "Open feed"}</Link>
           </>}

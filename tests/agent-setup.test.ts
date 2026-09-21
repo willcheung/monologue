@@ -15,7 +15,8 @@ describe("hosted agent setup", () => {
     expect(canonical).toContain("/api/connect/request");
     expect(canonical).toContain("/api/connect/poll");
     expect(canonical).toContain("Show the user only the returned `verificationUrl`");
-    expect(canonical).toContain("skillVersion\":\"1.2.0");
+    expect(canonical).toContain("skillVersion\":\"1.2.1");
+    expect(canonical).toContain("https://www.monologue.events/sign-in?next=%2Fsettings%2Fkeys");
     expect(canonical).toContain("cannot read the shared feed");
     expect(canonical).not.toContain("required_environment_variables");
   });
