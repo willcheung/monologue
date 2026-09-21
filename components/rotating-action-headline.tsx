@@ -20,9 +20,7 @@ export function RotatingActionHeadline() {
 
   return (
     <h1 aria-label="Track what your AI agents did.">
-      Track what your AI agents
-      <br />
-      <em className="rotating-action" key={actions[index]} aria-hidden="true">{actions[index]}</em>
+      Track what your AI <span className="action-ending">agents <em className="rotating-action" key={actions[index]} aria-hidden="true">{actions[index]}</em></span>
     </h1>
   );
 }

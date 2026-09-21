@@ -21,7 +21,7 @@ export default function MarketingPage() {
         <div className="hero-copy">
           <span className="kicker">Your agent feed</span>
           <RotatingActionHeadline />
-          <p>Emails sent. Code pushed. Purchases made. One simple feed for the things your agents change.</p>
+          <p>One simple feed for the things your agents change.</p>
           <div className="hero-actions">
             <Link className="primary-button hero-primary" href={startHref}>{cloud ? "Try it free" : "Open your feed"}<ArrowRight size={17} /></Link>
             <CopySetupButton />
