@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { actionInputSchema } from "@/lib/action-schema";
 import { createAction, listActions } from "@/lib/actions";
+import { authenticateApiRequest } from "@/lib/api-keys";
 
 export const runtime = "nodejs";
-
-function authorized(request: NextRequest) {
-  const key = process.env.MONOLOGUE_API_KEY;
-  return Boolean(key && request.headers.get("authorization") === `Bearer ${key}`);
-}
 
 function unauthorized() {
   return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 }
 
 export async function POST(request: NextRequest) {
-  if (!authorized(request)) return unauthorized();
+  const credential = await authenticateApiRequest(request);
+  if (!credential) return unauthorized();
   let json: unknown;
   try {
     json = await request.json();
@@ -30,12 +27,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { action, duplicate } = await createAction(parsed.data);
+  const { action, duplicate } = await createAction(parsed.data, credential.workspaceId);
   return NextResponse.json({ success: true, id: action.id, ...(duplicate && { duplicate: true }) }, { status: duplicate ? 200 : 201 });
 }
 
 export async function GET(request: NextRequest) {
-  if (!authorized(request)) return unauthorized();
+  const credential = await authenticateApiRequest(request);
+  if (!credential) return unauthorized();
   const params = request.nextUrl.searchParams;
   const actions = await listActions({
     agent: params.get("agent") || undefined,
@@ -46,6 +44,6 @@ export async function GET(request: NextRequest) {
     from: params.get("from") || undefined,
     to: params.get("to") || undefined,
     search: params.get("search") || undefined,
-  });
+  }, credential.workspaceId);
   return NextResponse.json({ success: true, actions });
 }

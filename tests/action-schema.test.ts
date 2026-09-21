@@ -23,7 +23,8 @@ describe("action validation", () => {
 
 describe("filters", () => {
   it("builds exact filters and a five-field text search", () => {
-    const where = buildActionWhere({ agent:"Codex", category:"code", search:"GitHub" });
+    const where = buildActionWhere({ agent:"Codex", category:"code", search:"GitHub" }, "workspace-1");
+    expect(where.workspaceId).toBe("workspace-1");
     expect(where.agentName).toBe("Codex");
     expect(where.category).toBe("code");
     expect(where.OR).toHaveLength(5);

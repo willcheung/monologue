@@ -8,7 +8,7 @@ const at = (daysAgo: number, hour: number, minute = 0) => {
   return date;
 };
 
-const base = { status: "completed", source: "self_reported" };
+const base = { status: "completed", source: "self_reported", workspaceId: "local" };
 const agentIds: Record<string, string> = {
   "Codex": "codex",
   "Hermes · Scout": "hermes-scout",
@@ -57,6 +57,11 @@ const actions = [
 ].map((action) => ({ ...base, ...action, agentId: agentIds[action.agentName] }));
 
 async function main() {
+  await prisma.workspace.upsert({
+    where: { id: "local" },
+    update: {},
+    create: { id: "local", name: "My agent feed" },
+  });
   await prisma.action.deleteMany();
   await prisma.action.createMany({ data: actions });
   console.log(`Seeded ${actions.length} consequential actions.`);

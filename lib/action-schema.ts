@@ -19,7 +19,7 @@ export const actionInputSchema = z.object({
   currency: z.string().trim().length(3).transform((value) => value.toUpperCase()).optional(),
   url: z.string().url().max(2048).optional(),
   source: z.enum(SOURCES).default("self_reported"),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   occurredAt: z.string().datetime({ offset: true }).optional(),
 }).strict();
 
