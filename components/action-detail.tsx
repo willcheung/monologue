@@ -2,6 +2,7 @@ import type { Action } from "@prisma/client";
 import Link from "next/link";
 import { ExternalLink, X } from "lucide-react";
 import { ActionIcon } from "./action-icon";
+import { categoryPresentation } from "@/lib/constants";
 
 function dateTime(date: Date) {
   return new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeStyle: "short" }).format(date);
@@ -23,6 +24,7 @@ function isUrl(value: unknown): value is string {
 }
 
 export function ActionDetail({ action, closeHref }: { action: Action; closeHref: string }) {
+  const category = categoryPresentation(action.category);
   const rows = [
     ["Agent", action.agentName], ["Verb", action.verb], ["System", action.system],
     ["Status", action.status], ["Time", dateTime(action.occurredAt)],
@@ -39,7 +41,7 @@ export function ActionDetail({ action, closeHref }: { action: Action; closeHref:
       <Link className="drawer-scrim" href={closeHref} scroll={false} aria-label="Close details" />
       <aside className="drawer">
         <div className="drawer-header"><span>Action details</span><Link href={closeHref} scroll={false} aria-label="Close"><X /></Link></div>
-        <div className="drawer-title"><ActionIcon category={action.category} /><div><span className="eyebrow">{action.category}</span><h2>{action.summary}</h2></div></div>
+        <div className="drawer-title"><ActionIcon category={action.category} /><div><span className="eyebrow">{category.label}</span><h2>{action.summary}</h2></div></div>
         <dl>{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd className={label === "Status" ? `detail-status ${action.status}` : ""}>{value}</dd></div>)}</dl>
         {action.url && <a className="external-link" href={action.url} target="_blank" rel="noreferrer">Open in {action.system}<ExternalLink size={16} /></a>}
         {metadata.length > 0 && <div className="metadata">

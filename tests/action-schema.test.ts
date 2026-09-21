@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { actionInputSchema } from "@/lib/action-schema";
 import { buildActionWhere } from "@/lib/actions";
+import { CATEGORIES, CATEGORY_PRESENTATION } from "@/lib/constants";
 
 const valid = { agentName:"Codex", verb:"pushed", summary:"Pushed a commit.", category:"code", status:"completed", system:"GitHub" };
 
@@ -32,5 +33,15 @@ describe("filters", () => {
     const where = buildActionWhere({ category:"research", status:"unknown" });
     expect(where.category).toBeUndefined();
     expect(where.status).toBeUndefined();
+  });
+});
+
+describe("category presentation", () => {
+  it("gives every supported category one stable emoji and label", () => {
+    expect(Object.keys(CATEGORY_PRESENTATION)).toEqual([...CATEGORIES]);
+    for (const category of CATEGORIES) {
+      expect(CATEGORY_PRESENTATION[category].emoji).not.toBe("");
+      expect(CATEGORY_PRESENTATION[category].label).not.toBe("");
+    }
   });
 });

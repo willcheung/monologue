@@ -1,6 +1,6 @@
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
-import { CATEGORIES, STATUSES } from "@/lib/constants";
+import { CATEGORIES, STATUSES, categoryPresentation } from "@/lib/constants";
 
 type Options = { agents: string[]; systems: string[] };
 type Params = Record<string, string | undefined>;
@@ -18,7 +18,7 @@ export function Filters({ options, params }: { options: Options; params: Params 
         <summary><SlidersHorizontal size={17} /> Filters {activeCount > 0 && <b>{activeCount}</b>}</summary>
         <div className="filter-grid">
           <label>Agent<select name="agent" defaultValue={params.agent ?? ""}><option value="">All agents</option>{options.agents.map((x) => <option key={x}>{x}</option>)}</select></label>
-          <label>Category<select name="category" defaultValue={params.category ?? ""}><option value="">All categories</option>{CATEGORIES.map((x) => <option key={x}>{x}</option>)}</select></label>
+          <label>Category<select name="category" defaultValue={params.category ?? ""}><option value="">All categories</option>{CATEGORIES.map((x) => { const item = categoryPresentation(x); return <option key={x} value={x}>{item.emoji} {item.label}</option>; })}</select></label>
           <label>System<select name="system" defaultValue={params.system ?? ""}><option value="">All systems</option>{options.systems.map((x) => <option key={x}>{x}</option>)}</select></label>
           <label>Status<select name="status" defaultValue={params.status ?? ""}><option value="">All statuses</option>{STATUSES.map((x) => <option key={x}>{x}</option>)}</select></label>
           <label>From<input type="date" name="from" defaultValue={params.from} /></label>
