@@ -4,11 +4,11 @@
 
 Monologue is an open-source feed of the real-world actions taken by your AI agents.
 
-It records things agents actually change — emails sent, forms submitted, purchases made, code pushed, calendar events changed, transactions executed — while ignoring research, reasoning, browsing, and other internal work.
+It records things agents change — emails sent, forms submitted, purchases made, code pushed, calendar events changed, transactions executed — while ignoring research, reasoning, browsing, and other internal work.
 
 ## Why
 
-As people use more autonomous agents, their actions become scattered across different products. Monologue creates one timeline of what they actually changed.
+As people use more autonomous agents, their actions become scattered across different products. Monologue creates one timeline of what they changed.
 
 ## Core rule
 

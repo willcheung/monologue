@@ -29,9 +29,6 @@ export function CopySetupButton() {
     <button className="setup-copy-button" type="button" onClick={copyPrompt}>
       {copied ? <Check size={19} /> : <Copy size={19} />}
       <span>{copied ? "Copied setup prompt" : "Copy setup prompt"}</span>
-      <span className="agent-dots" aria-hidden="true">
-        <i>C</i><i>Cl</i><i>H</i>
-      </span>
     </button>
   );
 }

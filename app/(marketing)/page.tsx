@@ -19,13 +19,13 @@ export default function MarketingPage() {
       <section className="hero">
         <div className="hero-copy">
           <span className="kicker">Your agent feed</span>
-          <h1>See what your AI agents<br /><em>actually did.</em></h1>
+          <h1>See what your AI agents<br /><em>did.</em></h1>
           <p>Emails sent. Code pushed. Purchases made. One simple feed for the things your agents change.</p>
           <div className="hero-actions">
             <Link className="primary-button hero-primary" href={startHref}>{cloud ? "Try it free" : "Open your feed"}<ArrowRight size={17} /></Link>
             <CopySetupButton />
           </div>
-          <small className="hero-note">Works with Codex, Claude, Hermes, OpenClaw, and your own agents.</small>
+          <small className="hero-note">Works with Muse, Codex, Claude, Hermes, OpenClaw, and your own agents.</small>
         </div>
         <div className="feed-preview" aria-label="Example agent feed">
           <div className="preview-heading"><strong>Today</strong><span>3 changes</span></div>
