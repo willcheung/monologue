@@ -9,31 +9,35 @@ datasource db {
 }
 
 model Action {
-  id          String    @id @default(cuid())
-  agentName   String
-  agentId     String?
-  verb        String
-  summary     String
-  category    String
-  status      String
-  system      String
-  objectType  String?
-  objectName  String?
-  project     String?
-  externalId  String?
-  value       Float?
-  currency    String?
-  url         String?
-  source      String    @default("self_reported")
-  metadata    Json?
-  occurredAt  DateTime  @default(now())
-  createdAt   DateTime  @default(now())
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  agentName       String
+  agentId         String?
+  verb            String
+  summary         String
+  category        String
+  status          String
+  system          String
+  objectType      String?
+  objectName      String?
+  project         String?
+  externalId      String?
+  value           Float?
+  currency        String?
+  url             String?
+  source          String    @default("self_reported")
+  metadata        Json?
+  occurredAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reportedByKeyId String?
+  reportedByKey   ApiKey?   @relation("ActionReporter", fields: [reportedByKeyId], references: [id], onDelete: SetNull)
 
   @@unique([workspaceId, agentName, system, externalId])
+  @@unique([workspaceId, agentId, system, externalId])
   @@index([workspaceId, occurredAt])
   @@index([workspaceId, agentName])
+  @@index([reportedByKeyId])
   @@index([category])
   @@index([status])
   @@index([system])
@@ -47,53 +51,87 @@ model Workspace {
   owner            User?             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   actions          Action[]
   apiKeys          ApiKey[]
+  agents           Agent[]
   agentConnections AgentConnection[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 }
 
 model ApiKey {
-  id          String    @id @default(cuid())
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  name        String
-  prefix      String
-  keyHash     String    @unique
-  lastUsedAt  DateTime?
-  revokedAt   DateTime?
-  createdAt   DateTime  @default(now())
+  id              String    @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name            String
+  prefix          String
+  keyHash         String    @unique
+  scopes          String    @default("actions:read actions:write")
+  agentId         String?
+  agent           Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  createdByUserId String?
+  createdByUser   User?     @relation("ApiKeyCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  reportedActions Action[]  @relation("ActionReporter")
+  lastUsedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
 
   @@index([workspaceId, createdAt])
+  @@index([agentId])
+  @@index([createdByUserId])
+}
+
+model Agent {
+  id                String    @id @default(cuid())
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name              String
+  platform          String?
+  skillVersion      String?
+  connectedByUserId String?
+  connectedByUser   User?     @relation("AgentConnector", fields: [connectedByUserId], references: [id], onDelete: SetNull)
+  apiKeys           ApiKey[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([workspaceId, name])
+  @@index([connectedByUserId])
 }
 
 model AgentConnection {
   id               String     @id @default(cuid())
   agentName        String
+  platform         String?
+  skillVersion     String?
   deviceCodeHash   String     @unique
   approvalCodeHash String     @unique
   status           String     @default("pending")
   workspaceId      String?
   workspace        Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  approvedByUserId String?
+  approvedByUser   User?      @relation("ConnectionApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
   expiresAt        DateTime
   approvedAt       DateTime?
   claimedAt        DateTime?
   createdAt        DateTime   @default(now())
 
   @@index([workspaceId, createdAt])
+  @@index([approvedByUserId])
   @@index([expiresAt])
 }
 
 model User {
-  id            String     @id
-  name          String
-  email         String     @unique
-  emailVerified Boolean    @default(false)
-  image         String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  workspace     Workspace?
+  id                  String            @id
+  name                String
+  email               String            @unique
+  emailVerified       Boolean           @default(false)
+  image               String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  sessions            Session[]
+  accounts            Account[]
+  workspace           Workspace?
+  connectedAgents     Agent[]           @relation("AgentConnector")
+  createdApiKeys      ApiKey[]          @relation("ApiKeyCreator")
+  approvedConnections AgentConnection[] @relation("ConnectionApprover")
 
   @@map("user")
 }

@@ -13,6 +13,8 @@ Implemented in the application:
 - Better Auth browser sessions and Google sign-in
 - first-run onboarding and agent-key management
 - short-lived, no-copy agent connection approval
+- stable agent identity with optional platform and skill-version metadata
+- write-only automatic agent keys with backward-compatible legacy keys
 - local SQLite and hosted libSQL/Turso database connections
 - production deployment at `https://www.monologue.events`
 - public agent bootstrap skill at `/agent-setup/SKILL.md`
@@ -148,12 +150,15 @@ Do not add enterprise SSO, Google Workspace domain restrictions, or organization
 
 ## Hosted data ownership
 
-The hosted data model adds `Workspace` and `ApiKey` records and places `workspaceId` on every `Action`.
+The hosted data model adds `Workspace`, `Agent`, and `ApiKey` records and places `workspaceId` on every `Action`. An Agent is the stable identity behind one or more connections; its display name, platform, skill version, and connecting user are server-owned context rather than trusted action fields.
 
 Security invariants:
 
 - Resolve workspace membership from the authenticated session, never from a client-provided workspace ID alone.
 - Resolve agent workspace access from the API key record.
+- Derive agent identity from an associated Agent record when present. Legacy keys without one remain payload-compatible.
+- Default automatically connected keys to `actions:write`; do not let them read a future shared timeline.
+- Preserve existing and manual key scopes so current integrations do not break.
 - Store only an API-key hash and a non-secret display prefix; show the raw key once.
 - Include `workspaceId` in action deduplication and relevant indexes.
 - Scope action lists, searches, filter options, counts, and detail lookups to the workspace.
@@ -167,10 +172,12 @@ Security invariants:
 4. `/welcome` provides the public skill installation prompt.
 5. The agent creates a short-lived connection request and gives the user an approval link.
 6. The signed-in user approves the named agent. The browser never receives or displays its API key.
-7. The agent claims the generated key once and stores it in its own secure secret store.
+7. Monologue creates a stable Agent identity and a write-only key. The agent claims that key once and stores it in its own secure secret store.
 8. The first reported action appears in `/feed`.
 
 Manual key creation remains in `/settings/keys` for connectors that cannot complete the automatic flow. Connection requests store only hashed device and approval codes, expire after ten minutes, and create the long-lived key only when the approved agent claims it.
+
+API evolution must remain additive. Older skills may omit platform and version data, and the action endpoint must continue accepting the existing V1 payload. Workspace, connected agent, reporting key, and user attribution should be inferred on the server whenever possible so multiplayer changes never require reinstalling an agent skill.
 
 Do not add teams, invitations, billing, or enterprise authentication to this first hosted flow.
 

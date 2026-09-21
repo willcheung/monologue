@@ -6,6 +6,7 @@ export type KeyRecord = {
   id: string;
   name: string;
   prefix: string;
+  scopes: string;
   createdAt: string;
   lastUsedAt: string | null;
   revokedAt: string | null;
@@ -86,7 +87,7 @@ export function ApiKeyManager({ initialKeys = [] }: { initialKeys?: KeyRecord[] 
       <button type="button" onClick={() => copy(INSTALL_PROMPT, "install")}>{copied === "install" ? "Copied install prompt" : "Copy install prompt"}</button>
     </div>
     {keys.length > 0 && <div className="key-list">{keys.map((key) => <div className="key-row" key={key.id}>
-      <div><strong>{key.name}</strong><span>{key.prefix}•••• · {key.revokedAt ? "Revoked" : key.lastUsedAt ? "Used recently" : "Never used"}</span></div>
+      <div><strong>{key.name}</strong><span>{key.prefix}•••• · {key.scopes.includes("actions:read") ? "Read and add actions" : "Add actions only"} · {key.revokedAt ? "Revoked" : key.lastUsedAt ? "Used recently" : "Never used"}</span></div>
       {!key.revokedAt && <button type="button" disabled={busy} onClick={() => revokeKey(key.id)}>Revoke</button>}
     </div>)}</div>}
   </div>;

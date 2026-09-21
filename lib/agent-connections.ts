@@ -1,6 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { db } from "./db";
-import { prepareWorkspaceApiKey } from "./api-keys";
+import { ACTION_WRITE_SCOPE, prepareWorkspaceApiKey } from "./api-keys";
 
 const CONNECTION_LIFETIME_MS = 10 * 60 * 1000;
 export const CONNECTION_POLL_INTERVAL_SECONDS = 2;
@@ -15,12 +15,22 @@ function safeSecretMatch(secret: string, expectedHash: string) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-export async function createAgentConnection(agentName: string) {
+export async function createAgentConnection({
+  agentName,
+  platform,
+  skillVersion,
+}: {
+  agentName: string;
+  platform?: string;
+  skillVersion?: string;
+}) {
   const deviceCode = randomBytes(32).toString("base64url");
   const approvalCode = randomBytes(24).toString("base64url");
   const connection = await db.agentConnection.create({
     data: {
       agentName: agentName.trim(),
+      platform,
+      skillVersion,
       deviceCodeHash: hashSecret(deviceCode),
       approvalCodeHash: hashSecret(approvalCode),
       expiresAt: new Date(Date.now() + CONNECTION_LIFETIME_MS),
@@ -35,7 +45,7 @@ export async function getAgentConnectionForApproval(id: string, approvalCode: st
   return connection;
 }
 
-export async function approveAgentConnection(id: string, approvalCode: string, workspaceId: string) {
+export async function approveAgentConnection(id: string, approvalCode: string, workspaceId: string, approvedByUserId: string) {
   const connection = await getAgentConnectionForApproval(id, approvalCode);
   if (!connection) return { status: "invalid" as const };
   if (connection.expiresAt <= new Date()) return { status: "expired" as const };
@@ -48,7 +58,7 @@ export async function approveAgentConnection(id: string, approvalCode: string, w
 
   const result = await db.agentConnection.updateMany({
     where: { id, status: "pending", workspaceId: null },
-    data: { status: "approved", workspaceId, approvedAt: new Date() },
+    data: { status: "approved", workspaceId, approvedByUserId, approvedAt: new Date() },
   });
   return result.count ? { status: "approved" as const } : { status: "invalid" as const };
 }
@@ -71,7 +81,20 @@ export async function claimAgentConnection(id: string, deviceCode: string) {
     });
     if (!claimed.count) return { status: "claimed" as const };
 
-    const prepared = prepareWorkspaceApiKey(connection.workspaceId, connection.agentName);
+    const agent = await transaction.agent.create({
+      data: {
+        workspaceId: connection.workspaceId,
+        name: connection.agentName,
+        platform: connection.platform,
+        skillVersion: connection.skillVersion,
+        connectedByUserId: connection.approvedByUserId,
+      },
+    });
+    const prepared = prepareWorkspaceApiKey(connection.workspaceId, connection.agentName, {
+      agentId: agent.id,
+      createdByUserId: connection.approvedByUserId ?? undefined,
+      scopes: ACTION_WRITE_SCOPE,
+    });
     const key = await transaction.apiKey.create({ data: prepared.data });
     return {
       status: "connected" as const,

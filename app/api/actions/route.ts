@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { actionInputSchema } from "@/lib/action-schema";
 import { createAction, listActions } from "@/lib/actions";
-import { authenticateApiRequest } from "@/lib/api-keys";
+import { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, authenticateApiRequest, hasApiScope } from "@/lib/api-keys";
 
 export const runtime = "nodejs";
 
@@ -9,9 +9,14 @@ function unauthorized() {
   return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 }
 
+function forbidden() {
+  return NextResponse.json({ success: false, error: "This agent connection does not have permission" }, { status: 403 });
+}
+
 export async function POST(request: NextRequest) {
   const credential = await authenticateApiRequest(request);
   if (!credential) return unauthorized();
+  if (!hasApiScope(credential, ACTION_WRITE_SCOPE)) return forbidden();
   let json: unknown;
   try {
     json = await request.json();
@@ -27,13 +32,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { action, duplicate } = await createAction(parsed.data, credential.workspaceId);
+  const attributed = credential.agentId
+    ? { ...parsed.data, agentId: credential.agentId, agentName: credential.agentName ?? parsed.data.agentName }
+    : parsed.data;
+  const { action, duplicate } = await createAction(attributed, credential.workspaceId, credential.keyId);
   return NextResponse.json({ success: true, id: action.id, ...(duplicate && { duplicate: true }) }, { status: duplicate ? 200 : 201 });
 }
 
 export async function GET(request: NextRequest) {
   const credential = await authenticateApiRequest(request);
   if (!credential) return unauthorized();
+  if (!hasApiScope(credential, ACTION_READ_SCOPE)) return forbidden();
   const params = request.nextUrl.searchParams;
   const actions = await listActions({
     agent: params.get("agent") || undefined,

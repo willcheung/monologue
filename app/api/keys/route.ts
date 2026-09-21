@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createWorkspaceApiKey } from "@/lib/api-keys";
+import { createWorkspaceAgentApiKey } from "@/lib/api-keys";
 import { db } from "@/lib/db";
 import { isCloudMode } from "@/lib/runtime";
 import { getWorkspaceContext } from "@/lib/workspace";
@@ -25,7 +25,7 @@ export async function GET() {
   if (!context) return json({ success: false, error: "Unauthorized" }, 401);
   const keys = await db.apiKey.findMany({
     where: { workspaceId: context.workspace.id },
-    select: { id: true, name: true, prefix: true, lastUsedAt: true, revokedAt: true, createdAt: true },
+    select: { id: true, name: true, prefix: true, scopes: true, lastUsedAt: true, revokedAt: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   });
   return json({ success: true, keys });
@@ -37,7 +37,8 @@ export async function POST(request: Request) {
   if (!context) return json({ success: false, error: "Unauthorized" }, 401);
   const parsed = createKeySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return json({ success: false, error: "Enter a name for this agent" }, 400);
-  const key = await createWorkspaceApiKey(context.workspace.id, parsed.data.name);
+  if (!context.user) return json({ success: false, error: "Unauthorized" }, 401);
+  const key = await createWorkspaceAgentApiKey(context.workspace.id, parsed.data.name, context.user.id);
   return json({ success: true, key }, 201);
 }
 

@@ -79,7 +79,7 @@ For the fastest setup, give an agent this instruction:
 Read and execute https://www.monologue.events/agent-setup/SKILL.md
 ```
 
-The agent starts a short-lived connection request and gives you a secure Monologue link. Sign in and approve it. Monologue creates a dedicated API key behind the scenes and returns it directly to the agent, so there is no key to copy or paste. The agent must support persistent secret storage. Manual one-time key creation remains available at `/settings/keys` for Muse, custom connectors, and advanced setups.
+The agent starts a short-lived connection request and gives you a secure Monologue link. Sign in and approve it. Monologue creates a stable Agent record and a dedicated write-only API key behind the scenes, then returns the key directly to the agent, so there is nothing to copy or paste. The agent must support persistent secret storage. Manual one-time keys with read and write access remain available at `/settings/keys` for Muse, custom connectors, and advanced setups.
 
 The portable skill is also in [`skills/monologue`](skills/monologue). Agents compatible with the common Skills CLI can install it with:
 
@@ -152,11 +152,13 @@ Both routes require `Authorization: Bearer <MONOLOGUE_API_KEY>`.
 
 Hosted automatic connection uses three short-lived endpoints:
 
-- `POST /api/connect/request` starts a ten-minute connection request for an agent.
+- `POST /api/connect/request` starts a ten-minute connection request for an agent. It requires `agentName` and optionally accepts `platform` and `skillVersion`.
 - `POST /api/connect/approve` requires a signed-in browser session and approves that request for the user's workspace.
 - `POST /api/connect/poll` lets the requesting agent claim its generated key exactly once after approval.
 
-Only hashes of the device and approval codes are stored. The long-lived API key is created at claim time, returned once to the agent, and then stored by Monologue only as a hash.
+Only hashes of the device and approval codes are stored. The long-lived API key is created at claim time, returned once to the agent, and then stored by Monologue only as a hash. Automatic keys are scoped to `actions:write`; existing and manually created keys retain read and write access for compatibility.
+
+When a key is associated with an Agent record, Monologue derives `agentId` and `agentName` from that authenticated connection instead of trusting the submitted identity. Older keys without an Agent association continue to use the original payload, so installed skills remain compatible.
 
 `externalId` is optional. When supplied, the tuple `(agentName, system, externalId)` is unique and retry-safe. No fuzzy deduplication is performed.
 

@@ -41,5 +41,5 @@ export default async function ConnectPage({ searchParams }: { searchParams: Sear
     return <><Header product signedIn /><main className="connection-shell"><div className="connection-card connection-success"><span className="connection-icon" aria-hidden="true">✓</span><h1>{connection.agentName} is already connected.</h1><p>The agent has securely received its connection key.</p><Link className="primary-button" href="/feed">Open your feed</Link></div></main></>;
   }
 
-  return <><Header product signedIn /><main className="connection-shell"><AgentConnectionApproval requestId={requestId} approvalCode={approvalCode} agentName={connection.agentName} /></main></>;
+  return <><Header product signedIn /><main className="connection-shell"><AgentConnectionApproval requestId={requestId} approvalCode={approvalCode} agentName={connection.agentName} platform={connection.platform} /></main></>;
 }

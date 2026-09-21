@@ -13,7 +13,7 @@ export default async function AgentKeysPage() {
   if (!context) redirect("/sign-in");
   const keys = await db.apiKey.findMany({
     where: { workspaceId: context.workspace.id },
-    select: { id: true, name: true, prefix: true, createdAt: true, lastUsedAt: true, revokedAt: true },
+    select: { id: true, name: true, prefix: true, scopes: true, createdAt: true, lastUsedAt: true, revokedAt: true },
     orderBy: { createdAt: "desc" },
   });
   const initialKeys = keys.map((key) => ({ ...key, createdAt: key.createdAt.toISOString(), lastUsedAt: key.lastUsedAt?.toISOString() ?? null, revokedAt: key.revokedAt?.toISOString() ?? null }));

@@ -7,6 +7,8 @@ export const runtime = "nodejs";
 
 const requestSchema = z.object({
   agentName: z.string().trim().min(1).max(80),
+  platform: z.string().trim().min(1).max(80).optional(),
+  skillVersion: z.string().trim().min(1).max(40).optional(),
 }).strict();
 const noStoreHeaders = { "Cache-Control": "no-store, max-age=0", Pragma: "no-cache" };
 
@@ -22,7 +24,7 @@ export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return json({ success: false, error: "Enter an agent name" }, 400);
 
-  const { connection, deviceCode, approvalCode } = await createAgentConnection(parsed.data.agentName);
+  const { connection, deviceCode, approvalCode } = await createAgentConnection(parsed.data);
   const baseUrl = process.env.BETTER_AUTH_URL!;
   const verificationUrl = new URL("/connect", baseUrl);
   verificationUrl.searchParams.set("request", connection.id);

@@ -47,11 +47,20 @@ export async function listActions(filters: ActionFilters = {}, workspaceId = LOC
   return db.action.findMany({ where: buildActionWhere(filters, workspaceId), orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }] });
 }
 
-export async function createAction(input: ActionInput, workspaceId = LOCAL_WORKSPACE_ID) {
+function actionIdentity(input: ActionInput, workspaceId: string): Prisma.ActionWhereInput {
+  return {
+    workspaceId,
+    system: input.system,
+    externalId: input.externalId!,
+    ...(input.agentId
+      ? { OR: [{ agentId: input.agentId }, { agentName: input.agentName }] }
+      : { agentName: input.agentName }),
+  };
+}
+
+export async function createAction(input: ActionInput, workspaceId = LOCAL_WORKSPACE_ID, reportedByKeyId: string | null = null) {
   if (input.externalId) {
-    const existing = await db.action.findUnique({
-      where: { workspaceId_agentName_system_externalId: { workspaceId, agentName: input.agentName, system: input.system, externalId: input.externalId } },
-    });
+    const existing = await db.action.findFirst({ where: actionIdentity(input, workspaceId) });
     if (existing) return { action: existing, duplicate: true };
   }
 
@@ -60,6 +69,7 @@ export async function createAction(input: ActionInput, workspaceId = LOCAL_WORKS
       data: {
         ...input,
         workspaceId,
+        reportedByKeyId,
         occurredAt: input.occurredAt ? new Date(input.occurredAt) : new Date(),
         metadata: input.metadata as Prisma.InputJsonValue | undefined,
       },
@@ -67,9 +77,7 @@ export async function createAction(input: ActionInput, workspaceId = LOCAL_WORKS
     return { action, duplicate: false };
   } catch (error) {
     if (input.externalId && error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      const action = await db.action.findUniqueOrThrow({
-        where: { workspaceId_agentName_system_externalId: { workspaceId, agentName: input.agentName, system: input.system, externalId: input.externalId } },
-      });
+      const action = await db.action.findFirstOrThrow({ where: actionIdentity(input, workspaceId) });
       return { action, duplicate: true };
     }
     throw error;

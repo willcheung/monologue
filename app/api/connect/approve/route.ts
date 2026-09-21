@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   const context = await getWorkspaceContext();
-  if (!context) return json({ success: false, error: "Unauthorized" }, 401);
+  if (!context?.user) return json({ success: false, error: "Unauthorized" }, 401);
 
   const parsed = approvalSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return json({ success: false, error: "Invalid connection request" }, 400);
@@ -31,6 +31,7 @@ export async function POST(request: Request) {
     parsed.data.requestId,
     parsed.data.approvalCode,
     context.workspace.id,
+    context.user.id,
   );
   if (result.status === "expired") return json({ success: false, error: "This connection link expired" }, 410);
   if (result.status === "claimed") return json({ success: false, error: "This agent is already connected" }, 409);
