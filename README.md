@@ -134,6 +134,8 @@ AI agent → Monologue skill → POST /api/actions → validation + dedupe → S
 
 Next.js renders the feed directly from one SQLite database through Prisma. The API uses the same validation and query layer. There are no accounts, hosted services, queues, or integrations to configure.
 
+The planned hosted architecture, repository ownership rules, and Google sign-in boundary are documented in [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md). The hosted version will remain in this repository rather than becoming a separate application fork.
+
 ## Development checks
 
 ```bash
