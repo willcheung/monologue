@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Check, Code2 } from "lucide-react";
+import { CopySetupButton } from "@/components/copy-setup-button";
 import { Header } from "@/components/header";
 import { isCloudMode } from "@/lib/runtime";
 
@@ -18,12 +19,13 @@ export default function MarketingPage() {
       <section className="hero">
         <div className="hero-copy">
           <span className="kicker">Your agent feed</span>
-          <h1>Know what changed<br /><em>while you were away.</em></h1>
-          <p>One calm timeline of the real-world actions taken by all of your AI agents. No thoughts, traces, or research—just what they actually changed.</p>
+          <h1>See what your AI agents<br /><em>actually did.</em></h1>
+          <p>Emails sent. Code pushed. Purchases made. One simple feed for the things your agents change.</p>
           <div className="hero-actions">
-            <Link className="primary-button" href={startHref}>{cloud ? "Start your feed" : "Open your feed"}<ArrowRight size={17} /></Link>
-            <a className="secondary-button" href="https://github.com/willcheung/monologue"><Code2 size={17} />View on GitHub</a>
+            <Link className="primary-button hero-primary" href={startHref}>{cloud ? "Try it free" : "Open your feed"}<ArrowRight size={17} /></Link>
+            <CopySetupButton />
           </div>
+          <small className="hero-note">Works with Codex, Claude, Hermes, OpenClaw, and your own agents.</small>
         </div>
         <div className="feed-preview" aria-label="Example agent feed">
           <div className="preview-heading"><strong>Today</strong><span>3 changes</span></div>
@@ -35,7 +37,8 @@ export default function MarketingPage() {
       </section>
       <section className="signal-section" id="how-it-works">
         <span className="kicker">One simple rule</span>
-        <h2>If something outside the agent is now different, it belongs in Monologue.</h2>
+        <h2>If your agent changed something, it shows up here.</h2>
+        <p className="signal-lede">Sent an email? Made a purchase? Pushed code? That goes in. Reading, searching, and planning don&apos;t.</p>
         <div className="signal-grid">
           <div><h3><Check size={18} />What appears</h3><p>Messages sent, purchases made, calendar events changed, files written, code pushed, and deployments completed.</p></div>
           <div><h3>What stays out</h3><p>Research, browsing, analysis, planning, drafts, recommendations, internal thoughts, and read-only tool calls.</p></div>
@@ -48,6 +51,6 @@ export default function MarketingPage() {
         <Link className="primary-button" href={startHref}>{cloud ? "Start your feed" : "Try the local feed"}<ArrowRight size={17} /></Link>
       </section>
     </main>
-    <footer><span>Monologue</span><p>Open source. Strict about signal.</p></footer>
+    <footer><span>Monologue</span><p>Open source. Strict about signal.</p><a href="https://github.com/willcheung/monologue"><Code2 size={14} />GitHub</a></footer>
   </>;
 }

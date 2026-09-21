@@ -12,7 +12,7 @@ As people use more autonomous agents, their actions become scattered across diff
 
 ## Core rule
 
-> If something outside the agent is now different because of the agent's action, it belongs in Monologue.
+> If your agent changed something, it shows up in Monologue.
 
 A message sent belongs in the feed. Reading fifty messages does not. A committed patch belongs; generated code that was never written does not. The feed stays useful by staying strict about signal.
 
