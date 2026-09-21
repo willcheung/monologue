@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionDetail } from "@/components/action-detail";
 import { FeedTimeline } from "@/components/feed-timeline";
@@ -39,7 +38,6 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
       <div className="feed-summary"><span>{actions.length} {actions.length === 1 ? "action" : "actions"}</span><span className="live-dot">Live feed</span></div>
       <FeedTimeline actions={actions} queryString={queryString} />
     </main>
-    <footer><span>Monologue</span><p>Only the changes that matter.</p><nav className="footer-links" aria-label="Footer"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></nav></footer>
     {detail && <ActionDetail action={detail} closeHref={queryString ? `/feed?${queryString}` : "/feed"} />}
   </>;
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Check, Code2 } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { CopySetupButton } from "@/components/copy-setup-button";
 import { Header } from "@/components/header";
 import { isCloudMode } from "@/lib/runtime";
@@ -51,6 +51,5 @@ export default function MarketingPage() {
         <Link className="primary-button" href={startHref}>{cloud ? "Start your feed" : "Try the local feed"}<ArrowRight size={17} /></Link>
       </section>
     </main>
-    <footer><span>Monologue</span><p>Open source. Strict about signal.</p><nav className="footer-links" aria-label="Footer"><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="https://github.com/willcheung/monologue"><Code2 size={14} />GitHub</a></nav></footer>
   </>;
 }
