@@ -87,6 +87,8 @@ npx skills add https://github.com/willcheung/monologue --skill monologue
 
 For manual installation, copy the whole `skills/monologue` directory into your agent's skills directory. Copying only `skills/monologue/SKILL.md` also works when the agent will POST directly rather than use the helper. Give the agent `MONOLOGUE_URL` and `MONOLOGUE_API_KEY` in its environment.
 
+After any installation method, confirm `monologue` appears in the agent's available-skills list. Reload skills or start a new session when the agent builds that list at session start. Installation is not complete until the skill is discoverable.
+
 The included helper has no dependencies:
 
 ```bash

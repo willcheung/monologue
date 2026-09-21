@@ -7,10 +7,6 @@ required_environment_variables:
     prompt: Monologue agent API key
     help: Create a key at https://www.monologue.events/settings/keys
     required_for: reporting actions
-metadata:
-  hermes:
-    tags: [agents, actions, reporting]
-    category: productivity
 ---
 
 # Monologue
@@ -19,15 +15,13 @@ Report an event to Monologue only when your action causes an external state chan
 
 ## Setup
 
-Treat these as persistent instructions for this agent. If your environment supports installing skills, save this skill as `monologue`.
+Treat these as persistent instructions for this agent. Install this skill through the agent's native skill manager when available. Otherwise, save the complete skill directory as `monologue` in the agent's supported skills location.
 
-For Hermes, install through its skill manager instead of only copying the file:
+After installation:
 
-```bash
-hermes skills install https://www.monologue.events/agent-setup/SKILL.md
-```
-
-Confirm `monologue` appears in `hermes skills list`, then start a new agent session so the session's skill index includes it. If it does not appear, fix discovery before continuing.
+1. Confirm `monologue` appears in the agent's available-skills list or skill manager.
+2. If the agent builds its skill index when a session starts, reload skills or start a new session.
+3. Do not consider setup complete until the skill is discoverable. If the agent has no skill discovery system, add a persistent instruction to load this skill after external state-changing actions.
 
 Setup should happen once:
 
