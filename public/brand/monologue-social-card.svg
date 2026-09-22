@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Monologue — Your agent feed</title>
+  <desc id="desc">One place to see what your AI agents did.</desc>
+
+  <rect width="1200" height="630" fill="#fffaf3"/>
+  <circle cx="1090" cy="78" r="190" fill="#ffe3d8" opacity="0.72"/>
+  <circle cx="104" cy="608" r="212" fill="#f2eade" opacity="0.72"/>
+
+  <g transform="translate(830 122) scale(.36)">
+    <rect x="78" y="84" width="896" height="896" rx="238" fill="#20201d"/>
+    <rect x="54" y="46" width="896" height="896" rx="238" fill="#ff6b45"/>
+    <path d="M550 297 C695 297 644 494 772 494" fill="none" stroke="#fffaf3" stroke-width="68" stroke-linecap="round"/>
+    <path d="M622 494 H772" fill="none" stroke="#fffaf3" stroke-width="68" stroke-linecap="round"/>
+    <path d="M550 691 C695 691 644 494 772 494" fill="none" stroke="#fffaf3" stroke-width="68" stroke-linecap="round"/>
+    <rect x="146" y="210" width="440" height="174" rx="87" fill="#fffaf3"/>
+    <circle cx="236" cy="297" r="43" fill="#20201d"/>
+    <rect x="316" y="271" width="182" height="52" rx="26" fill="#ff6b45"/>
+    <rect x="146" y="407" width="512" height="174" rx="87" fill="#fffaf3"/>
+    <circle cx="236" cy="494" r="43" fill="#20201d"/>
+    <rect x="316" y="468" width="254" height="52" rx="26" fill="#ff6b45"/>
+    <rect x="146" y="604" width="440" height="174" rx="87" fill="#fffaf3"/>
+    <circle cx="236" cy="691" r="43" fill="#20201d"/>
+    <rect x="316" y="665" width="182" height="52" rx="26" fill="#ff6b45"/>
+    <circle cx="790" cy="494" r="91" fill="#fffaf3"/>
+    <circle cx="790" cy="494" r="46" fill="#20201d"/>
+  </g>
+
+  <text x="82" y="132" fill="#ef6848" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="800" letter-spacing="4">YOUR AGENT FEED</text>
+  <text x="76" y="258" fill="#20201d" font-family="Georgia, 'Times New Roman', serif" font-size="88" font-weight="700">Monologue</text>
+  <text x="82" y="335" fill="#54534f" font-family="Arial, Helvetica, sans-serif" font-size="37">See what your AI agents did.</text>
+  <line x1="82" y1="440" x2="666" y2="440" stroke="#ded6ca" stroke-width="2"/>
+  <text x="82" y="494" fill="#20201d" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700">Emails sent  ·  Code pushed  ·  Purchases made</text>
+  <text x="82" y="555" fill="#77736c" font-family="Arial, Helvetica, sans-serif" font-size="23">monologue.events</text>
+</svg>
