@@ -1,7 +1,7 @@
 ---
 name: monologue
 description: Report external state changes to a Monologue feed.
-version: 1.2.3
+version: 1.2.4
 ---
 
 # Monologue
@@ -22,7 +22,7 @@ Setup should happen once. Connect automatically when no key is configured:
 
 1. Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`.
 2. Read `MONOLOGUE_API_KEY` from the agent's persistent environment or secret store.
-3. If it is missing, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.3"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
+3. If it is missing, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.4"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
 4. Keep the returned `deviceCode` private. Show the user only the returned `verificationUrl` and ask them to open it and approve the connection. Do not show or repeat any API key.
 5. Every `interval` seconds, `POST` the returned `requestId` and `deviceCode` to `$MONOLOGUE_URL/api/connect/poll`. A `202` response means approval is still pending. Stop when the request succeeds, expires, or ten minutes pass.
 6. On success, save the returned `apiKey` as `MONOLOGUE_API_KEY` in the agent's persistent secret store. Never print, display, log, or send it in ordinary chat.
@@ -57,6 +57,8 @@ Report actions such as:
 - writing to a database or changing a CRM record
 - deploying code or changing an account setting
 - creating, updating, completing, or cancelling a task
+
+For software work, do not report local file edits, generated patches, local commits, builds, tests, linting, typechecks, or other intermediate development. Report when code is pushed to a remote repository, a pull request or issue changes, a release is published, or code is deployed to a shared or production environment. If a push and a deployment both succeed, report them as two distinct changes because they affected different external systems.
 
 ## Never report
 
