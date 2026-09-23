@@ -4,6 +4,7 @@ import { AlertTriangle, Bot, Boxes, CalendarDays } from "lucide-react";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { Header } from "@/components/header";
 import { StaticShareCard, type ShareCardData } from "@/components/static-share-card";
+import { listAgentSummaries } from "@/lib/agents";
 import { categoryPresentation } from "@/lib/constants";
 import { getWeeklyLedger } from "@/lib/weekly-ledger";
 import { getWorkspaceContext } from "@/lib/workspace";
@@ -14,8 +15,12 @@ const AGENT_COLORS = ["#ff6b45", "#6f8f78", "#7588b1", "#b57a5b", "#8b74a8", "#c
 export default async function RecapPage() {
   const context = await getWorkspaceContext();
   if (!context) redirect("/sign-in?next=%2Frecap");
-  const ledger = await getWeeklyLedger(context.workspace.id);
+  const [ledger, agents] = await Promise.all([
+    getWeeklyLedger(context.workspace.id),
+    listAgentSummaries(context.workspace.id),
+  ]);
   const maxDay = Math.max(1, ...ledger.days.map((day) => day.count));
+  const weeklyActionsByAgent = new Map(ledger.agents.filter((agent) => agent.id).map((agent) => [agent.id, agent.count]));
   const shareData: ShareCardData = {
     kind:"recap",
     periodLabel:ledger.periodLabel,
@@ -42,7 +47,7 @@ export default async function RecapPage() {
           <div className="ledger-chart" aria-label={`Completed actions by agent and day from ${ledger.periodLabel}`}>
             {ledger.days.map((day) => <div className="ledger-day" key={day.key}>
               <span>{day.count}</span>
-              <div>{day.count === 0 ? <i className="empty-segment" /> : day.agents.map((agent) => { const agentIndex = ledger.agents.findIndex((item) => item.name === agent.name); return <i key={agent.name} title={`${agent.name}: ${agent.count}`} style={{ height:`${agent.count / maxDay * 100}%`, background:AGENT_COLORS[agentIndex % AGENT_COLORS.length] }} />; })}</div>
+              <div className="ledger-bar-track">{day.count === 0 ? <i className="ledger-bar-empty" /> : <div className="ledger-bar" style={{ height:`${day.count / maxDay * 100}%` }}>{day.agents.map((agent) => { const agentIndex = ledger.agents.findIndex((item) => item.name === agent.name); return <i key={agent.name} title={`${agent.name}: ${agent.count}`} style={{ flex:agent.count, background:AGENT_COLORS[agentIndex % AGENT_COLORS.length] }} />; })}</div>}</div>
               <b>{day.weekday}</b><small>{day.dateLabel}</small>
             </div>)}
           </div>
@@ -57,10 +62,11 @@ export default async function RecapPage() {
       </section>
 
       <section className="ledger-agents">
-        <div><span className="kicker">Your crew this week</span><h2>Agents in the ledger</h2><p>Only agents with completed changes during this period appear here.</p></div>
-        <div>{ledger.agents.map((agent) => {
-          const content = <><AgentAvatar name={agent.name} /><span><strong>{agent.name}</strong><small>{agent.count} {agent.count === 1 ? "action" : "actions"}</small></span></>;
-          return agent.id ? <Link key={agent.id} href={`/agents/${agent.id}`}>{content}</Link> : <div key={agent.name}>{content}</div>;
+        <div><h2>My agents</h2><p>Every agent in your feed, including agents that were quiet this week.</p></div>
+        <div>{agents.map((agent) => {
+          const weeklyCount = weeklyActionsByAgent.get(agent.id) ?? 0;
+          const content = <><AgentAvatar name={agent.name} /><span><strong>{agent.name}</strong><small>{weeklyCount} {weeklyCount === 1 ? "action" : "actions"} this week</small></span></>;
+          return <Link key={agent.id} href={`/agents/${agent.id}`}>{content}</Link>;
         })}</div>
       </section>
 
