@@ -111,13 +111,8 @@ function renderPng(data: ShareCardData) {
       let bottom = chartY + chartHeight;
       if (day.count === 0) {
         context.fillStyle = "#e7e3db";
-        roundRect(context, x, bottom - 8, barWidth, 8, 4);
-        context.fill();
+        context.fillRect(x, bottom - 8, barWidth, 8);
       } else {
-        const totalHeight = day.count / max * chartHeight;
-        context.save();
-        roundRect(context, x, bottom - totalHeight, barWidth, totalHeight, 10);
-        context.clip();
         for (const agent of day.agents) {
           const height = agent.count / max * chartHeight;
           const agentIndex = data.agents.findIndex((item) => item.name === agent.name);
@@ -125,7 +120,6 @@ function renderPng(data: ShareCardData) {
           context.fillRect(x, bottom - height, barWidth, height + 1);
           bottom -= height;
         }
-        context.restore();
       }
       context.fillStyle = "#20201d";
       context.font = "700 15px Avenir Next, Arial";
