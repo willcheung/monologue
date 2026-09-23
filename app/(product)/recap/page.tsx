@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, Bot, Boxes, Sparkles } from "lucide-react";
+import { AlertTriangle, Bot, Boxes, CalendarDays } from "lucide-react";
+import { AgentAvatar } from "@/components/agent-avatar";
 import { Header } from "@/components/header";
 import { StaticShareCard, type ShareCardData } from "@/components/static-share-card";
 import { categoryPresentation } from "@/lib/constants";
@@ -21,8 +23,8 @@ export default async function RecapPage() {
     activeAgents:ledger.activeAgents,
     topAgent:ledger.topAgent?.name ?? "No activity yet",
     topSystem:ledger.topSystem?.name ?? "No activity yet",
+    agents:ledger.agents.slice(0, 5).map(({ name, count }) => ({ name, count })),
     days:ledger.days.map(({ weekday, count }) => ({ weekday, count })),
-    categories:ledger.categories.slice(0, 4).map((category) => { const presentation = categoryPresentation(category.name); return { name:presentation.label, count:category.count, emoji:presentation.emoji }; }),
   };
 
   return <>
@@ -34,7 +36,7 @@ export default async function RecapPage() {
       </section>
 
       <section className="ledger-card">
-        <div className="ledger-total"><strong>{ledger.totalChanges}</strong><div><h2>things changed</h2><p>Completed external actions only.</p></div></div>
+        <div className="ledger-total"><strong>{ledger.totalChanges}</strong><div><h2>actions completed</h2><p>Confirmed external changes only.</p></div></div>
         <div className="ledger-chart" aria-label={`Actions by day from ${ledger.periodLabel}`}>
           {ledger.days.map((day, index) => <div className="ledger-day" key={day.key}>
             <span>{day.count}</span>
@@ -47,7 +49,15 @@ export default async function RecapPage() {
       <section className="ledger-highlights" aria-label="Weekly highlights">
         <div><Bot size={18} /><span>Most active agent</span><strong>{ledger.topAgent?.name ?? "—"}</strong><small>{ledger.topAgent ? `${ledger.topAgent.count} changes` : "No completed changes"}</small></div>
         <div><Boxes size={18} /><span>Most-used system</span><strong>{ledger.topSystem?.name ?? "—"}</strong><small>{ledger.topSystem ? `${ledger.topSystem.count} changes` : "No completed changes"}</small></div>
-        <div><Sparkles size={18} /><span>Active agents</span><strong>{ledger.activeAgents}</strong><small>With completed changes</small></div>
+        <div><CalendarDays size={18} /><span>Busiest day</span><strong>{ledger.busiestDay?.name ?? "—"}</strong><small>{ledger.busiestDay ? `${ledger.busiestDay.count} completed actions` : "No completed actions"}</small></div>
+      </section>
+
+      <section className="ledger-agents">
+        <div><span className="kicker">Your crew this week</span><h2>Agents in the ledger</h2><p>Only agents with completed changes during this period appear here.</p></div>
+        <div>{ledger.agents.map((agent) => {
+          const content = <><AgentAvatar name={agent.name} /><span><strong>{agent.name}</strong><small>{agent.count} {agent.count === 1 ? "action" : "actions"}</small></span></>;
+          return agent.id ? <Link key={agent.id} href={`/agents/${agent.id}`}>{content}</Link> : <div key={agent.name}>{content}</div>;
+        })}</div>
       </section>
 
       <section className="ledger-mix">

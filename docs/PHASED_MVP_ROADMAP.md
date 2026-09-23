@@ -38,6 +38,7 @@ Add a private `/recap` page:
 - active agents
 - most active agent
 - most-used system
+- active-agent roster and busiest day
 - one seven-day activity bar chart
 - compact category breakdown
 - failed attempts shown separately

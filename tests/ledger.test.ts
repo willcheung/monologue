@@ -24,6 +24,8 @@ describe("weekly agent ledger", () => {
     expect(ledger.failedAttempts).toBe(1);
     expect(ledger.activeAgents).toBe(2);
     expect(ledger.days.map((day) => day.count)).toEqual([1, 0, 0, 0, 0, 0, 1]);
+    expect(ledger.agents.map((agent) => agent.name)).toEqual(["Codex", "Muse"]);
+    expect(ledger.busiestDay).toEqual({ name:"Thu · Sep 17", count:1 });
   });
 
   it("ranks agents and systems deterministically without counting failed attempts", () => {
@@ -33,7 +35,7 @@ describe("weekly agent ledger", () => {
       action("2026-09-23T09:00:00Z", { status:"failed", agentName:"Muse", system:"Gmail" }),
     ], new Date("2026-09-23T18:00:00Z"));
 
-    expect(ledger.topAgent).toEqual({ name:"Codex", count:2 });
+    expect(ledger.topAgent).toEqual({ id:null, name:"Codex", count:2 });
     expect(ledger.topSystem).toEqual({ name:"GitHub", count:2 });
     expect(ledger.categories).toEqual([{ name:"code", count:2 }]);
   });

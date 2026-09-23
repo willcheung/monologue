@@ -54,21 +54,21 @@ export async function listAgentSummaries(workspaceId: string) {
       },
       orderBy: [{ createdAt: "asc" }],
     }),
-    db.action.findMany({
+    db.action.groupBy({
       where: { workspaceId, agentId: { not: null } },
-      select: { agentId: true, system: true },
-      distinct: ["agentId", "system"],
-      orderBy: { system: "asc" },
+      by: ["agentId", "system"],
+      _count: { _all:true },
     }),
   ]);
 
-  const systemsByAgent = new Map<string, string[]>();
+  const systemsByAgent = new Map<string, Array<{ name:string; count:number }>>();
   for (const item of systems) {
     if (!item.agentId) continue;
     const values = systemsByAgent.get(item.agentId) ?? [];
-    values.push(item.system);
+    values.push({ name:item.system, count:item._count._all });
     systemsByAgent.set(item.agentId, values);
   }
+  for (const values of systemsByAgent.values()) values.sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
 
   return agents.map((agent) => ({
     id: agent.id,
@@ -77,7 +77,10 @@ export async function listAgentSummaries(workspaceId: string) {
     description: agent.description,
     actionCount: agent._count.actions,
     lastActive: agent.actions[0]?.occurredAt ?? null,
-    systems: systemsByAgent.get(agent.id) ?? [],
+    systems: (systemsByAgent.get(agent.id) ?? []).map((system) => system.name),
+    mostLikely: systemsByAgent.get(agent.id)?.[0]?.name
+      ? `Most likely to be changing things in ${systemsByAgent.get(agent.id)![0].name}.`
+      : "Waiting for its first recorded action.",
     connectedToMonologue: agent.apiKeys.length > 0,
   })).sort((left, right) => {
     const leftTime = left.lastActive?.getTime() ?? 0;

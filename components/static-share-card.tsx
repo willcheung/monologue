@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Check, Copy, Download, Share2, X } from "lucide-react";
 
 type Count = { name: string; count: number; emoji?: string };
@@ -14,8 +14,8 @@ export type ShareCardData =
       activeAgents: number;
       topAgent: string;
       topSystem: string;
+      agents: Count[];
       days: Array<{ weekday: string; count: number }>;
-      categories: Count[];
     }
   | {
       kind: "profile";
@@ -62,11 +62,9 @@ function drawBrand(context: CanvasRenderingContext2D) {
 
 function drawFooter(context: CanvasRenderingContext2D, snapshotLabel: string) {
   context.fillStyle = "#75736c";
-  context.font = "15px Avenir Next, Arial";
-  context.fillText(`Static snapshot · ${snapshotLabel}`, 58, 588);
   context.textAlign = "right";
-  context.font = "700 15px Avenir Next, Arial";
-  context.fillText("monologue.events", 1142, 588);
+  context.font = "700 16px Avenir Next, Arial";
+  context.fillText(`monologue.events · Static snapshot · ${snapshotLabel}`, 1142, 588);
   context.textAlign = "left";
 }
 
@@ -95,13 +93,27 @@ function renderPng(data: ShareCardData) {
     context.font = "600 112px Georgia";
     context.fillText(String(data.totalChanges), 58, 352);
     context.font = "600 29px Georgia";
-    context.fillText("things changed", 58, 390);
+    context.fillText("actions completed", 58, 390);
     context.fillStyle = "#75736c";
     context.font = "18px Avenir Next, Arial";
     context.fillText(`${data.activeAgents} active agents · Most active: ${data.topAgent}`, 58, 442);
     context.fillText(`Worked most in ${data.topSystem}`, 58, 474);
-    context.font = "700 16px Avenir Next, Arial";
-    context.fillText(data.categories.slice(0, 3).map((category) => `${category.emoji ?? ""} ${category.name} ${category.count}`).join("   "), 58, 522, 590);
+    let agentX = 58;
+    for (const agent of data.agents.slice(0, 4)) {
+      context.fillStyle = "#e9eef9";
+      context.beginPath();
+      context.arc(agentX + 18, 526, 18, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = "#39455d";
+      context.textAlign = "center";
+      context.font = "700 12px Georgia";
+      context.fillText(initials(agent.name), agentX + 18, 530);
+      context.textAlign = "left";
+      context.fillStyle = "#20201d";
+      context.font = "700 14px Avenir Next, Arial";
+      context.fillText(`${agent.name} · ${agent.count}`, agentX + 44, 531, 125);
+      agentX += 155;
+    }
 
     const max = Math.max(1, ...data.days.map((day) => day.count));
     const chartX = 705;
@@ -159,27 +171,39 @@ function renderPng(data: ShareCardData) {
 }
 
 function shareText(data: ShareCardData) {
-  if (data.kind === "recap") return `My AI crew changed ${data.totalChanges} things from ${data.periodLabel}. ${data.activeAgents} agents were active, led by ${data.topAgent}. Made with Monologue.`;
+  if (data.kind === "recap") return `My AI crew completed ${data.totalChanges} actions from ${data.periodLabel}. ${data.activeAgents} agents were active, led by ${data.topAgent}. Made with Monologue.`;
   return `${data.agentName} has completed ${data.totalActions} recorded actions since ${data.activeSince}. Made with Monologue.`;
 }
 
 export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData; label?: string }) {
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const actionLock = useRef(false);
   const fileName = data.kind === "recap" ? "monologue-weekly-ledger.png" : `monologue-${data.agentName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
 
-  function download() {
-    const blob = renderPng(data);
+  function saveBlob(blob: Blob) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = fileName;
     anchor.click();
     URL.revokeObjectURL(url);
+  }
+
+  function download() {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setBusy(true);
+    saveBlob(renderPng(data));
     setNotice("Image saved");
+    window.setTimeout(() => { actionLock.current = false; setBusy(false); }, 500);
   }
 
   async function share() {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setBusy(true);
     try {
       const blob = renderPng(data);
       const file = new File([blob], fileName, { type:"image/png" });
@@ -187,17 +211,28 @@ export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData
         await navigator.share({ files:[file], title:"Monologue" });
         setNotice("Shared");
       } else {
-        await download();
+        saveBlob(blob);
         setNotice("Sharing files is unavailable here, so the image was saved instead");
       }
     } catch (error) {
       if ((error as Error).name !== "AbortError") setNotice("Could not share this image");
+    } finally {
+      actionLock.current = false;
+      setBusy(false);
     }
   }
 
   async function copy() {
-    await navigator.clipboard.writeText(shareText(data));
-    setNotice("Summary copied");
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setBusy(true);
+    try {
+      await navigator.clipboard.writeText(shareText(data));
+      setNotice("Text copied");
+    } finally {
+      actionLock.current = false;
+      setBusy(false);
+    }
   }
 
   return <>
@@ -209,16 +244,16 @@ export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData
         <div className={`share-preview share-preview-${data.kind}`}>
           <div className="share-preview-brand"><span>m</span><b>Monologue</b></div>
           {data.kind === "recap" ? <>
-            <small>{data.periodLabel}</small><h3>My AI crew this week</h3><strong>{data.totalChanges}</strong><p>things changed</p>
+            <small>{data.periodLabel}</small><h3>My AI crew this week</h3><strong>{data.totalChanges}</strong><p>actions completed</p>
             <div className="share-mini-bars">{data.days.map((day) => { const max = Math.max(1, ...data.days.map((item) => item.count)); return <span key={day.weekday}><i style={{ height:`${Math.max(8, day.count / max * 100)}%` }} /><b>{day.weekday}</b></span>; })}</div>
             <div className="share-preview-detail">{data.activeAgents} active agents · Most active: {data.topAgent}</div>
-            <div className="share-recap-categories">{data.categories.slice(0, 3).map((category) => <span key={category.name}>{category.emoji} {category.name} {category.count}</span>)}</div>
+            <div className="share-card-agents">{data.agents.slice(0, 4).map((agent) => <span key={agent.name}><i>{initials(agent.name)}</i><b>{agent.name}</b><small>{agent.count}</small></span>)}</div>
           </> : <>
             <small>{data.platform}</small><h3>{data.agentName}</h3><strong>{data.totalActions}</strong><p>recorded actions</p><div className="share-profile-systems">{data.systems.slice(0, 3).map((system) => <span key={system}>{system}</span>)}</div><div className="share-preview-detail">Active since {data.activeSince}{data.commonActions.length ? ` · Often ${data.commonActions.map((action) => action.name).join(", ")}` : ""}</div>
           </>}
           <em>monologue.events · Snapshot {data.snapshotLabel}</em>
         </div>
-        <div className="share-actions"><button type="button" onClick={share}><Share2 size={16} />Share image</button><button type="button" onClick={download}><Download size={16} />Save image</button><button type="button" onClick={copy}><Copy size={16} />Copy summary</button></div>
+        <div className="share-actions"><button type="button" disabled={busy} onClick={share}><Share2 size={16} />Share image</button><button type="button" disabled={busy} onClick={download}><Download size={16} />Save image</button><button type="button" disabled={busy} onClick={copy}><Copy size={16} />Copy text</button></div>
         {notice && <div className="share-notice"><Check size={14} />{notice}</div>}
       </section>
     </div>}

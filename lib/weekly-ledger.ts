@@ -12,7 +12,7 @@ export async function getWeeklyLedger(workspaceId: string, now = new Date()) {
       category: true,
       system: true,
       agentName: true,
-      agent: { select: { name:true, displayName:true } },
+      agent: { select: { id:true, name:true, displayName:true } },
     },
   });
 
@@ -21,6 +21,7 @@ export async function getWeeklyLedger(workspaceId: string, now = new Date()) {
     status: action.status,
     category: action.category,
     system: action.system,
+    agentId: action.agent?.id ?? null,
     agentName: action.agent?.displayName?.trim() || action.agent?.name || action.agentName,
   })), now);
 }

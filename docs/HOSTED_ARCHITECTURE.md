@@ -22,7 +22,7 @@ Implemented in the application:
 - server-owned self-reported provenance for agent-key ingestion
 - stable Action-to-Agent relationships with historical backfill
 - private AI Crew list and agent track-record pages
-- private weekly agent ledger and browser-generated static share cards
+- private weekly agent ledger, active-agent roster, and browser-generated static share cards
 
 Still required as the hosted product expands:
 

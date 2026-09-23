@@ -15,7 +15,7 @@ export function Header({ product = false, signedIn = false }: { product?: boolea
         <nav className="header-nav" aria-label="Main navigation">
           {product ? <>
             <Link href="/feed">Agent feed</Link>
-            <Link href="/agents">Agents</Link>
+            <Link href="/agents">My Agents</Link>
             <Link href="/recap">Recap</Link>
             <Link className="nav-add-agent" href={cloud ? "/settings/keys" : "/welcome"}>Add agent</Link>
             {signedIn && <SignOutButton />}
