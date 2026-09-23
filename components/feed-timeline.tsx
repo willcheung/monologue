@@ -6,32 +6,49 @@ import { Inbox } from "lucide-react";
 import { useBrowserTime } from "@/lib/use-browser-time";
 import { ActionCard } from "./action-card";
 
-function dayGroup(dateValue: Date, localTime: boolean) {
+function dateParts(dateValue: Date, localTime: boolean) {
   const date = new Date(dateValue);
+  const year = localTime ? date.getFullYear() : date.getUTCFullYear();
+  const monthIndex = localTime ? date.getMonth() : date.getUTCMonth();
+  const day = localTime ? date.getDate() : date.getUTCDate();
+  return { date, year, monthIndex, day, key: `${year}-${monthIndex}-${day}` };
+}
+
+function calendarLabel(dateValue: Date, localTime: boolean) {
+  const { date, key, day } = dateParts(dateValue, localTime);
   const now = new Date();
-  const startToday = localTime
-    ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const startYesterday = new Date(startToday);
-  if (localTime) startYesterday.setDate(startYesterday.getDate() - 1);
-  else startYesterday.setUTCDate(startYesterday.getUTCDate() - 1);
-  if (date >= startToday) return "Today";
-  if (date >= startYesterday) return "Yesterday";
-  return "Earlier";
+  const today = dateParts(now, localTime);
+  const yesterdayDate = localTime
+    ? new Date(today.year, today.monthIndex, today.day - 1)
+    : new Date(Date.UTC(today.year, today.monthIndex, today.day - 1));
+  const yesterday = dateParts(yesterdayDate, localTime);
+  const timeZone = localTime ? undefined : "UTC";
+  const month = new Intl.DateTimeFormat("en-US", { month: "short", timeZone }).format(date).toUpperCase();
+  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone }).format(date).toUpperCase();
+  const relative = key === today.key ? "TODAY" : key === yesterday.key ? "YESTERDAY" : weekday;
+  const accessible = new Intl.DateTimeFormat("en-US", { dateStyle: "full", timeZone }).format(date);
+  return { month, day, relative, accessible };
 }
 
 export function FeedTimeline({ actions, queryString }: { actions: Action[]; queryString: string }) {
   const localTime = useBrowserTime();
+  const groups = new Map<string, { date: Date; actions: Action[] }>();
 
-  const groups = actions.reduce<Record<string, Action[]>>((all, action) => {
-    (all[dayGroup(action.occurredAt, localTime)] ??= []).push(action);
-    return all;
-  }, {});
+  for (const action of actions) {
+    const key = dateParts(action.occurredAt, localTime).key;
+    const group = groups.get(key);
+    if (group) group.actions.push(action);
+    else groups.set(key, { date: action.occurredAt, actions: [action] });
+  }
 
   return <section className="feed" aria-label="Agent actions">
     {actions.length === 0 && <div className="empty"><Inbox size={30} /><h2>No actions yet</h2><p>Connect an agent and its real-world changes will show up here.</p><Link href="/welcome">Connect an agent</Link></div>}
-    {(["Today", "Yesterday", "Earlier"] as const).map((label) => groups[label]?.length
-      ? <div className="day-group" key={label}><div className="day-label"><h2>{label}</h2><span>{groups[label].length}</span></div><div className="cards">{groups[label].map((action) => <ActionCard key={action.id} action={action} queryString={queryString} localTime={localTime} />)}</div></div>
-      : null)}
+    {Array.from(groups.entries()).map(([key, group]) => {
+      const label = calendarLabel(group.date, localTime);
+      return <div className="day-group" key={key}>
+        <div className="calendar-day" aria-label={label.accessible}><span>{label.month}</span><strong>{label.day}</strong><small>{label.relative}</small></div>
+        <div className="action-list">{group.actions.map((action) => <ActionCard key={action.id} action={action} queryString={queryString} localTime={localTime} />)}</div>
+      </div>;
+    })}
   </section>;
 }
