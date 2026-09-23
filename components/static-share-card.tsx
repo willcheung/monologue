@@ -59,7 +59,7 @@ function drawBrand(context: CanvasRenderingContext2D) {
   context.fillText("m", 78, 83);
   context.textAlign = "left";
   context.fillStyle = "#20201d";
-  context.font = "700 22px Georgia";
+  context.font = "700 27px Gaegu, Marker Felt, cursive";
   context.fillText("Monologue", 120, 69);
   context.fillStyle = "#75736c";
   context.font = "15px Avenir Next, Arial";
@@ -98,7 +98,7 @@ function renderPng(data: ShareCardData) {
 
   if (data.kind === "recap") {
     const sketch = rough.canvas(canvas);
-    const noteFont = '"Marker Felt", "Comic Sans MS", cursive';
+    const noteFont = 'Gaegu, "Marker Felt", "Comic Sans MS", cursive';
     context.fillStyle = "#ff6b45";
     context.font = `700 18px ${noteFont}`;
     context.fillText(data.periodLabel.toUpperCase(), 58, 162);
