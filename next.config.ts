@@ -3,7 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/agent-setup/SKILL.md": ["./skills/monologue/SKILL.md"],
-    ...(process.env.MONOLOGUE_DEMO_MODE === "1" && { "/*": ["./demo/monologue.db"] }),
+    ...(process.env.MONOLOGUE_DEMO_MODE === "1" && {
+      "/*": ["./demo/monologue.db"],
+      "/agents": ["./demo/monologue.db"],
+      "/agents/[agentId]": ["./demo/monologue.db"],
+      "/feed": ["./demo/monologue.db"],
+    }),
   },
 };
 
