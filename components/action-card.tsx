@@ -22,9 +22,10 @@ function knownChange(metadata: Action["metadata"]) {
   return typeof before === "string" && typeof after === "string" ? { before, after } : null;
 }
 
-function summaryWithVerb(summary: string, verb: string) {
-  if (!summary.toLowerCase().startsWith(verb.toLowerCase())) return summary;
-  return <><strong>{summary.slice(0, verb.length)}</strong>{summary.slice(verb.length)}</>;
+function summaryWithLeadingAction(summary: string) {
+  const splitAt = summary.search(/\s/);
+  if (splitAt === -1) return <strong>{summary}</strong>;
+  return <><strong>{summary.slice(0, splitAt)}</strong>{summary.slice(splitAt)}</>;
 }
 
 export function ActionCard({ action, queryString = "", basePath = "/feed", localTime = false }: { action: Action; queryString?: string; basePath?: string; localTime?: boolean }) {
@@ -49,7 +50,7 @@ export function ActionCard({ action, queryString = "", basePath = "/feed", local
               {action.status === "failed" ? <AlertCircle size={12} /> : <Clock3 size={12} />}{action.status}
             </span>}
           </div>
-          <p>{summaryWithVerb(action.summary, action.verb)}</p>
+          <p>{summaryWithLeadingAction(action.summary)}</p>
           {change && <div className="inline-action-change"><del>{change.before}</del><i>→</i><b>{change.after}</b></div>}
           <div className="timeline-meta">
             <span>{action.system}</span>
