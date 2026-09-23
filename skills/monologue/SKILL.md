@@ -1,7 +1,7 @@
 ---
 name: monologue
 description: Report external state changes to a Monologue feed.
-version: 1.2.5
+version: 1.2.6
 ---
 
 # Monologue
@@ -22,7 +22,7 @@ Setup should happen once. Connect automatically when no key is configured:
 
 1. Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`.
 2. Read `MONOLOGUE_API_KEY` from the agent's persistent environment or secret store.
-3. If it is missing, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.5"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
+3. If it is missing, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.6"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
 4. Keep the returned `deviceCode` private. Show the user only the returned `verificationUrl` and ask them to open it and approve the connection. Do not show or repeat any API key.
 5. Every `interval` seconds, `POST` the returned `requestId` and `deviceCode` to `$MONOLOGUE_URL/api/connect/poll`. A `202` response means approval is still pending. Stop when the request succeeds, expires, or ten minutes pass.
 6. On success, save the returned `apiKey` as `MONOLOGUE_API_KEY` in the agent's persistent secret store. Never print, display, log, or send it in ordinary chat.
@@ -49,7 +49,9 @@ Report actions such as:
 
 - sending an email, message, or DM
 - submitting a form
-- making a purchase, booking, cancellation, or trade
+- making a purchase, booking, cancellation, trade, payment, refund, or subscription change
+- creating, updating, submitting, publishing, or removing a marketplace listing
+- creating or updating an order, shipment, fulfillment, or payout
 - creating, updating, or deleting a calendar event
 - writing, moving, uploading, or deleting a file
 - committing or pushing code
@@ -66,11 +68,13 @@ Do not report research, summaries, reading, browsing, searches, analysis, planni
 
 ## Timing and status
 
-Report after the external action is attempted:
+Report immediately after the external write or submission returns and before composing the final response to the user. Reporting is part of completing the action, including when the result is unexpected or still awaiting review.
 
 - Use `completed` when it succeeded.
 - Use `failed` when it failed.
-- Use `pending` when the outcome cannot be determined.
+- Use `pending` when it entered an unresolved external state, such as awaiting marketplace review, payment settlement, or another party's approval.
+
+Describe the state that actually exists. For example, a listing accepted for review is `submitted` with `status = pending`, not `published`. If a later agent action publishes it, report that as a separate completed action.
 
 Report one event for the resulting external action, not its intermediate steps. Supply a stable `externalId` when the external system provides one so retries are safely deduplicated.
 
