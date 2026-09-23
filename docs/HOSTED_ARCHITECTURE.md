@@ -22,6 +22,7 @@ Implemented in the application:
 - server-owned self-reported provenance for agent-key ingestion
 - stable Action-to-Agent relationships with historical backfill
 - private AI Crew list and agent track-record pages
+- private weekly agent ledger and browser-generated static share cards
 
 Still required as the hosted product expands:
 
@@ -54,6 +55,7 @@ Do not create separate marketing, cloud-app, or skill repositories. A separate p
 | Workspace resolution and access checks | `lib/workspace.ts` |
 | Agent API-key creation and verification | `lib/api-keys.ts` |
 | Action validation and queries | `lib/action-schema.ts`, `lib/actions.ts` |
+| Weekly ledger aggregation | `lib/ledger.ts`, `lib/weekly-ledger.ts` |
 | Database connection selection | `lib/db.ts` |
 | Models and committed migrations | `prisma/` |
 | Agent-facing installation package | `skills/monologue/` |
@@ -72,6 +74,7 @@ Route groups organize code without appearing in public URLs. The intended routes
 /feed                authenticated action feed
 /agents              authenticated AI Crew
 /agents/[agentId]    authenticated private agent profile and track record
+/recap               authenticated private seven-day agent ledger
 /settings/keys       create, name, rotate, and revoke agent keys
 /api/auth/*           browser authentication
 /api/actions          agent ingestion and authenticated action reads

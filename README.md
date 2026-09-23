@@ -187,11 +187,13 @@ Supported statuses: `completed`, `failed`, `pending`. Supported sources: `self_r
 AI agent → Monologue skill → POST /api/actions → validation + dedupe → SQLite
                                                                   ├─ Feed
                                                                   ├─ AI Crew profiles
+                                                                  ├─ Weekly agent ledger
                                                                   ├─ Filters + search
-                                                                  └─ Action details
+                                                                  ├─ Action details
+                                                                  └─ Browser-generated static share cards
 ```
 
-Next.js renders the product directly from one SQLite-compatible database through Prisma. Local mode uses one SQLite file; hosted mode uses workspace-scoped libSQL/Turso. The API and product pages use the same validation and data-access layer, with no queue, cache, or analytics service.
+Next.js renders the product directly from one SQLite-compatible database through Prisma. Local mode uses one SQLite file; hosted mode uses workspace-scoped libSQL/Turso. The weekly ledger is aggregated live from actions. Share cards are rendered as static PNGs in the browser and are never uploaded or connected to future activity. The API and product pages use the same validation and data-access layer, with no queue, cache, analytics service, or charting framework.
 
 The planned hosted architecture, repository ownership rules, and Google sign-in boundary are documented in [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md). The hosted version will remain in this repository rather than becoming a separate application fork.
 

@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
       "/agents": ["./demo/monologue.db"],
       "/agents/[agentId]": ["./demo/monologue.db"],
       "/feed": ["./demo/monologue.db"],
+      "/recap": ["./demo/monologue.db"],
     }),
   },
 };

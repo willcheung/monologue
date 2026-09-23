@@ -28,26 +28,32 @@ Do not build:
 - milestones, badges, or streaks
 - weekly recap or sharing
 
-## Phase 2 — Seven-day recap
+## Phase 2 — Weekly Agent Ledger and static sharing
 
-**Goal:** Give users lightweight proof of value without creating an analytics dashboard.
+**Goal:** Give users lightweight proof of value and test sharing intent without creating an analytics dashboard or publishing private data.
 
-Add a compact recap to the crew experience:
+Add a private `/recap` page:
 
 - things changed in the last seven days
 - active agents
 - most active agent
 - most-used system
-- category breakdown
+- one seven-day activity bar chart
+- compact category breakdown
 - failed attempts shown separately
+- static recap share-card preview
+- static agent-profile share-card preview
+- native share sheet, PNG download, and copy-text fallback
 
-Use live aggregation. Do not cache, schedule, or generate commentary with an LLM.
+Use live aggregation. Share cards must be generated in the browser from a minimal, allowlisted summary. They must not upload data, create a public URL, contain individual actions or metadata, or update after being shared.
 
-## Phase 3 — Share intent test
+Do not cache, schedule, add a charting dependency, or generate commentary with an LLM.
 
-**Goal:** Test whether users want to share aggregate agent activity.
+## Phase 3 — Evaluate share intent
 
-Add a preview plus native share-sheet and clipboard fallback. Share aggregate text only. Do not create public URLs or expose action details.
+**Goal:** Decide whether static sharing creates enough demand to justify public infrastructure.
+
+Measure recap and profile share attempts. Do not create public URLs or expose action details.
 
 ## Phase 4 — Revocable public recaps
 
@@ -72,4 +78,3 @@ Measure:
 - seven-day return rate
 - recap share attempts
 - shared-page views to signup, once public recaps exist
-

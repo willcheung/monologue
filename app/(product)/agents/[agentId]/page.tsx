@@ -5,6 +5,7 @@ import { ActionDetail } from "@/components/action-detail";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { FeedTimeline } from "@/components/feed-timeline";
 import { Header } from "@/components/header";
+import { StaticShareCard, type ShareCardData } from "@/components/static-share-card";
 import { getAgentProfile } from "@/lib/agents";
 import { categoryPresentation } from "@/lib/constants";
 import { db } from "@/lib/db";
@@ -31,6 +32,16 @@ export default async function AgentProfilePage({ params, searchParams }: { param
   const detail = actionId ? await db.action.findFirst({ where: { id:actionId, workspaceId:context.workspace.id, agentId } }) : null;
   const description = profile.description ?? `${profile.platform ?? profile.name} agent with a track record in your Monologue feed.`;
   const basePath = `/agents/${profile.id}`;
+  const profileShareData: ShareCardData = {
+    kind:"profile",
+    snapshotLabel:dateLabel(new Date()),
+    agentName:profile.name,
+    platform:profile.platform ?? "AI agent",
+    totalActions:profile.totalActions,
+    activeSince:dateLabel(profile.firstSeen),
+    systems:profile.systems.slice(0, 3).map((system) => system.name),
+    commonActions:profile.commonActions.slice(0, 3),
+  };
 
   return <>
     <Header product signedIn={Boolean(context.user)} />
@@ -39,6 +50,7 @@ export default async function AgentProfilePage({ params, searchParams }: { param
       <section className="agent-profile-hero">
         <AgentAvatar name={profile.name} large />
         <div><span className="kicker">{profile.platform ?? "AI agent"}</span><h1>{profile.name}</h1><p>{description}</p><small><CheckCircle2 size={14} />{profile.connectedToMonologue ? "Connected to Monologue" : "Seen in your action history"}</small></div>
+        <StaticShareCard data={profileShareData} label="Share profile" />
       </section>
 
       <section className="agent-overview" aria-label="Agent overview">
@@ -53,9 +65,9 @@ export default async function AgentProfilePage({ params, searchParams }: { param
         <div className="track-panel"><span className="kicker">Track record</span><h2>Common actions</h2><p>What this agent has historically done in your feed.</p><div className="capability-list">{profile.commonActions.map((action) => <span key={action.name}><b>{action.name}</b><small>{action.count}</small></span>)}</div></div>
       </section>
 
-      <section className="category-breakdown"><div><span className="kicker">Activity mix</span><h2>What it changes</h2></div><div>{profile.categories.map((category) => { const presentation = categoryPresentation(category.name); return <span key={category.name}><b>{presentation.emoji} {presentation.label}</b><small>{category.count}</small></span>; })}</div></section>
+      <section className="category-breakdown"><div><span className="kicker">Activity mix</span><h2>What it changes</h2></div><div className="activity-pills">{profile.categories.map((category) => { const presentation = categoryPresentation(category.name); return <span key={category.name}><i>{presentation.emoji}</i><b>{presentation.label}</b><small>{category.count}</small></span>; })}</div></section>
 
-      <section className="agent-recent"><span className="kicker">Recent activity</span><h2>Latest changes</h2><FeedTimeline actions={profile.recentActions} queryString="" basePath={basePath} /></section>
+      <section className="agent-recent"><div className="agent-recent-heading"><div><span className="kicker">Recent activity</span><h2>Latest changes</h2><p>The 12 most recent actions from this agent.</p></div><Link href={`/feed?agent=${encodeURIComponent(profile.canonicalName)}`}>View all activity</Link></div><FeedTimeline actions={profile.recentActions} queryString="" basePath={basePath} /></section>
     </main>
     {detail && <ActionDetail action={detail} closeHref={basePath} />}
   </>;
