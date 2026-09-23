@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { Check, Copy, Download, Share2, X } from "lucide-react";
+import rough from "roughjs";
+import { agentColor } from "@/lib/agent-colors";
 
 type Count = { name: string; count: number; emoji?: string };
 
@@ -32,7 +34,9 @@ function initials(name: string) {
   return name.split(/\s+|·/).map((part) => part.trim()).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 }
 
-const AGENT_COLORS = ["#ff6b45", "#6f8f78", "#7588b1", "#b57a5b", "#8b74a8", "#c3994d", "#6d9ba0"];
+function hatchedBackground(color: string) {
+  return `repeating-linear-gradient(-12deg, ${color} 0 1.5px, transparent 1.5px 4px), color-mix(in srgb, ${color} 12%, white)`;
+}
 
 function roundRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   context.beginPath();
@@ -79,6 +83,13 @@ function renderPng(data: ShareCardData) {
 
   context.fillStyle = "#fbfaf6";
   context.fillRect(0, 0, canvas.width, canvas.height);
+  if (data.kind === "recap") {
+    context.strokeStyle = "#eeeae0";
+    context.lineWidth = 1;
+    for (let y = 0; y < canvas.height; y += 32) { context.beginPath(); context.moveTo(0, y); context.lineTo(canvas.width, y); context.stroke(); }
+    context.strokeStyle = "#f3ead0";
+    for (let x = 0; x < canvas.width; x += 32) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x, canvas.height); context.stroke(); }
+  }
   context.fillStyle = "#fff1e7";
   context.beginPath();
   context.arc(1110, 20, 245, 0, Math.PI * 2);
@@ -86,18 +97,20 @@ function renderPng(data: ShareCardData) {
   drawBrand(context);
 
   if (data.kind === "recap") {
+    const sketch = rough.canvas(canvas);
+    const noteFont = '"Marker Felt", "Comic Sans MS", cursive';
     context.fillStyle = "#ff6b45";
-    context.font = "800 15px Avenir Next, Arial";
+    context.font = `700 18px ${noteFont}`;
     context.fillText(data.periodLabel.toUpperCase(), 58, 162);
     context.fillStyle = "#20201d";
-    context.font = "600 54px Georgia";
+    context.font = `700 56px ${noteFont}`;
     context.fillText("My AI crew this week", 58, 222);
-    context.font = "600 112px Georgia";
+    context.font = `700 112px ${noteFont}`;
     context.fillText(String(data.totalChanges), 58, 352);
-    context.font = "600 29px Georgia";
+    context.font = `700 30px ${noteFont}`;
     context.fillText("actions completed", 58, 390);
     context.fillStyle = "#75736c";
-    context.font = "18px Avenir Next, Arial";
+    context.font = `20px ${noteFont}`;
     context.fillText(`${data.activeAgents} active agents · Most active: ${data.topAgent}`, 58, 442);
     context.fillText(`Worked most in ${data.topSystem}`, 58, 474);
     const max = Math.max(1, ...data.days.map((day) => day.count));
@@ -110,35 +123,34 @@ function renderPng(data: ShareCardData) {
       const x = chartX + index * (barWidth + gap);
       let bottom = chartY + chartHeight;
       if (day.count === 0) {
-        context.fillStyle = "#e7e3db";
-        context.fillRect(x, bottom - 8, barWidth, 8);
+        sketch.rectangle(x, bottom - 8, barWidth, 8, { fill:"#d8d4ca", fillStyle:"solid", stroke:"#aaa69d", strokeWidth:1.2, roughness:1.3, seed:700 + index });
       } else {
-        for (const agent of day.agents) {
+        day.agents.forEach((agent, segmentIndex) => {
           const height = agent.count / max * chartHeight;
           const agentIndex = data.agents.findIndex((item) => item.name === agent.name);
-          context.fillStyle = AGENT_COLORS[agentIndex % AGENT_COLORS.length];
-          context.fillRect(x, bottom - height, barWidth, height + 1);
+          const color = agentColor(agentIndex);
+          sketch.rectangle(x, bottom - height, barWidth, height + 1, { fill:color, fillStyle:"hachure", fillWeight:1.2, hachureAngle:-12, hachureGap:4, stroke:color, strokeWidth:1.7, roughness:1.15, seed:(index + 1) * 100 + segmentIndex });
           bottom -= height;
-        }
+        });
       }
       context.fillStyle = "#20201d";
-      context.font = "700 15px Avenir Next, Arial";
+      context.font = `700 17px ${noteFont}`;
       context.textAlign = "center";
       context.fillText(String(day.count), x + barWidth / 2, Math.max(chartY + 12, bottom - 12));
       context.fillStyle = "#75736c";
-      context.font = "14px Avenir Next, Arial";
+      context.font = `16px ${noteFont}`;
       context.fillText(day.weekday, x + barWidth / 2, chartY + chartHeight + 30);
     });
     context.textAlign = "left";
     data.agents.forEach((agent, index) => {
       const legendX = chartX + index % 4 * 110;
       const legendY = 526 + Math.floor(index / 4) * 20;
-      context.fillStyle = AGENT_COLORS[index % AGENT_COLORS.length];
+      context.fillStyle = agentColor(index);
       context.beginPath();
       context.arc(legendX + 5, legendY, 5, 0, Math.PI * 2);
       context.fill();
       context.fillStyle = "#20201d";
-      context.font = "700 12px Avenir Next, Arial";
+      context.font = `700 14px ${noteFont}`;
       context.fillText(agent.name, legendX + 15, legendY + 4, 90);
     });
   } else {
@@ -250,9 +262,9 @@ export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData
           <div className="share-preview-brand"><span>m</span><b>Monologue</b></div>
           {data.kind === "recap" ? <>
             <small>{data.periodLabel}</small><h3>My AI crew this week</h3><strong>{data.totalChanges}</strong><p>actions completed</p>
-            <div className="share-mini-bars">{data.days.map((day) => { const max = Math.max(1, ...data.days.map((item) => item.count)); return <span key={day.weekday}><i className="share-stacked-bar">{day.count === 0 ? <u className="empty-segment" /> : day.agents.map((agent) => { const agentIndex = data.agents.findIndex((item) => item.name === agent.name); return <u key={agent.name} style={{ height:`${agent.count / max * 100}%`, background:AGENT_COLORS[agentIndex % AGENT_COLORS.length] }} />; })}</i><b>{day.weekday}</b></span>; })}</div>
+            <div className="share-mini-bars">{data.days.map((day) => { const max = Math.max(1, ...data.days.map((item) => item.count)); return <span key={day.weekday}><i className="share-stacked-bar">{day.count === 0 ? <u className="empty-segment" /> : day.agents.map((agent) => { const agentIndex = data.agents.findIndex((item) => item.name === agent.name); const color = agentColor(agentIndex); return <u key={agent.name} style={{ height:`${agent.count / max * 100}%`, background:hatchedBackground(color), borderColor:color }} />; })}</i><b>{day.weekday}</b></span>; })}</div>
             <div className="share-preview-detail">{data.activeAgents} active agents · Most active: {data.topAgent}</div>
-            <div className="share-chart-legend">{data.agents.map((agent, index) => <span key={agent.name}><i style={{ background:AGENT_COLORS[index % AGENT_COLORS.length] }} />{agent.name}</span>)}</div>
+            <div className="share-chart-legend">{data.agents.map((agent, index) => <span key={agent.name}><i style={{ background:agentColor(index) }} />{agent.name}</span>)}</div>
           </> : <>
             <small>{data.platform}</small><h3>{data.agentName}</h3><strong>{data.totalActions}</strong><p>recorded actions</p><div className="share-profile-systems">{data.systems.slice(0, 3).map((system) => <span key={system}>{system}</span>)}</div><div className="share-preview-detail">Active since {data.activeSince}{data.commonActions.length ? ` · Often ${data.commonActions.map((action) => action.name).join(", ")}` : ""}</div>
           </>}

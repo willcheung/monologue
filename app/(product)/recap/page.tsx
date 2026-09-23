@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AlertTriangle, Bot, Boxes, CalendarDays } from "lucide-react";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { Header } from "@/components/header";
+import { SketchLedgerChart } from "@/components/sketch-ledger-chart";
 import { StaticShareCard, type ShareCardData } from "@/components/static-share-card";
 import { listAgentSummaries } from "@/lib/agents";
 import { categoryPresentation } from "@/lib/constants";
@@ -10,7 +11,6 @@ import { getWeeklyLedger } from "@/lib/weekly-ledger";
 import { getWorkspaceContext } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
-const AGENT_COLORS = ["#ff6b45", "#6f8f78", "#7588b1", "#b57a5b", "#8b74a8", "#c3994d", "#6d9ba0"];
 
 export default async function RecapPage() {
   const context = await getWorkspaceContext();
@@ -19,7 +19,6 @@ export default async function RecapPage() {
     getWeeklyLedger(context.workspace.id),
     listAgentSummaries(context.workspace.id),
   ]);
-  const maxDay = Math.max(1, ...ledger.days.map((day) => day.count));
   const weeklyActionsByAgent = new Map(ledger.agents.filter((agent) => agent.id).map((agent) => [agent.id, agent.count]));
   const shareData: ShareCardData = {
     kind:"recap",
@@ -43,16 +42,7 @@ export default async function RecapPage() {
 
       <section className="ledger-card">
         <div className="ledger-total"><strong>{ledger.totalChanges}</strong><div><h2>actions completed</h2><p>Confirmed external changes only.</p></div></div>
-        <div className="ledger-chart-wrap">
-          <div className="ledger-chart" aria-label={`Completed actions by agent and day from ${ledger.periodLabel}`}>
-            {ledger.days.map((day) => <div className="ledger-day" key={day.key}>
-              <span>{day.count}</span>
-              <div className="ledger-bar-track">{day.count === 0 ? <i className="ledger-bar-empty" /> : <div className="ledger-bar" style={{ height:`${day.count / maxDay * 100}%` }}>{day.agents.map((agent) => { const agentIndex = ledger.agents.findIndex((item) => item.name === agent.name); return <i key={agent.name} title={`${agent.name}: ${agent.count}`} style={{ flex:agent.count, background:AGENT_COLORS[agentIndex % AGENT_COLORS.length] }} />; })}</div>}</div>
-              <b>{day.weekday}</b><small>{day.dateLabel}</small>
-            </div>)}
-          </div>
-          <div className="ledger-chart-legend">{ledger.agents.map((agent, index) => <span key={agent.name}><i style={{ background:AGENT_COLORS[index % AGENT_COLORS.length] }} />{agent.name}</span>)}</div>
-        </div>
+        <SketchLedgerChart days={ledger.days} agents={ledger.agents} periodLabel={ledger.periodLabel} />
       </section>
 
       <section className="ledger-highlights" aria-label="Weekly highlights">
