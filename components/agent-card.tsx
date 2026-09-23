@@ -33,8 +33,7 @@ export function AgentCard({ agent }: { agent: AgentCardData }) {
       <div><span>{agent.platform ?? "AI agent"}</span><h2>{agent.name}</h2></div>
       <ArrowUpRight size={18} />
     </div>
-    <p>{agent.description ?? "An agent with a track record in your Monologue feed."}</p>
-    <p className="agent-card-likely">{agent.mostLikely}</p>
+    <p>{agent.description ?? "An agent with a track record in your Monologue feed."} <em>{agent.mostLikely}</em></p>
     <div className="agent-card-systems">
       <span>Has worked with</span>
       <div>{agent.systems.slice(0, 3).map((system) => <b key={system}>{system}</b>)}{agent.systems.length > 3 && <b>+{agent.systems.length - 3}</b>}</div>

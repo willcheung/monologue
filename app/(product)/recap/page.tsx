@@ -9,6 +9,7 @@ import { getWeeklyLedger } from "@/lib/weekly-ledger";
 import { getWorkspaceContext } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
+const AGENT_COLORS = ["#ff6b45", "#6f8f78", "#7588b1", "#b57a5b", "#8b74a8", "#c3994d", "#6d9ba0"];
 
 export default async function RecapPage() {
   const context = await getWorkspaceContext();
@@ -23,8 +24,8 @@ export default async function RecapPage() {
     activeAgents:ledger.activeAgents,
     topAgent:ledger.topAgent?.name ?? "No activity yet",
     topSystem:ledger.topSystem?.name ?? "No activity yet",
-    agents:ledger.agents.slice(0, 5).map(({ name, count }) => ({ name, count })),
-    days:ledger.days.map(({ weekday, count }) => ({ weekday, count })),
+    agents:ledger.agents.map(({ name, count }) => ({ name, count })),
+    days:ledger.days.map(({ weekday, count, agents }) => ({ weekday, count, agents:agents.map(({ name, count:agentCount }) => ({ name, count:agentCount })) })),
   };
 
   return <>
@@ -37,12 +38,15 @@ export default async function RecapPage() {
 
       <section className="ledger-card">
         <div className="ledger-total"><strong>{ledger.totalChanges}</strong><div><h2>actions completed</h2><p>Confirmed external changes only.</p></div></div>
-        <div className="ledger-chart" aria-label={`Actions by day from ${ledger.periodLabel}`}>
-          {ledger.days.map((day, index) => <div className="ledger-day" key={day.key}>
-            <span>{day.count}</span>
-            <div><i className={index === ledger.days.length - 1 ? "is-today" : ""} style={{ height:`${Math.max(day.count ? 10 : 3, day.count / maxDay * 100)}%` }} /></div>
-            <b>{day.weekday}</b><small>{day.dateLabel}</small>
-          </div>)}
+        <div className="ledger-chart-wrap">
+          <div className="ledger-chart" aria-label={`Completed actions by agent and day from ${ledger.periodLabel}`}>
+            {ledger.days.map((day) => <div className="ledger-day" key={day.key}>
+              <span>{day.count}</span>
+              <div>{day.count === 0 ? <i className="empty-segment" /> : day.agents.map((agent) => { const agentIndex = ledger.agents.findIndex((item) => item.name === agent.name); return <i key={agent.name} title={`${agent.name}: ${agent.count}`} style={{ height:`${agent.count / maxDay * 100}%`, background:AGENT_COLORS[agentIndex % AGENT_COLORS.length] }} />; })}</div>
+              <b>{day.weekday}</b><small>{day.dateLabel}</small>
+            </div>)}
+          </div>
+          <div className="ledger-chart-legend">{ledger.agents.map((agent, index) => <span key={agent.name}><i style={{ background:AGENT_COLORS[index % AGENT_COLORS.length] }} />{agent.name}</span>)}</div>
         </div>
       </section>
 

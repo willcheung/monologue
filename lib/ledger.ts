@@ -21,7 +21,7 @@ export type WeeklyLedger = {
   busiestDay: { name: string; count: number } | null;
   agents: LedgerAgent[];
   categories: LedgerCount[];
-  days: Array<{ key: string; weekday: string; dateLabel: string; count: number }>;
+  days: Array<{ key: string; weekday: string; dateLabel: string; count: number; agents: LedgerAgent[] }>;
 };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -68,7 +68,13 @@ export function buildWeeklyLedger(actions: LedgerAction[], now = new Date()): We
   const topSystems = ranked(completed.map((action) => action.system));
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(start.getTime() + index * DAY);
-    return { key:key(date), weekday:weekday.format(date), dateLabel:dateLabel.format(date), count:dayCounts.get(key(date)) ?? 0 };
+    return {
+      key:key(date),
+      weekday:weekday.format(date),
+      dateLabel:dateLabel.format(date),
+      count:dayCounts.get(key(date)) ?? 0,
+      agents:rankedAgents(completed.filter((action) => key(action.occurredAt) === key(date))),
+    };
   });
   const busiest = [...days].sort((left, right) => right.count - left.count)[0];
 

@@ -39,7 +39,7 @@ Add a private `/recap` page:
 - most active agent
 - most-used system
 - active-agent roster and busiest day
-- one seven-day activity bar chart
+- one seven-day activity bar chart, stacked by agent
 - compact category breakdown
 - failed attempts shown separately
 - static recap share-card preview

@@ -15,7 +15,7 @@ export type ShareCardData =
       topAgent: string;
       topSystem: string;
       agents: Count[];
-      days: Array<{ weekday: string; count: number }>;
+      days: Array<{ weekday: string; count: number; agents: Count[] }>;
     }
   | {
       kind: "profile";
@@ -31,6 +31,8 @@ export type ShareCardData =
 function initials(name: string) {
   return name.split(/\s+|·/).map((part) => part.trim()).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 }
+
+const AGENT_COLORS = ["#ff6b45", "#6f8f78", "#7588b1", "#b57a5b", "#8b74a8", "#c3994d", "#6d9ba0"];
 
 function roundRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   context.beginPath();
@@ -98,23 +100,6 @@ function renderPng(data: ShareCardData) {
     context.font = "18px Avenir Next, Arial";
     context.fillText(`${data.activeAgents} active agents · Most active: ${data.topAgent}`, 58, 442);
     context.fillText(`Worked most in ${data.topSystem}`, 58, 474);
-    let agentX = 58;
-    for (const agent of data.agents.slice(0, 4)) {
-      context.fillStyle = "#e9eef9";
-      context.beginPath();
-      context.arc(agentX + 18, 526, 18, 0, Math.PI * 2);
-      context.fill();
-      context.fillStyle = "#39455d";
-      context.textAlign = "center";
-      context.font = "700 12px Georgia";
-      context.fillText(initials(agent.name), agentX + 18, 530);
-      context.textAlign = "left";
-      context.fillStyle = "#20201d";
-      context.font = "700 14px Avenir Next, Arial";
-      context.fillText(`${agent.name} · ${agent.count}`, agentX + 44, 531, 125);
-      agentX += 155;
-    }
-
     const max = Math.max(1, ...data.days.map((day) => day.count));
     const chartX = 705;
     const chartY = 182;
@@ -122,20 +107,41 @@ function renderPng(data: ShareCardData) {
     const barWidth = 48;
     const gap = 18;
     data.days.forEach((day, index) => {
-      const height = Math.max(8, (day.count / max) * chartHeight);
       const x = chartX + index * (barWidth + gap);
-      context.fillStyle = index === data.days.length - 1 ? "#ff6b45" : "#d9ded4";
-      roundRect(context, x, chartY + chartHeight - height, barWidth, height, 10);
-      context.fill();
+      let bottom = chartY + chartHeight;
+      if (day.count === 0) {
+        context.fillStyle = "#e7e3db";
+        roundRect(context, x, bottom - 8, barWidth, 8, 4);
+        context.fill();
+      }
+      for (const agent of day.agents) {
+        const height = Math.max(5, agent.count / max * chartHeight);
+        const agentIndex = data.agents.findIndex((item) => item.name === agent.name);
+        context.fillStyle = AGENT_COLORS[agentIndex % AGENT_COLORS.length];
+        roundRect(context, x, bottom - height, barWidth, height + 1, 5);
+        context.fill();
+        bottom -= height;
+      }
       context.fillStyle = "#20201d";
       context.font = "700 15px Avenir Next, Arial";
       context.textAlign = "center";
-      context.fillText(String(day.count), x + barWidth / 2, chartY + chartHeight - height - 12);
+      context.fillText(String(day.count), x + barWidth / 2, Math.max(chartY + 12, bottom - 12));
       context.fillStyle = "#75736c";
       context.font = "14px Avenir Next, Arial";
       context.fillText(day.weekday, x + barWidth / 2, chartY + chartHeight + 30);
     });
     context.textAlign = "left";
+    data.agents.forEach((agent, index) => {
+      const legendX = chartX + index % 4 * 110;
+      const legendY = 526 + Math.floor(index / 4) * 20;
+      context.fillStyle = AGENT_COLORS[index % AGENT_COLORS.length];
+      context.beginPath();
+      context.arc(legendX + 5, legendY, 5, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = "#20201d";
+      context.font = "700 12px Avenir Next, Arial";
+      context.fillText(agent.name, legendX + 15, legendY + 4, 90);
+    });
   } else {
     context.fillStyle = "#ff6b45";
     context.font = "800 15px Avenir Next, Arial";
@@ -245,9 +251,9 @@ export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData
           <div className="share-preview-brand"><span>m</span><b>Monologue</b></div>
           {data.kind === "recap" ? <>
             <small>{data.periodLabel}</small><h3>My AI crew this week</h3><strong>{data.totalChanges}</strong><p>actions completed</p>
-            <div className="share-mini-bars">{data.days.map((day) => { const max = Math.max(1, ...data.days.map((item) => item.count)); return <span key={day.weekday}><i style={{ height:`${Math.max(8, day.count / max * 100)}%` }} /><b>{day.weekday}</b></span>; })}</div>
+            <div className="share-mini-bars">{data.days.map((day) => { const max = Math.max(1, ...data.days.map((item) => item.count)); return <span key={day.weekday}><i className="share-stacked-bar">{day.count === 0 ? <u className="empty-segment" /> : day.agents.map((agent) => { const agentIndex = data.agents.findIndex((item) => item.name === agent.name); return <u key={agent.name} style={{ height:`${agent.count / max * 100}%`, background:AGENT_COLORS[agentIndex % AGENT_COLORS.length] }} />; })}</i><b>{day.weekday}</b></span>; })}</div>
             <div className="share-preview-detail">{data.activeAgents} active agents · Most active: {data.topAgent}</div>
-            <div className="share-card-agents">{data.agents.slice(0, 4).map((agent) => <span key={agent.name}><i>{initials(agent.name)}</i><b>{agent.name}</b><small>{agent.count}</small></span>)}</div>
+            <div className="share-chart-legend">{data.agents.map((agent, index) => <span key={agent.name}><i style={{ background:AGENT_COLORS[index % AGENT_COLORS.length] }} />{agent.name}</span>)}</div>
           </> : <>
             <small>{data.platform}</small><h3>{data.agentName}</h3><strong>{data.totalActions}</strong><p>recorded actions</p><div className="share-profile-systems">{data.systems.slice(0, 3).map((system) => <span key={system}>{system}</span>)}</div><div className="share-preview-detail">Active since {data.activeSince}{data.commonActions.length ? ` · Often ${data.commonActions.map((action) => action.name).join(", ")}` : ""}</div>
           </>}

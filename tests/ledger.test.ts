@@ -24,6 +24,7 @@ describe("weekly agent ledger", () => {
     expect(ledger.failedAttempts).toBe(1);
     expect(ledger.activeAgents).toBe(2);
     expect(ledger.days.map((day) => day.count)).toEqual([1, 0, 0, 0, 0, 0, 1]);
+    expect(ledger.days[6].agents).toEqual([{ id:null, name:"Muse", count:1 }]);
     expect(ledger.agents.map((agent) => agent.name)).toEqual(["Codex", "Muse"]);
     expect(ledger.busiestDay).toEqual({ name:"Thu · Sep 17", count:1 });
   });
