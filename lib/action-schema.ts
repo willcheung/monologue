@@ -24,3 +24,7 @@ export const actionInputSchema = z.object({
 }).strict();
 
 export type ActionInput = z.infer<typeof actionInputSchema>;
+
+export function attributeSelfReportedAction(input: ActionInput, agent: { id: string; name: string }): ActionInput {
+  return { ...input, agentId: agent.id, agentName: agent.name, source: "self_reported" };
+}

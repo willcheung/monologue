@@ -41,8 +41,13 @@ export function prepareWorkspaceApiKey(workspaceId: string, name: string, option
 
 export async function createWorkspaceAgentApiKey(workspaceId: string, name: string, createdByUserId: string) {
   return db.$transaction(async (transaction) => {
-    const agent = await transaction.agent.create({
-      data: { workspaceId, name: name.trim() || "My agent", connectedByUserId: createdByUserId },
+    const normalizedName = name.trim() || "My agent";
+    const existing = await transaction.agent.findFirst({
+      where: { workspaceId, name: normalizedName },
+      orderBy: { createdAt: "asc" },
+    });
+    const agent = existing ?? await transaction.agent.create({
+      data: { workspaceId, name: normalizedName, connectedByUserId: createdByUserId },
     });
     const prepared = prepareWorkspaceApiKey(workspaceId, agent.name, {
       agentId: agent.id,
@@ -79,7 +84,7 @@ export async function authenticateApiRequest(request: Request) {
     workspaceId: key.workspaceId,
     keyId: key.id,
     agentId: key.agent?.id ?? null,
-    agentName: key.agent?.name ?? null,
+    agentName: key.agent?.name ?? key.name,
     scopes: key.scopes,
   };
 }

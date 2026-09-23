@@ -6,6 +6,7 @@ import { LOCAL_WORKSPACE_ID } from "./runtime";
 
 export type ActionFilters = {
   agent?: string;
+  agentId?: string;
   category?: string;
   status?: string;
   system?: string;
@@ -30,6 +31,7 @@ export function buildActionWhere(filters: ActionFilters, workspaceId = LOCAL_WOR
   return {
     workspaceId,
     ...(filters.agent && { agentName: filters.agent }),
+    ...(filters.agentId && { agentId: filters.agentId }),
     ...(filters.category && CATEGORIES.includes(filters.category as (typeof CATEGORIES)[number]) && { category: filters.category }),
     ...(filters.status && STATUSES.includes(filters.status as (typeof STATUSES)[number]) && { status: filters.status }),
     ...(filters.system && { system: filters.system }),

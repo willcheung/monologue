@@ -19,6 +19,16 @@ const agentIds: Record<string, string> = {
   "Instinct · Iris": "instinct-iris",
 };
 
+const agents = [
+  { id:"codex", name:"Codex", platform:"Codex", description:"Coding agent for software development and deployments." },
+  { id:"hermes-scout", name:"Hermes · Scout", platform:"Hermes", description:"General-purpose agent for files, launches, and operational follow-through." },
+  { id:"muse-maya", name:"Muse · Maya", platform:"Muse", description:"Personal agent for communication, forms, and everyday follow-through." },
+  { id:"claude-cal", name:"Claude · Cal", platform:"Claude", description:"Calendar-focused agent for scheduling and time changes." },
+  { id:"openclaw-penny", name:"OpenClaw · Penny", platform:"OpenClaw", description:"Shopping agent for orders, returns, and account changes." },
+  { id:"grokbot-tabi", name:"Grokbot · Tabi", platform:"Grokbot", description:"Travel agent for bookings, cancellations, and itinerary changes." },
+  { id:"instinct-iris", name:"Instinct · Iris", platform:"Instinct", description:"Personal operations agent for messages, rides, and appointments." },
+].map((agent) => ({ ...agent, workspaceId:"local" }));
+
 const actions = [
   { agentName:"Codex", verb:"pushed", summary:"Pushed the responsive agent feed and action detail drawer.", category:"code", system:"GitHub", objectType:"commit", objectName:"8ab214f", project:"Monologue", externalId:"commit-8ab214f", url:"https://github.com/example/monologue/commit/8ab214f", metadata:{ repository:"example/monologue", branch:"main", commitSha:"8ab214f", filesChanged:14 }, occurredAt:at(0,14,43) },
   { agentName:"Muse · Maya", verb:"sent", summary:"Sent Sarah a follow-up email confirming Friday's interview time.", category:"communication", system:"Gmail", objectType:"email", objectName:"Friday interview follow-up", project:"Job Search", externalId:"gmail-101", occurredAt:at(0,13,17) },
@@ -63,8 +73,11 @@ async function main() {
     create: { id: "local", name: "My agent feed" },
   });
   await prisma.action.deleteMany();
+  await prisma.apiKey.updateMany({ where: { workspaceId:"local" }, data: { agentId:null } });
+  await prisma.agent.deleteMany({ where: { workspaceId:"local" } });
+  await prisma.agent.createMany({ data:agents });
   await prisma.action.createMany({ data: actions });
-  console.log(`Seeded ${actions.length} consequential actions.`);
+  console.log(`Seeded ${agents.length} agents and ${actions.length} consequential actions.`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1); }).finally(async () => prisma.$disconnect());

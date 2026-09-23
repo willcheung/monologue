@@ -30,7 +30,7 @@ function calendarLabel(dateValue: Date, localTime: boolean) {
   return { month, day, relative, accessible };
 }
 
-export function FeedTimeline({ actions, queryString }: { actions: Action[]; queryString: string }) {
+export function FeedTimeline({ actions, queryString, basePath = "/feed" }: { actions: Action[]; queryString: string; basePath?: string }) {
   const localTime = useBrowserTime();
   const groups = new Map<string, { date: Date; actions: Action[] }>();
 
@@ -47,7 +47,7 @@ export function FeedTimeline({ actions, queryString }: { actions: Action[]; quer
       const label = calendarLabel(group.date, localTime);
       return <div className="day-group" key={key}>
         <div className="calendar-day" aria-label={label.accessible}><span>{label.month}</span><strong>{label.day}</strong><small>{label.relative}</small></div>
-        <div className="action-list">{group.actions.map((action) => <ActionCard key={action.id} action={action} queryString={queryString} localTime={localTime} />)}</div>
+        <div className="action-list">{group.actions.map((action) => <ActionCard key={action.id} action={action} queryString={queryString} basePath={basePath} localTime={localTime} />)}</div>
       </div>;
     })}
   </section>;

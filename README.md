@@ -158,7 +158,7 @@ Hosted automatic connection uses three short-lived endpoints:
 
 Only hashes of the device and approval codes are stored. The long-lived API key is created at claim time, returned once to the agent, and then stored by Monologue only as a hash. Automatic keys are scoped to `actions:write`; existing and manually created keys retain read and write access for compatibility.
 
-When a key is associated with an Agent record, Monologue derives `agentId` and `agentName` from that authenticated connection instead of trusting the submitted identity. Older keys without an Agent association continue to use the original payload, so installed skills remain compatible.
+Monologue derives stable agent identity from the authenticated connection instead of trusting a submitted `agentId`. Older keys are attached to an Agent automatically on their next write, so installed skills remain compatible. Agent-key ingestion is always stored as `self_reported`; `verified` and `observed` are reserved for future trusted ingestion paths.
 
 `externalId` is optional. When supplied, the tuple `(agentName, system, externalId)` is unique and retry-safe. No fuzzy deduplication is performed.
 
@@ -186,13 +186,16 @@ Supported statuses: `completed`, `failed`, `pending`. Supported sources: `self_r
 ```text
 AI agent → Monologue skill → POST /api/actions → validation + dedupe → SQLite
                                                                   ├─ Feed
+                                                                  ├─ AI Crew profiles
                                                                   ├─ Filters + search
                                                                   └─ Action details
 ```
 
-Next.js renders the feed directly from one SQLite database through Prisma. The API uses the same validation and query layer. There are no accounts, hosted services, queues, or integrations to configure.
+Next.js renders the product directly from one SQLite-compatible database through Prisma. Local mode uses one SQLite file; hosted mode uses workspace-scoped libSQL/Turso. The API and product pages use the same validation and data-access layer, with no queue, cache, or analytics service.
 
 The planned hosted architecture, repository ownership rules, and Google sign-in boundary are documented in [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md). The hosted version will remain in this repository rather than becoming a separate application fork.
+
+Consumer feature sizing and the deliberately smaller phased build are documented in [`docs/CONSUMER_FEATURES.md`](docs/CONSUMER_FEATURES.md) and [`docs/PHASED_MVP_ROADMAP.md`](docs/PHASED_MVP_ROADMAP.md).
 
 ## Development checks
 

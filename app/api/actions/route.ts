@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { actionInputSchema } from "@/lib/action-schema";
+import { actionInputSchema, attributeSelfReportedAction } from "@/lib/action-schema";
 import { createAction, listActions } from "@/lib/actions";
+import { ensureReportingAgent } from "@/lib/agents";
 import { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, authenticateApiRequest, hasApiScope } from "@/lib/api-keys";
 
 export const runtime = "nodejs";
@@ -32,9 +33,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const attributed = credential.agentId
-    ? { ...parsed.data, agentId: credential.agentId, agentName: credential.agentName ?? parsed.data.agentName }
-    : parsed.data;
+  const agent = await ensureReportingAgent({
+    workspaceId: credential.workspaceId,
+    agentId: credential.agentId,
+    agentName: credential.agentName ?? parsed.data.agentName,
+    keyId: credential.keyId,
+  });
+  const attributed = attributeSelfReportedAction(parsed.data, agent);
   const { action, duplicate } = await createAction(attributed, credential.workspaceId, credential.keyId);
   return NextResponse.json({ success: true, id: action.id, ...(duplicate && { duplicate: true }) }, { status: duplicate ? 200 : 201 });
 }

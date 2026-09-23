@@ -12,6 +12,7 @@ model Action {
   id              String    @id @default(cuid())
   agentName       String
   agentId         String?
+  agent           Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
   verb            String
   summary         String
   category        String
@@ -37,6 +38,7 @@ model Action {
   @@unique([workspaceId, agentId, system, externalId])
   @@index([workspaceId, occurredAt])
   @@index([workspaceId, agentName])
+  @@index([agentId])
   @@index([reportedByKeyId])
   @@index([category])
   @@index([status])
@@ -84,11 +86,14 @@ model Agent {
   workspaceId       String
   workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   name              String
+  displayName       String?
+  description       String?
   platform          String?
   skillVersion      String?
   connectedByUserId String?
   connectedByUser   User?     @relation("AgentConnector", fields: [connectedByUserId], references: [id], onDelete: SetNull)
   apiKeys           ApiKey[]
+  actions           Action[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

@@ -19,6 +19,9 @@ Implemented in the application:
 - production deployment at `https://www.monologue.events`
 - public agent bootstrap skill at `/agent-setup/SKILL.md`
 - production Turso schema, Google sign-in, and end-to-end hosted ingestion
+- server-owned self-reported provenance for agent-key ingestion
+- stable Action-to-Agent relationships with historical backfill
+- private AI Crew list and agent track-record pages
 
 Still required as the hosted product expands:
 
@@ -67,6 +70,8 @@ Route groups organize code without appearing in public URLs. The intended routes
 /welcome             first-run agent setup
 /connect             approve a short-lived agent connection
 /feed                authenticated action feed
+/agents              authenticated AI Crew
+/agents/[agentId]    authenticated private agent profile and track record
 /settings/keys       create, name, rotate, and revoke agent keys
 /api/auth/*           browser authentication
 /api/actions          agent ingestion and authenticated action reads
@@ -94,7 +99,7 @@ One application supports two explicit modes:
 - no automatic seed data
 - every query scoped to the authenticated workspace
 
-The application must fail closed if cloud authentication or workspace resolution is unavailable. Preview deployments must never connect to the production database.
+The application must fail closed if cloud authentication or workspace resolution is unavailable. Preview deployments must never connect to the production database. Database selection follows the explicit runtime mode; the presence of Turso variables alone must never make a local or preview runtime use the hosted database.
 
 ## Authentication boundary
 

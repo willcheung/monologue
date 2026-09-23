@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actionInputSchema } from "@/lib/action-schema";
+import { actionInputSchema, attributeSelfReportedAction } from "@/lib/action-schema";
 import { buildActionWhere } from "@/lib/actions";
 import { CATEGORIES, CATEGORY_PRESENTATION } from "@/lib/constants";
 
@@ -19,6 +19,14 @@ describe("action validation", () => {
   it("rejects unknown properties", () => {
     expect(actionInputSchema.safeParse({ ...valid, internalThought:"secret" }).success).toBe(false);
   });
+
+  it("keeps provenance and agent identity server-owned", () => {
+    const input = actionInputSchema.parse({ ...valid, source:"verified", agentId:"untrusted-agent" });
+    const attributed = attributeSelfReportedAction(input, { id:"trusted-agent", name:"Muse" });
+    expect(attributed.source).toBe("self_reported");
+    expect(attributed.agentId).toBe("trusted-agent");
+    expect(attributed.agentName).toBe("Muse");
+  });
 });
 
 describe("filters", () => {
@@ -34,6 +42,11 @@ describe("filters", () => {
     const where = buildActionWhere({ category:"research", status:"unknown" });
     expect(where.category).toBeUndefined();
     expect(where.status).toBeUndefined();
+  });
+
+  it("supports stable internal agent identity filters", () => {
+    const where = buildActionWhere({ agentId:"agent-123" }, "workspace-1");
+    expect(where.agentId).toBe("agent-123");
   });
 });
 

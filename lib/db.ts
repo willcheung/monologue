@@ -1,11 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
+import { isCloudMode } from "./runtime";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createClient() {
   const url = process.env.TURSO_DATABASE_URL;
-  if (url) {
+  if (isCloudMode() && url) {
     const adapter = new PrismaLibSQL({ url, authToken: process.env.TURSO_AUTH_TOKEN });
     return new PrismaClient({ adapter });
   }

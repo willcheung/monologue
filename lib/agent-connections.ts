@@ -81,15 +81,32 @@ export async function claimAgentConnection(id: string, deviceCode: string) {
     });
     if (!claimed.count) return { status: "claimed" as const };
 
-    const agent = await transaction.agent.create({
-      data: {
+    const existingAgent = await transaction.agent.findFirst({
+      where: {
         workspaceId: connection.workspaceId,
         name: connection.agentName,
-        platform: connection.platform,
-        skillVersion: connection.skillVersion,
-        connectedByUserId: connection.approvedByUserId,
+        OR: connection.platform ? [{ platform: connection.platform }, { platform: null }] : [{ platform: null }],
       },
+      orderBy: { createdAt: "asc" },
     });
+    const agent = existingAgent
+      ? await transaction.agent.update({
+          where: { id: existingAgent.id },
+          data: {
+            platform: connection.platform ?? existingAgent.platform,
+            skillVersion: connection.skillVersion,
+            connectedByUserId: connection.approvedByUserId,
+          },
+        })
+      : await transaction.agent.create({
+          data: {
+            workspaceId: connection.workspaceId,
+            name: connection.agentName,
+            platform: connection.platform,
+            skillVersion: connection.skillVersion,
+            connectedByUserId: connection.approvedByUserId,
+          },
+        });
     const prepared = prepareWorkspaceApiKey(connection.workspaceId, connection.agentName, {
       agentId: agent.id,
       createdByUserId: connection.approvedByUserId ?? undefined,
