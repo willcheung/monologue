@@ -16,7 +16,12 @@ function dateTime(date: Date, localTime: boolean) {
 }
 
 function metadataLabel(key: string) {
-  return key.replace(/([a-z])([A-Z])/g, "$1 $2").replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase());
+  return key.replace(/([a-z])([A-Z])/g, "$1 $2").replaceAll("_", " ").replace(/\burl\b/gi, "URL").replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function metadataLinkLabel(key: string) {
+  const subject = metadataLabel(key).replace(/\s+URL$/i, "").trim();
+  return subject ? `Open ${subject.toLowerCase()}` : "Open link";
 }
 
 function metadataValue(value: unknown) {
@@ -57,7 +62,7 @@ export function ActionDetail({ action, closeHref }: { action: Action; closeHref:
           <dl className="metadata-list">{metadata.map(([key, value]) => <div key={key}>
             <dt>{metadataLabel(key)}</dt>
             <dd>{isUrl(value)
-              ? <a href={value} target="_blank" rel="noreferrer">Open link <ExternalLink size={13} /></a>
+              ? <a href={value} target="_blank" rel="noreferrer">{metadataLinkLabel(key)} <ExternalLink size={13} /></a>
               : metadataValue(value)}
             </dd>
           </div>)}</dl>

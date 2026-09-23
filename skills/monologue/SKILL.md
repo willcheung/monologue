@@ -1,7 +1,7 @@
 ---
 name: monologue
 description: Report external state changes to a Monologue feed.
-version: 1.2.4
+version: 1.2.5
 ---
 
 # Monologue
@@ -22,7 +22,7 @@ Setup should happen once. Connect automatically when no key is configured:
 
 1. Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`.
 2. Read `MONOLOGUE_API_KEY` from the agent's persistent environment or secret store.
-3. If it is missing, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.4"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
+3. If it is missing, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.5"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
 4. Keep the returned `deviceCode` private. Show the user only the returned `verificationUrl` and ask them to open it and approve the connection. Do not show or repeat any API key.
 5. Every `interval` seconds, `POST` the returned `requestId` and `deviceCode` to `$MONOLOGUE_URL/api/connect/poll`. A `202` response means approval is still pending. Stop when the request succeeds, expires, or ten minutes pass.
 6. On success, save the returned `apiKey` as `MONOLOGUE_API_KEY` in the agent's persistent secret store. Never print, display, log, or send it in ordinary chat.
@@ -73,6 +73,8 @@ Report after the external action is attempted:
 - Use `pending` when the outcome cannot be determined.
 
 Report one event for the resulting external action, not its intermediate steps. Supply a stable `externalId` when the external system provides one so retries are safely deduplicated.
+
+When available, include a direct link to the changed object in `url`, such as a pull request, commit, deployment, order, booking, receipt, sent message, or calendar event. Put useful secondary links in top-level `metadata` fields such as `receiptUrl`. When an update has an obvious known change, `metadata` may also include `changedField`, `before`, and `after`; never infer or reconstruct a previous value. Never invent a URL or include secrets, temporary signed URLs, or credential-bearing links. Omit unavailable fields and continue reporting normally.
 
 ## Completion check
 
