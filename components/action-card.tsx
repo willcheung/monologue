@@ -37,9 +37,10 @@ export function ActionCard({ action, queryString = "", basePath = "/feed", local
   return (
     <Link href={href} scroll={false} className="timeline-event">
       <time className="timeline-time">{timeLabel(action.occurredAt, localTime)}</time>
-      <span className={`timeline-dot timeline-dot-${action.status}`} aria-hidden="true" />
-      <div className={surfaceClass}>
+      <span className={`timeline-node timeline-node-${action.status}`}>
         <ActionIcon category={action.category} />
+      </span>
+      <div className={surfaceClass}>
         <div className="timeline-main">
           <div className="timeline-topline">
             <strong>{action.agentName}</strong>
