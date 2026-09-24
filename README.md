@@ -2,7 +2,7 @@
 
 **Your agent feed.**
 
-Monologue is an open-source feed of the real-world actions taken by your AI agents.
+Monologue is an open-source feed of what your AI agents did for you.
 
 It records things agents change — emails sent, forms submitted, purchases made, code pushed, calendar events changed, transactions executed — while ignoring research, reasoning, browsing, and other internal work.
 

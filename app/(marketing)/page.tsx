@@ -39,7 +39,7 @@ export default function MarketingPage() {
         <div className="hero-copy">
           <span className="kicker">Your agent feed</span>
           <RotatingActionHeadline />
-          <p>One simple feed for the things your agents change.</p>
+          <p>Emails sent, purchases made, code pushed—all in one private feed.</p>
           <div className="hero-actions">
             <Link className="primary-button hero-primary" href={startHref}>{cloud ? "Try it free" : "Open your feed"}<ArrowRight size={17} /></Link>
             <CopySetupButton />
@@ -73,7 +73,7 @@ export default function MarketingPage() {
         <h2>If your agent changed something, it shows up here.</h2>
         <p className="signal-lede">Sent an email? Made a purchase? Pushed code? That goes in. Reading, searching, and planning don&apos;t.</p>
         <div className="signal-grid">
-          <div><h3><Check size={18} />What appears</h3><p>Messages sent, purchases made, calendar events changed, files written, code pushed, and deployments completed.</p></div>
+          <div><h3><Check size={18} />What appears</h3><p>Emails sent, purchases made, calendar events changed, files written, code pushed, and deployments completed.</p></div>
           <div><h3>What stays out</h3><p>Research, browsing, analysis, planning, drafts, recommendations, internal thoughts, and read-only tool calls.</p></div>
         </div>
       </section>

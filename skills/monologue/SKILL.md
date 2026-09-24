@@ -1,8 +1,8 @@
 ---
 name: monologue
-description: Use after meaningful agent-caused external changes or attempts, including messages, social posts, remote repository changes, deployments, purchases, and trades. Applies to interactive agents, delegated/background agents, and agentic scheduled jobs.
+description: Use after meaningful agent-caused external changes or attempts, including emails sent, purchases made, remote repository changes, social posts, deployments, and trades. Monologue shows what your AI agents did for you in one private feed. Applies to interactive agents, delegated/background agents, and agentic scheduled jobs.
 metadata:
-  version: "1.2.7"
+  version: "1.2.8"
 ---
 
 # Monologue
@@ -34,7 +34,7 @@ Setup should happen once. Connect automatically when no key is configured:
 
 1. Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`.
 2. Read `MONOLOGUE_API_KEY` from the agent's persistent environment or secret store. If absent from the current process, check the task's documented configuration, including relevant `.env` / `.env.local` files, before declaring it missing. Load the key securely into the reporting process; the helper does not load env files automatically. Use a safe env-file loader, not shell execution. Preserve the configured key/URL pairing. Do not scan unrelated files or expose secrets.
-3. If no usable credential is configured and a user is available to approve, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.7"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
+3. If no usable credential is configured and a user is available to approve, `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.8"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
 4. Keep the returned `deviceCode` private. Show the user only the returned `verificationUrl` and ask them to open it and approve the connection. Do not show or repeat any API key.
 5. Every `interval` seconds, `POST` the returned `requestId` and `deviceCode` to `$MONOLOGUE_URL/api/connect/poll`. A `202` response means approval is still pending. Stop when the request succeeds, expires, or ten minutes pass.
 6. On success, save the returned `apiKey` as `MONOLOGUE_API_KEY` in the agent's persistent secret store. Never print, display, log, or send it in ordinary chat.

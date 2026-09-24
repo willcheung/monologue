@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
   <title id="title">Monologue — Your agent feed</title>
-  <desc id="desc">One place to see what your AI agents did.</desc>
+  <desc id="desc">See what your AI agents did for you. Emails sent, purchases made, code pushed—all in one private feed.</desc>
 
   <rect width="1200" height="630" fill="#fffaf3"/>
   <circle cx="1090" cy="78" r="190" fill="#ffe3d8" opacity="0.72"/>
@@ -27,8 +27,8 @@
 
   <text x="82" y="132" fill="#ef6848" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="800" letter-spacing="4">YOUR AGENT FEED</text>
   <text x="76" y="258" fill="#20201d" font-family="Georgia, 'Times New Roman', serif" font-size="88" font-weight="700">Monologue</text>
-  <text x="82" y="335" fill="#54534f" font-family="Arial, Helvetica, sans-serif" font-size="37">See what your AI agents did.</text>
+  <text x="82" y="335" fill="#54534f" font-family="Arial, Helvetica, sans-serif" font-size="37">See what your AI agents did for you.</text>
   <line x1="82" y1="440" x2="666" y2="440" stroke="#ded6ca" stroke-width="2"/>
-  <text x="82" y="494" fill="#20201d" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700">Emails sent  ·  Code pushed  ·  Purchases made</text>
+  <text x="82" y="494" fill="#20201d" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700">Emails sent  ·  Purchases made  ·  Code pushed</text>
   <text x="82" y="555" fill="#77736c" font-family="Arial, Helvetica, sans-serif" font-size="23">monologue.events</text>
 </svg>

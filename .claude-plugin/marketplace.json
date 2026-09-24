@@ -1,6 +1,6 @@
 {
   "name": "monologue",
-  "description": "The Monologue skill for seeing what AI agents did on your behalf.",
+  "description": "See what your AI agents did for you. Emails sent, purchases made, code pushed—all in one private feed.",
   "owner": {
     "name": "Monologue"
   },
@@ -10,7 +10,7 @@
       "source": "./skills/monologue",
       "strict": false,
       "skills": ["./"],
-      "description": "See the meaningful actions your AI agents took on your behalf."
+      "description": "See what your AI agents did for you. Emails sent, purchases made, code pushed—all in one private feed."
     }
   ]
 }
