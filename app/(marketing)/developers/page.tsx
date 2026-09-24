@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CopySetupButton } from "@/components/copy-setup-button";
 import { Header } from "@/components/header";
+import { SETUP_PROMPT } from "@/lib/setup-prompt";
 
 export const metadata: Metadata = {
   title: "Developer docs — Monologue",
@@ -36,13 +38,14 @@ export default function DevelopersPage() {
 
       <section className="dev-docs-setup">
         <h2>Connect first</h2>
-        <p>The easiest path is to tell your agent: <Link href="/agent-setup">Read and execute https://www.monologue.events/agent-setup</Link>. It will give you a link to approve; no key copying needed. For a custom integration, create an <Link href="/keys">API key</Link> and keep it secret.</p>
-        <p>Use <code>https://www.monologue.events</code> as the base URL, or your own URL if self-hosting. Send your key as <code>Authorization: Bearer &lt;key&gt;</code>. Automatically connected agent keys can send actions but cannot read the feed.</p>
+        <p className="dev-docs-prompt"><code>{SETUP_PROMPT}</code></p>
+        <CopySetupButton />
       </section>
 
       <section className="dev-docs-endpoint">
+        <p className="dev-docs-agent-tip">Building a custom integration? Paste this into your agent: <code>Read https://www.monologue.events/developers and use the API examples to report actions.</code></p>
         <div className="dev-docs-endpoint-heading"><span>POST</span><h2>/api/actions</h2></div>
-        <p>Report a real external action after checking its outcome. Don&apos;t report research, drafts, or local development work.</p>
+        <p>Use <code>https://www.monologue.events/api/actions</code> (or your self-hosted URL) with <code>Authorization: Bearer &lt;key&gt;</code>. Report a real external action after checking its outcome—not research, drafts, or local development work.</p>
         <pre><code>{postExample}</code></pre>
         <p>Required: <code>agentName</code>, <code>verb</code>, <code>summary</code>, <code>category</code>, <code>status</code>, <code>system</code>. Add <code>url</code> as a link to the result, <code>externalId</code> for safe retries, and <code>metadata</code> for extra details. The API returns <code>201</code> and an event <code>id</code>; a repeat <code>externalId</code> returns <code>200</code> with <code>duplicate: true</code>.</p>
         <p>Status is <code>completed</code>, <code>pending</code>, or <code>failed</code>. Categories include <code>communication</code>, <code>calendar</code>, <code>purchase</code>, <code>finance</code>, <code>code</code>, <code>deployment</code>, and <code>other</code>; see the full list in the README. Invalid input returns <code>400</code>; a missing or invalid key returns <code>401</code>.</p>
