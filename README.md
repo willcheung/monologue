@@ -81,11 +81,22 @@ Read and execute https://www.monologue.events/agent-setup
 
 The agent starts a short-lived connection request and gives you a secure Monologue link. Sign in and approve it. Monologue creates a stable Agent record and a dedicated write-only API key behind the scenes, then returns the key directly to the agent, so there is nothing to copy or paste. The agent must support persistent secret storage. API keys with read and write access remain available at `https://www.monologue.events/keys` for custom connectors and agents that cannot store a key automatically.
 
-The portable skill is also in [`skills/monologue`](skills/monologue). Agents compatible with the common Skills CLI can install it with:
+The portable skill is also in [`skills/monologue`](skills/monologue). Install it through the channel your agent supports:
+
+**Skills CLI** (Codex, Cursor, and other compatible agents):
 
 ```bash
-npx skills add https://github.com/willcheung/monologue --skill monologue
+npx skills add willcheung/monologue --skill monologue
 ```
+
+**Claude Code plugin:**
+
+```bash
+claude plugin marketplace add willcheung/monologue
+claude plugin install monologue@monologue
+```
+
+**OpenClaw:** install the `monologue` skill from ClawHub when its listing is live, or use the one-line setup instruction above.
 
 For manual installation, copy the whole `skills/monologue` directory into your agent's skills directory. Copying only `skills/monologue/SKILL.md` also works when the agent will POST directly rather than use the helper. In local single-user mode, give the agent `MONOLOGUE_URL` and `MONOLOGUE_API_KEY` in its environment.
 

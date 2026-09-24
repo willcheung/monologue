@@ -1,0 +1,16 @@
+{
+  "name": "monologue",
+  "description": "The Monologue skill for seeing what AI agents did on your behalf.",
+  "owner": {
+    "name": "Monologue"
+  },
+  "plugins": [
+    {
+      "name": "monologue",
+      "source": "./skills/monologue",
+      "strict": false,
+      "skills": ["./"],
+      "description": "See the meaningful actions your AI agents took on your behalf."
+    }
+  ]
+}
