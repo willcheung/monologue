@@ -84,7 +84,6 @@ footer { border-top:1px solid var(--line); width:min(1060px,calc(100% - 40px)); 
   .product-header .brand { min-height:60px; align-self:flex-start; }
   .product-header .header-nav { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); align-items:stretch; gap:4px; width:100%; padding:0 0 8px; font-size:13px; }
   .product-header .header-nav>a { display:flex!important; align-items:center; justify-content:center; min-height:40px; text-align:center; white-space:nowrap; }
-  .product-header .header-nav .nav-add-agent { border-radius:9px; background:var(--ink); color:#fff; }
   .product-header .sign-out-button { position:absolute; top:20px; right:0; }
   .crew-shell,.agent-profile-shell { width:calc(100% - 28px); padding:46px 0 75px; }
   .crew-title-row { align-items:flex-start; flex-direction:column; }.crew-title-row h1 { font-size:48px; letter-spacing:-1.8px; }.crew-title-row p { font-size:15px; }.crew-add { width:100%; }.crew-totals { gap:16px; flex-wrap:wrap; }.agent-grid { grid-template-columns:1fr; }.agent-card>p { min-height:0; }
