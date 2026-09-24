@@ -33,7 +33,7 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
   return <>
     <Header product signedIn={Boolean(context.user)} />
     <main className="page-shell">
-      <section className="intro"><span className="kicker">What changed?</span><h1>The things your agents<br /><em>did.</em></h1><p>A clear record of what changed while you were away.</p></section>
+      <section className="intro"><span className="kicker">What changed?</span><h1>The things your <span className="intro-ending">agents <em>did.</em></span></h1><p>A running record of what they changed on your behalf.</p></section>
       <Filters params={params} options={{ agents: agents.map((x) => x.agentName), systems: systems.map((x) => x.system) }} />
       <div className="feed-summary"><span>{actions.length} {actions.length === 1 ? "action" : "actions"}</span><span className="live-dot">Live feed</span></div>
       <FeedTimeline actions={actions} queryString={queryString} />
