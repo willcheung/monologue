@@ -20,7 +20,8 @@ export function Header({ product = false, signedIn = false }: { product?: boolea
             <Link className="nav-add-agent" href={cloud ? "/settings/keys" : "/welcome"}>Add agent</Link>
             {signedIn && <SignOutButton />}
           </> : <>
-            <Link href="/#how-it-works">How it works</Link>
+            <Link className="nav-marketing-link" href="/#features">Features</Link>
+            <Link className="nav-marketing-link" href="/#how-it-works">How it works</Link>
             <a href="https://github.com/willcheung/monologue">GitHub</a>
             <Link className="nav-cta" href={cloud ? "/sign-in" : "/feed"}>{cloud ? "Try free" : "Open feed"}</Link>
           </>}

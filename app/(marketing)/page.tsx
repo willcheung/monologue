@@ -68,7 +68,7 @@ export default function MarketingPage() {
           </div>
         </div>
       </section>
-      <section className="signal-section" id="how-it-works">
+      <section className="signal-section">
         <span className="kicker">One simple rule</span>
         <h2>If your agent changed something, it shows up here.</h2>
         <p className="signal-lede">Sent an email? Made a purchase? Pushed code? That goes in. Reading, searching, and planning don&apos;t.</p>
@@ -77,7 +77,7 @@ export default function MarketingPage() {
           <div><h3>What stays out</h3><p>Research, browsing, analysis, planning, drafts, recommendations, internal thoughts, and read-only tool calls.</p></div>
         </div>
       </section>
-      <section className="feature-section" aria-label="Agent profiles">
+      <section className="feature-section" id="features" aria-label="Agent profiles">
         <div className="feature-copy">
           <span className="kicker">Your AI crew</span>
           <h2>Know who did what.</h2>
@@ -110,9 +110,9 @@ export default function MarketingPage() {
       </section>
       <section className="why-section">
         <span className="kicker">Why we made it</span>
-        <div><h2>A human record for an automated world.</h2><p>We built Monologue so we could see what our agents did without digging through every app. The handwritten, slightly retro look comes from an old habit worth keeping: write things down so you can go back and check.</p></div>
+        <div><h2>A human record for an automated world.</h2><p>We built Monologue so we could see what our agents did without digging through every chat window. The handwritten, slightly retro look comes from an old habit worth keeping: write things down so you can go back and check.</p></div>
       </section>
-      <section className="steps-section">
+      <section className="steps-section" id="how-it-works">
         <span className="kicker">Up and running quickly</span>
         <h2>Connect any agent in three steps.</h2>
         <ol><li><span>1</span><div><strong>Give your agent one prompt</strong><p>It installs Monologue and gives you a secure connection link.</p></div></li><li><span>2</span><div><strong>Approve the connection</strong><p>Sign in once. There are no keys to copy or paste.</p></div></li><li><span>3</span><div><strong>See what changes</strong><p>Consequential actions appear in one readable timeline.</p></div></li></ol>

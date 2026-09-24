@@ -7,6 +7,7 @@ import { agentColor } from "@/lib/agent-colors";
 import { BrandMark } from "./brand-mark";
 
 type Count = { name: string; count: number; emoji?: string };
+const MONOLOGUE_URL = "https://www.monologue.events";
 
 export type ShareCardData =
   | {
@@ -232,8 +233,8 @@ function renderPng(data: ShareCardData) {
 }
 
 function shareText(data: ShareCardData) {
-  if (data.kind === "recap") return `My AI crew completed ${data.totalChanges} actions from ${data.periodLabel}. ${data.activeAgents} agents were active, led by ${data.topAgent}. Made with Monologue.`;
-  return `${data.agentName} has completed ${data.totalActions} recorded actions since ${data.activeSince}. Made with Monologue.`;
+  if (data.kind === "recap") return `My AI crew completed ${data.totalChanges} actions from ${data.periodLabel}. ${data.activeAgents} agents were active, led by ${data.topAgent}. Made with Monologue. ${MONOLOGUE_URL}`;
+  return `${data.agentName} has completed ${data.totalActions} recorded actions since ${data.activeSince}. Made with Monologue. ${MONOLOGUE_URL}`;
 }
 
 export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData; label?: string }) {
@@ -269,7 +270,7 @@ export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData
       const blob = renderPng(data);
       const file = new File([blob], fileName, { type:"image/png" });
       if (navigator.share && navigator.canShare?.({ files:[file] })) {
-        await navigator.share({ files:[file], title:"Monologue" });
+        await navigator.share({ files:[file], title:"Monologue", text:shareText(data) });
         setNotice("Shared");
       } else {
         saveBlob(blob);
@@ -312,7 +313,7 @@ export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData
           </> : <>
             <small>{data.platform}</small><h3>{data.agentName}</h3><strong>{data.totalActions}</strong><p>recorded actions</p><div className="share-profile-systems">{data.systems.slice(0, 3).map((system) => <span key={system}>{system}</span>)}</div><div className="share-preview-detail">Active since {data.activeSince}{data.commonActions.length ? ` · Often ${data.commonActions.map((action) => action.name).join(", ")}` : ""}</div>
           </>}
-          <em>monologue.events · Snapshot {data.snapshotLabel}</em>
+          <div className="share-preview-footer"><a href={MONOLOGUE_URL} target="_blank" rel="noreferrer">monologue.events</a><span> · Snapshot {data.snapshotLabel}</span></div>
         </div>
         <div className="share-actions"><button type="button" disabled={busy} onClick={share}><Share2 size={16} />Share image</button><button type="button" disabled={busy} onClick={download}><Download size={16} />Save image</button><button type="button" disabled={busy} onClick={copy}><Copy size={16} />Copy text</button></div>
         {notice && <div className="share-notice"><Check size={14} />{notice}</div>}
