@@ -12,7 +12,7 @@ export type KeyRecord = {
   revokedAt: string | null;
 };
 
-const AGENT_SETUP_URL = "https://www.monologue.events/agent-setup/SKILL.md";
+const AGENT_SETUP_URL = "https://www.monologue.events/agent-setup";
 const INSTALL_PROMPT = `Read and execute ${AGENT_SETUP_URL}`;
 
 export function ApiKeyManager({ initialKeys = [] }: { initialKeys?: KeyRecord[] }) {

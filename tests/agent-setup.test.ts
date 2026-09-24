@@ -1,12 +1,13 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { GET } from "@/app/agent-setup/SKILL.md/route";
+import { GET as getHtml } from "@/app/agent-setup/route";
+import { GET as getMarkdown } from "@/app/agent-setup/SKILL.md/route";
 
 describe("hosted agent setup", () => {
   it("serves the canonical portable skill as markdown", async () => {
     const canonical = await readFile(path.join(process.cwd(), "skills", "monologue", "SKILL.md"), "utf8");
-    const response = await GET();
+    const response = await getMarkdown();
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("text/markdown");
@@ -25,5 +26,18 @@ describe("hosted agent setup", () => {
     expect(canonical).toContain("awaiting marketplace review, payment settlement");
     expect(canonical).toContain("cannot read the shared feed");
     expect(canonical).not.toContain("required_environment_variables");
+  });
+
+  it("serves the complete skill in an HTML page for web readers", async () => {
+    const response = await getHtml();
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
+    expect(html).toContain("<title>Monologue agent setup</title>");
+    expect(html).toContain('href="/agent-setup/SKILL.md"');
+    expect(html).toContain("Mandatory completion check");
+    expect(html).toContain("&lt;this agent&#39;s name&gt;");
+    expect(html).not.toContain("<this agent's name>");
   });
 });

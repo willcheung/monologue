@@ -3,7 +3,7 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
-const SETUP_PROMPT = "Read and execute https://www.monologue.events/agent-setup/SKILL.md";
+const SETUP_PROMPT = "Read and execute https://www.monologue.events/agent-setup";
 
 export function CopySetupButton() {
   const [copied, setCopied] = useState(false);

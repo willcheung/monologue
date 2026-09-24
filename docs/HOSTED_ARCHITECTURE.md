@@ -17,7 +17,7 @@ Implemented in the application:
 - write-only automatic agent keys with backward-compatible legacy keys
 - local SQLite and hosted libSQL/Turso database connections
 - production deployment at `https://www.monologue.events`
-- public agent bootstrap skill at `/agent-setup/SKILL.md`
+- public agent setup page at `/agent-setup` and raw skill at `/agent-setup/SKILL.md`
 - production Turso schema, Google sign-in, and end-to-end hosted ingestion
 - server-owned self-reported provenance for agent-key ingestion
 - stable Action-to-Agent relationships with historical backfill
