@@ -156,6 +156,8 @@ See [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md) for repository 
 
 ## API
 
+For the shortest path from setup to a working request, see the [developer docs](https://www.monologue.events/developers).
+
 Both routes require `Authorization: Bearer <MONOLOGUE_API_KEY>`.
 
 - `POST /api/actions` validates and creates an action. Required fields: `agentName`, `verb`, `summary`, `category`, `status`, and `system`.

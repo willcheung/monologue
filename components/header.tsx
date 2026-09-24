@@ -6,7 +6,7 @@ import { SignOutButton } from "./sign-out-button";
 export function Header({ product = false, signedIn = false }: { product?: boolean; signedIn?: boolean }) {
   const cloud = isCloudMode();
   return (
-    <header className="site-header">
+    <header className={`site-header${product ? " product-header" : ""}`}>
       <div className="header-inner">
         <Link href={product ? "/feed" : "/"} className="brand" aria-label="Monologue home">
           <BrandMark />
