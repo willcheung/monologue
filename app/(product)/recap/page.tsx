@@ -36,7 +36,7 @@ export default async function RecapPage() {
     <Header product signedIn={Boolean(context.user)} />
     <main className="recap-shell">
       <section className="recap-intro">
-        <div><span className="kicker">{ledger.periodLabel}</span><h1>Your weekly ledger.</h1><p>A simple record of what your agents changed over the last seven days.</p></div>
+        <div><span className="kicker">{ledger.periodLabel}</span><h1>Your 7-day recap.</h1><p>A simple record of what your agents changed over the last seven days.</p></div>
         <StaticShareCard data={shareData} label="Share recap" />
       </section>
 

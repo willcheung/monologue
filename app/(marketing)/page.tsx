@@ -1,14 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
+import { ActionIcon } from "@/components/action-icon";
 import { CopySetupButton } from "@/components/copy-setup-button";
 import { Header } from "@/components/header";
 import { RotatingActionHeadline } from "@/components/rotating-action-headline";
 import { isCloudMode } from "@/lib/runtime";
 
 const examples = [
-  { emoji: "💬", agent: "Muse · Maya", category: "Communication", summary: "Sent Sarah a follow-up email confirming Friday's interview.", meta: "Gmail · 1:17 PM" },
-  { emoji: "💻", agent: "Codex", category: "Code", summary: "Pushed the responsive Monologue feed implementation.", meta: "GitHub · 2:43 PM" },
-  { emoji: "💰", agent: "Hermes · Scout", category: "Finance", summary: "Created the September software subscription charge.", meta: "Stripe · $24.00" },
+  { time: "2:43 PM", agent: "Codex", category: "code", label: "Code", verb: "Pushed", detail: "the responsive Monologue feed implementation.", system: "GitHub", context: "Monologue" },
+  { time: "1:17 PM", agent: "Muse · Maya", category: "communication", label: "Communication", verb: "Sent", detail: "Sarah a follow-up email confirming Friday's interview.", system: "Gmail", context: "Job Search" },
+  { time: "11:04 AM", agent: "Claude · Cal", category: "calendar", label: "Calendar", verb: "Rescheduled", detail: "the dentist appointment.", system: "Google Calendar", before: "Tuesday · 3:00 PM", after: "Thursday · 11:00 AM" },
 ];
 
 export default function MarketingPage() {
@@ -29,11 +30,25 @@ export default function MarketingPage() {
           <small className="hero-note">Works with Muse, Codex, Claude, Hermes, OpenClaw, and your own agents.</small>
         </div>
         <div className="feed-preview" aria-label="Example agent feed">
-          <div className="preview-heading"><strong>Today</strong><span>3 changes</span></div>
-          {examples.map((item) => <div className="preview-card" key={item.summary}>
-            <span className="preview-emoji" role="img" aria-label={item.category}>{item.emoji}</span>
-            <div><div className="preview-top"><strong>{item.agent}</strong><span>{item.category}</span></div><p>{item.summary}</p><small>{item.meta}</small></div>
-          </div>)}
+          <div className="preview-heading"><strong>Latest changes</strong><span>3 actions</span></div>
+          <div className="preview-day-group">
+            <div className="preview-calendar-day" aria-label="September 22, yesterday"><span>SEP</span><strong>22</strong><small>YESTERDAY</small></div>
+            <div className="preview-action-list">
+              {examples.map((item) => <article className="preview-timeline-event" key={`${item.agent}-${item.verb}`}>
+                <time className="preview-timeline-time">{item.time}</time>
+                <span className="preview-timeline-node"><ActionIcon category={item.category} /></span>
+                <div className={`preview-timeline-surface${item.before ? " has-change" : ""}`}>
+                  <div className="timeline-main">
+                    <div className="timeline-topline"><strong>{item.agent}</strong><span className="category-label">{item.label}</span></div>
+                    <p><strong>{item.verb}</strong> {item.detail}</p>
+                    {item.before && <div className="inline-action-change"><del>{item.before}</del><i>→</i><b>{item.after}</b></div>}
+                    <div className="timeline-meta"><span>{item.system}</span>{item.context && <><i>·</i><span>{item.context}</span></>}</div>
+                  </div>
+                  <ArrowUpRight className="timeline-arrow" size={17} aria-hidden="true" />
+                </div>
+              </article>)}
+            </div>
+          </div>
         </div>
       </section>
       <section className="signal-section" id="how-it-works">

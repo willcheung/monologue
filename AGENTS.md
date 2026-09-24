@@ -11,6 +11,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # Monologue repository rules
 
 Read [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md) before changing routes, authentication, persistence, tenancy, deployment configuration, or repository structure.
+Read [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) before changing product copy, page layout, components, typography, color, or interaction design.
 
 - This repository is the source of truth for the public website, hosted product, ingestion API, database schema, and portable Monologue skill. Do not create a second implementation or a cloud-only fork.
 - Keep product routes in `app/`, reusable UI in `components/`, domain and server logic in `lib/`, database models and migrations in `prisma/`, the agent integration in `skills/monologue/`, and automated checks in `tests/`.

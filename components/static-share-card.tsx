@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Check, Copy, Download, Share2, X } from "lucide-react";
 import rough from "roughjs";
 import { agentColor } from "@/lib/agent-colors";
+import { BrandMark } from "./brand-mark";
 
 type Count = { name: string; count: number; emoji?: string };
 
@@ -48,16 +49,59 @@ function roundRect(context: CanvasRenderingContext2D, x: number, y: number, widt
   context.closePath();
 }
 
-function drawBrand(context: CanvasRenderingContext2D) {
-  context.fillStyle = "#ff6b45";
-  context.beginPath();
-  context.arc(78, 72, 28, 0, Math.PI * 2);
+function drawLogoMark(context: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  context.save();
+  context.translate(x, y);
+  context.scale(size / 1024, size / 1024);
+  context.fillStyle = "#20201d";
+  roundRect(context, 78, 84, 896, 896, 238);
   context.fill();
-  context.fillStyle = "#fffaf4";
-  context.font = "italic 700 32px Georgia";
-  context.textAlign = "center";
-  context.fillText("m", 78, 83);
-  context.textAlign = "left";
+  context.fillStyle = "#ff6b45";
+  roundRect(context, 54, 46, 896, 896, 238);
+  context.fill();
+
+  context.strokeStyle = "#fffaf3";
+  context.lineWidth = 68;
+  context.lineCap = "round";
+  context.beginPath();
+  context.moveTo(550, 297);
+  context.bezierCurveTo(695, 297, 644, 494, 772, 494);
+  context.moveTo(622, 494);
+  context.lineTo(772, 494);
+  context.moveTo(550, 691);
+  context.bezierCurveTo(695, 691, 644, 494, 772, 494);
+  context.stroke();
+
+  const rows = [
+    { y:210, width:440, lineWidth:182 },
+    { y:407, width:512, lineWidth:254 },
+    { y:604, width:440, lineWidth:182 },
+  ];
+  rows.forEach((row) => {
+    context.fillStyle = "#fffaf3";
+    roundRect(context, 146, row.y, row.width, 174, 87);
+    context.fill();
+    context.fillStyle = "#20201d";
+    context.beginPath();
+    context.arc(236, row.y + 87, 43, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#ff6b45";
+    roundRect(context, 316, row.y + 61, row.lineWidth, 52, 26);
+    context.fill();
+  });
+  context.fillStyle = "#fffaf3";
+  context.beginPath();
+  context.arc(790, 494, 91, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "#20201d";
+  context.beginPath();
+  context.arc(790, 494, 46, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function drawBrand(context: CanvasRenderingContext2D) {
+  drawLogoMark(context, 47, 42, 60);
   context.fillStyle = "#20201d";
   context.font = "700 27px Gaegu, Marker Felt, cursive";
   context.fillText("Monologue", 120, 69);
@@ -197,7 +241,7 @@ export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const actionLock = useRef(false);
-  const fileName = data.kind === "recap" ? "monologue-weekly-ledger.png" : `monologue-${data.agentName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
+  const fileName = data.kind === "recap" ? "monologue-7-day-recap.png" : `monologue-${data.agentName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
 
   function saveBlob(blob: Blob) {
     const url = URL.createObjectURL(blob);
@@ -259,7 +303,7 @@ export function StaticShareCard({ data, label = "Share" }: { data: ShareCardData
       <section className="share-dialog">
         <div className="share-dialog-heading"><div><span className="kicker">Static snapshot</span><h2>Share without sharing access.</h2><p>This card is an image. It cannot update or reveal future activity.</p></div><button type="button" aria-label="Close" onClick={() => setOpen(false)}><X size={20} /></button></div>
         <div className={`share-preview share-preview-${data.kind}`}>
-          <div className="share-preview-brand"><span>m</span><b>Monologue</b></div>
+          <div className="share-preview-brand"><BrandMark className="share-card-mark" /><b>Monologue</b></div>
           {data.kind === "recap" ? <>
             <small>{data.periodLabel}</small><h3>My AI crew this week</h3><strong>{data.totalChanges}</strong><p>actions completed</p>
             <div className="share-mini-bars">{data.days.map((day) => { const max = Math.max(1, ...data.days.map((item) => item.count)); return <span key={day.weekday}><i className="share-stacked-bar">{day.count === 0 ? <u className="empty-segment" /> : day.agents.map((agent) => { const agentIndex = data.agents.findIndex((item) => item.name === agent.name); const color = agentColor(agentIndex); return <u key={agent.name} style={{ height:`${agent.count / max * 100}%`, background:hatchedBackground(color), borderColor:color }} />; })}</i><b>{day.weekday}</b></span>; })}</div>
