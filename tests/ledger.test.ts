@@ -40,4 +40,14 @@ describe("weekly agent ledger", () => {
     expect(ledger.topSystem).toEqual({ name:"GitHub", count:2 });
     expect(ledger.categories).toEqual([{ name:"code", count:2 }]);
   });
+
+  it("uses the viewer's calendar date near UTC midnight", () => {
+    const ledger = buildWeeklyLedger([
+      action("2026-09-24T00:30:00Z"),
+    ], new Date("2026-09-24T01:00:00Z"), "America/Los_Angeles");
+
+    expect(ledger.periodLabel).toBe("Sep 17–Sep 23");
+    expect(ledger.snapshotLabel).toBe("Sep 23");
+    expect(ledger.days[6]).toMatchObject({ key:"2026-09-23", count:1 });
+  });
 });

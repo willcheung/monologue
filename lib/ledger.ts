@@ -26,12 +26,24 @@ export type WeeklyLedger = {
 
 const DAY = 24 * 60 * 60 * 1000;
 
-function utcDay(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+function dayKey(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    year:"numeric",
+    month:"2-digit",
+    day:"2-digit",
+    timeZone,
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
-function key(date: Date) {
-  return date.toISOString().slice(0, 10);
+function shiftDayKey(value: string, days: number) {
+  const date = new Date(`${value}T12:00:00Z`);
+  return new Date(date.getTime() + days * DAY).toISOString().slice(0, 10);
+}
+
+function keyDate(value: string) {
+  return new Date(`${value}T12:00:00Z`);
 }
 
 function ranked(values: string[]) {
@@ -52,14 +64,19 @@ function rankedAgents(actions: LedgerAction[]) {
   return Array.from(counts.values()).sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
 }
 
-export function buildWeeklyLedger(actions: LedgerAction[], now = new Date()): WeeklyLedger {
-  const end = utcDay(now);
-  const start = new Date(end.getTime() - 6 * DAY);
-  const afterEnd = new Date(end.getTime() + DAY);
-  const inRange = actions.filter((action) => action.occurredAt >= start && action.occurredAt < afterEnd);
+export function buildWeeklyLedger(actions: LedgerAction[], now = new Date(), timeZone = "UTC"): WeeklyLedger {
+  const endKey = dayKey(now, timeZone);
+  const startKey = shiftDayKey(endKey, -6);
+  const inRange = actions.filter((action) => {
+    const actionKey = dayKey(action.occurredAt, timeZone);
+    return actionKey >= startKey && actionKey <= endKey;
+  });
   const completed = inRange.filter((action) => action.status === "completed");
   const dayCounts = new Map<string, number>();
-  for (const action of completed) dayCounts.set(key(action.occurredAt), (dayCounts.get(key(action.occurredAt)) ?? 0) + 1);
+  for (const action of completed) {
+    const actionKey = dayKey(action.occurredAt, timeZone);
+    dayCounts.set(actionKey, (dayCounts.get(actionKey) ?? 0) + 1);
+  }
 
   const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" });
   const dateLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
@@ -67,20 +84,21 @@ export function buildWeeklyLedger(actions: LedgerAction[], now = new Date()): We
   const topAgents = rankedAgents(completed);
   const topSystems = ranked(completed.map((action) => action.system));
   const days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(start.getTime() + index * DAY);
+    const currentKey = shiftDayKey(startKey, index);
+    const date = keyDate(currentKey);
     return {
-      key:key(date),
+      key:currentKey,
       weekday:weekday.format(date),
       dateLabel:dateLabel.format(date),
-      count:dayCounts.get(key(date)) ?? 0,
-      agents:rankedAgents(completed.filter((action) => key(action.occurredAt) === key(date))),
+      count:dayCounts.get(currentKey) ?? 0,
+      agents:rankedAgents(completed.filter((action) => dayKey(action.occurredAt, timeZone) === currentKey)),
     };
   });
   const busiest = [...days].sort((left, right) => right.count - left.count)[0];
 
   return {
-    periodLabel: `${periodDate.format(start)}–${periodDate.format(end)}`,
-    snapshotLabel: periodDate.format(now),
+    periodLabel: `${periodDate.format(keyDate(startKey))}–${periodDate.format(keyDate(endKey))}`,
+    snapshotLabel: periodDate.format(keyDate(endKey)),
     totalChanges: completed.length,
     failedAttempts: inRange.filter((action) => action.status === "failed").length,
     activeAgents: topAgents.length,

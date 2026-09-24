@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AlertTriangle, Bot, Boxes, CalendarDays } from "lucide-react";
 import { AgentAvatar } from "@/components/agent-avatar";
@@ -15,8 +16,15 @@ export const dynamic = "force-dynamic";
 export default async function RecapPage() {
   const context = await getWorkspaceContext();
   if (!context) redirect("/sign-in?next=%2Frecap");
+  const requestHeaders = await headers();
+  const requestedTimeZone = requestHeaders.get("x-vercel-ip-timezone") || "UTC";
+  let timeZone = "UTC";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone:requestedTimeZone }).format();
+    timeZone = requestedTimeZone;
+  } catch {}
   const [ledger, agents] = await Promise.all([
-    getWeeklyLedger(context.workspace.id),
+    getWeeklyLedger(context.workspace.id, new Date(), timeZone),
     listAgentSummaries(context.workspace.id),
   ]);
   const weeklyActionsByAgent = new Map(ledger.agents.filter((agent) => agent.id).map((agent) => [agent.id, agent.count]));
