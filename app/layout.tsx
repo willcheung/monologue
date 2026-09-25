@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
+
+const gaegu = localFont({
+  src: [
+    { path: "../public/fonts/gaegu-latin-regular.woff2", weight: "400" },
+    { path: "../public/fonts/gaegu-latin-bold.woff2", weight: "700" },
+  ],
+  display: "swap",
+  variable: "--font-gaegu",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.monologue.events"),
@@ -22,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={gaegu.variable}>
       <body>{children}<SiteFooter /></body>
     </html>
   );

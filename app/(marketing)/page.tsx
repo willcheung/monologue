@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ArrowUpRight, Check, Share2 } from "lucide-react";
 import { ActionIcon } from "@/components/action-icon";
 import { AgentAvatar } from "@/components/agent-avatar";
@@ -44,7 +45,6 @@ export default function MarketingPage() {
             <Link className="primary-button hero-primary" href={startHref}>{cloud ? "Try it free" : "Open your feed"}<ArrowRight size={17} /></Link>
             <CopySetupButton />
           </div>
-          <small className="hero-note">Works with Muse, Codex, Claude, Hermes, OpenClaw, and your own agents.</small>
         </div>
         <div className="feed-preview" aria-label="Example agent feed">
           <div className="preview-heading"><strong>Latest changes</strong><span>3 actions</span></div>
@@ -108,15 +108,19 @@ export default function MarketingPage() {
           </div>
         </div>
       </section>
-      <section className="why-section">
-        <span className="kicker">Why we made it</span>
-        <div><h2>A human record for an automated world.</h2><p>We built Monologue so we could see what our agents did without digging through every chat window. The handwritten, slightly retro look comes from an old habit worth keeping: write things down so you can go back and check.</p></div>
-      </section>
       <section className="steps-section" id="how-it-works">
         <span className="kicker">Up and running quickly</span>
         <h2>Connect any agent in three steps.</h2>
         <ol><li><span>1</span><div><strong>Give your agent one prompt</strong><p>It installs Monologue and gives you a secure connection link.</p></div></li><li><span>2</span><div><strong>Approve the connection</strong><p>Sign in once. There are no keys to copy or paste.</p></div></li><li><span>3</span><div><strong>See what changes</strong><p>Consequential actions appear in one readable timeline.</p></div></li></ol>
+        <div className="steps-illustration">
+          <Image className="steps-illustration-desktop" src="/illustrations/agent-cards-desktop.png" width={2172} height={724} sizes="(max-width: 820px) 100vw, 780px" alt="Monologue connects Muse, Codex, Claude, Hermes, and OpenClaw in one feed." />
+          <Image className="steps-illustration-mobile" src="/illustrations/agent-cards-mobile.png" width={1024} height={1536} sizes="(max-width: 700px) 100vw, 1px" alt="Monologue connects Muse, Codex, Claude, Hermes, and OpenClaw in one feed." />
+        </div>
         <Link className="primary-button" href={startHref}>{cloud ? "Start your feed" : "Try the local feed"}<ArrowRight size={17} /></Link>
+      </section>
+      <section className="why-section">
+        <span className="kicker">Why we made it</span>
+        <div><h2>A human record for an automated world.</h2><p>We built Monologue so we could see what our agents did without digging through every chat window. The handwritten, slightly retro look comes from an old habit worth keeping: write things down so you can go back and check.</p></div>
       </section>
     </main>
   </>;
