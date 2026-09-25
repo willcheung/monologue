@@ -63,6 +63,12 @@ export function ApiKeyManager({ initialKeys = [] }: { initialKeys?: KeyRecord[] 
   }
 
   return <div className="key-manager">
+    <div className="install-config">
+      <span>Connect an agent</span>
+      <pre>{INSTALL_PROMPT}</pre>
+      <p>This is the easier option. The prompt is public and safe to paste; your agent will give you a private approval link and connect without showing a key.</p>
+      <button type="button" onClick={() => copy(INSTALL_PROMPT, "install")}>{copied === "install" ? "Copied setup prompt" : "Copy setup prompt"}</button>
+    </div>
     <h2>API keys</h2>
     <p>For custom connectors or agents that can&apos;t connect automatically. Each new key is shown once.</p>
     <form className="key-form" onSubmit={createKey}>
@@ -80,12 +86,6 @@ export function ApiKeyManager({ initialKeys = [] }: { initialKeys?: KeyRecord[] 
         <button className="quiet-button" type="button" onClick={() => setNewKey(null)}>I&apos;ve saved it</button>
       </div>
     </div>}
-    <div className="install-config">
-      <span>Install the skill</span>
-      <pre>{INSTALL_PROMPT}</pre>
-      <p>This is the easier option. The prompt is public and safe to paste; your agent will give you a private approval link and connect without showing a key.</p>
-      <button type="button" onClick={() => copy(INSTALL_PROMPT, "install")}>{copied === "install" ? "Copied install prompt" : "Copy install prompt"}</button>
-    </div>
     {keys.length > 0 && <div className="key-list">{keys.map((key) => <div className="key-row" key={key.id}>
       <div><strong>{key.name}</strong><span>{key.prefix}•••• · {key.scopes.includes("actions:read") ? "Read and add actions" : "Add actions only"} · {key.revokedAt ? "Revoked" : key.lastUsedAt ? "Used recently" : "Never used"}</span></div>
       {!key.revokedAt && <button type="button" disabled={busy} onClick={() => revokeKey(key.id)}>Revoke</button>}

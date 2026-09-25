@@ -69,13 +69,13 @@ Route groups organize code without appearing in public URLs. The intended routes
 /privacy             hosted-service privacy policy
 /terms               hosted-service terms of service
 /sign-in             create an account or return to Monologue
-/welcome             first-run agent setup
+/welcome             optional agent setup guide
 /connect             approve a short-lived agent connection
 /feed                authenticated action feed
 /agents              authenticated AI Crew
 /agents/[agentId]    authenticated private agent profile and track record
 /recap               authenticated private seven-day agent ledger
-/settings/keys       create, name, rotate, and revoke agent keys
+/settings/keys       add agents and manage agent keys
 /api/auth/*           browser authentication
 /api/actions          agent ingestion and authenticated action reads
 /api/connect/*        request, approve, and claim an automatic agent connection
@@ -122,7 +122,7 @@ The authorization flow is:
 1. The user selects **Continue with Google** on `/sign-in`.
 2. Better Auth starts the provider flow and validates its state.
 3. Google returns to `/api/auth/callback/google`.
-4. A new user is sent to `/welcome`; a returning user is sent to `/feed`.
+4. A new user is sent to `/settings/keys`, unless they arrived through an agent approval link; a returning user is sent to `/feed` or their requested page.
 5. On first use, Monologue creates one personal workspace owned by that user.
 
 Request only the identity scopes needed to sign in:
@@ -177,7 +177,7 @@ Security invariants:
 1. A visitor clicks **Start your agent feed**.
 2. They continue with Google.
 3. Monologue creates their personal workspace.
-4. `/welcome` provides the public skill installation prompt.
+4. `/settings/keys` presents the no-key setup prompt before manual API-key options.
 5. The agent creates a short-lived connection request and gives the user an approval link.
 6. The signed-in user approves the named agent. The browser never receives or displays its API key.
 7. Monologue creates a stable Agent identity and a write-only key. The agent claims that key once and stores it in its own secure secret store.

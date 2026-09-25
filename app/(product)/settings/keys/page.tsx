@@ -17,5 +17,6 @@ export default async function AgentKeysPage() {
     orderBy: { createdAt: "desc" },
   });
   const initialKeys = keys.map((key) => ({ ...key, createdAt: key.createdAt.toISOString(), lastUsedAt: key.lastUsedAt?.toISOString() ?? null, revokedAt: key.revokedAt?.toISOString() ?? null }));
-  return <><Header product signedIn /><main className="settings-shell"><span className="kicker">Settings</span><h1>Connected agents.</h1><p className="setup-lede">See which agents can add actions to your feed and revoke access anytime.</p><ApiKeyManager initialKeys={initialKeys} /></main></>;
+  const hasActiveKey = keys.some((key) => !key.revokedAt);
+  return <><Header product signedIn /><main className="settings-shell"><span className="kicker">Add agent</span><h1>{hasActiveKey ? "Connected agents." : "Add an agent."}</h1><p className="setup-lede">{hasActiveKey ? "See which agents can add actions to your feed and revoke access anytime." : "Give your agent one prompt to connect it to your private feed."}</p><ApiKeyManager initialKeys={initialKeys} /></main></>;
 }

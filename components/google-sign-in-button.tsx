@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { newUserLandingPath } from "@/lib/redirects";
 
 export function GoogleSignInButton({ configured, callbackURL = "/feed" }: { configured: boolean; callbackURL?: string }) {
   const [loading, setLoading] = useState(false);
@@ -11,7 +12,7 @@ export function GoogleSignInButton({ configured, callbackURL = "/feed" }: { conf
     const result = await authClient.signIn.social({
       provider: "google",
       callbackURL,
-      newUserCallbackURL: callbackURL,
+      newUserCallbackURL: newUserLandingPath(callbackURL),
       errorCallbackURL: `/sign-in?error=google&next=${encodeURIComponent(callbackURL)}`,
     });
     if (result?.error) setLoading(false);

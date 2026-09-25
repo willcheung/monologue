@@ -42,7 +42,7 @@ export function FeedTimeline({ actions, queryString, basePath = "/feed" }: { act
   }
 
   return <section className="feed" aria-label="Agent actions">
-    {actions.length === 0 && <div className="empty"><Inbox size={30} /><h2>No actions yet</h2><p>Connect an agent and its real-world changes will show up here.</p><Link href="/welcome">Connect an agent</Link></div>}
+    {actions.length === 0 && <div className="empty"><Inbox size={30} /><h2>No actions yet</h2><p>Connect an agent and its real-world changes will show up here.</p><Link href="/settings/keys">Connect an agent</Link></div>}
     {Array.from(groups.entries()).map(([key, group]) => {
       const label = calendarLabel(group.date, localTime);
       return <div className="day-group" key={key}>

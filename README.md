@@ -139,7 +139,7 @@ Create a Google OAuth web client and register this exact callback URL:
 https://www.monologue.events/api/auth/callback/google
 ```
 
-Google sign-in requests only `openid`, `email`, and `profile`. It does not grant Monologue access to Gmail, Calendar, Drive, or other Google services. New users are taken to `/welcome`, where they can copy the setup prompt. An agent connection link returns them to Monologue to approve automatic key creation. Returning users go to `/feed`.
+Google sign-in requests only `openid`, `email`, and `profile`. It does not grant Monologue access to Gmail, Calendar, Drive, or other Google services. New users are taken to `/settings/keys`, where they can copy the setup prompt to add an agent. Someone signing up through an agent connection link returns to that link to approve automatic key creation. Returning users go to `/feed` or their requested page.
 
 For a Vercel deployment backed by Turso:
 
