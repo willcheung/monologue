@@ -119,6 +119,8 @@ Reporting is best-effort. The helper exits cleanly if Monologue is unavailable s
 
 ## Hosted mode and Google sign-in
 
+Setup guides for individual agents and three starter prompts are at `/integrations` and `/templates`. The [distribution plan](docs/DISTRIBUTION_PLAN.md) and [site-by-site publishing checklist](docs/DISTRIBUTION_PUBLISHING.md) distinguish installable packages from reviewed listings and native integrations.
+
 Monologue keeps the website, hosted product, API, and skill in this repository. Single-user mode uses the local SQLite file and `MONOLOGUE_API_KEY`. Cloud mode adds Google sign-in, personal workspaces, revocable agent keys, and a hosted SQLite-compatible Turso database.
 
 Set these variables for cloud mode:

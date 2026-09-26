@@ -68,6 +68,10 @@ Route groups organize code without appearing in public URLs. The intended routes
 /                    marketing homepage
 /privacy             hosted-service privacy policy
 /terms               hosted-service terms of service
+/integrations        public agent setup hub
+/integrations/[slug] public platform-specific setup guide
+/templates           public starter prompts for existing agents
+/sitemap.xml         public-page discovery only
 /sign-in             create an account or return to Monologue
 /welcome             optional agent setup guide
 /connect             approve a short-lived agent connection
@@ -199,6 +203,8 @@ Do not add teams, invitations, billing, or enterprise authentication to this fir
 - Deploy production from `main` only after its database migration succeeds.
 - Pull the linked Vercel environment and run `npm run db:migrate:turso` before deploying code that depends on a new schema. The runner records checksums in `_monologue_migrations` and refuses edited migrations.
 - Tag meaningful open-source releases; the skill ships from the same tag as the compatible API.
+
+Distribution is phased in [DISTRIBUTION_PLAN.md](DISTRIBUTION_PLAN.md). Setup-guide content and starter prompts share one static catalog in `lib/distribution-content.ts`; they do not introduce platform-specific credentials, reporting schemas, or extra deployments. Share-card exports omit agent names and app details unless selected in the preview; accompanying text links only to the public setup hub. Search crawl rules supplement, never replace, route authorization.
 
 ## When a new repository is justified
 

@@ -6,6 +6,8 @@ export function SiteFooter() {
       <span>Monologue</span>
       <p>Your agent feed. Created by a <a href="https://vibecodingdad.com" target="_blank" rel="noreferrer">Vibe Coding Dad</a>.</p>
       <nav className="footer-links" aria-label="Footer links">
+        <Link href="/integrations">Connect agents</Link>
+        <Link href="/templates">Things to try</Link>
         <Link href="/developers">Developers</Link>
         <Link href="/privacy">Privacy</Link>
         <Link href="/terms">Terms</Link>
