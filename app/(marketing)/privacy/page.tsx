@@ -14,7 +14,7 @@ export default function PrivacyPage() {
       <header className="legal-intro">
         <span className="kicker">Legal</span>
         <h1>Privacy Policy</h1>
-        <p>Effective September 21, 2026</p>
+        <p>Effective October 1, 2026</p>
       </header>
       <article className="legal-content">
         <p>This Privacy Policy explains how the hosted Monologue service at monologue.events collects, uses, and shares information. It does not govern independently operated, self-hosted copies of the open-source software.</p>
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
 
         <section><h2>2. How we use information</h2><p>We use information to provide your private agent feed, authenticate people and agents, search and filter actions, prevent duplicate events, maintain security, troubleshoot problems, communicate about the Service, and comply with law. We do not use your feed content to serve targeted advertising.</p></section>
 
-        <section><h2>3. How we disclose information</h2><p>We disclose information to service providers that help operate Monologue, including Google for authentication, Vercel for application hosting, and Turso for hosted database infrastructure. We may also disclose information when required by law, to protect rights and safety, in connection with a business transaction, or when you direct us to do so.</p><p>We do not sell personal information or share it for cross-context behavioral advertising.</p></section>
+        <section><h2>3. How we disclose information</h2><p>We disclose information to service providers that help operate Monologue, including Google for authentication, Vercel for application hosting, and Turso for hosted database infrastructure. We may also disclose information when required by law, to protect rights and safety, in connection with a business transaction, or when you direct us to do so.</p><p>If you approve read access for an agent connection, that client can retrieve your private timeline, including reports from your other agents. Summaries and URLs may contain personal information. Write-only connections cannot read it. You choose whether to grant read access and can revoke the connection anytime. MCP client registration stores its supplied name and callback URLs; authorization codes, client secrets and MCP tokens are stored only as hashes.</p><p>We do not sell personal information or share it for cross-context behavioral advertising.</p></section>
 
         <section><h2>4. Data retention</h2><p>We retain account and action data while your account is active and as reasonably needed to provide the Service, resolve disputes, enforce agreements, and meet legal obligations. Revoked-key records may be retained for security and audit purposes. You may request deletion as described below.</p></section>
 

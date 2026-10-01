@@ -72,6 +72,8 @@ model ApiKey {
   createdByUserId String?
   createdByUser   User?     @relation("ApiKeyCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   reportedActions Action[]  @relation("ActionReporter")
+  oauthCodes      McpOAuthCode[]
+  oauthTokens     McpOAuthToken[]
   lastUsedAt      DateTime?
   revokedAt       DateTime?
   createdAt       DateTime  @default(now())
@@ -79,6 +81,54 @@ model ApiKey {
   @@index([workspaceId, createdAt])
   @@index([agentId])
   @@index([createdByUserId])
+}
+
+model McpOAuthClient {
+  id             String   @id
+  name           String
+  redirectUris   Json
+  authMethod     String
+  secretHash     String?
+  createdAt      DateTime @default(now())
+  codes          McpOAuthCode[]
+  tokens         McpOAuthToken[]
+
+  @@index([createdAt])
+}
+
+model McpOAuthCode {
+  id            String   @id @default(cuid())
+  codeHash      String   @unique
+  clientId      String
+  client        McpOAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  keyId         String
+  key           ApiKey   @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  redirectUri   String
+  challenge     String
+  resource      String
+  expiresAt     DateTime
+  consumedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model McpOAuthToken {
+  id               String   @id @default(cuid())
+  accessHash       String   @unique
+  refreshHash      String   @unique
+  clientId         String
+  client           McpOAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  keyId            String
+  key              ApiKey   @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  resource         String
+  expiresAt        DateTime
+  refreshExpiresAt DateTime
+  rotatedAt        DateTime?
+  createdAt        DateTime @default(now())
+
+  @@index([keyId])
+  @@index([expiresAt])
 }
 
 model Agent {

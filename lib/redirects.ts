@@ -5,6 +5,7 @@ export function safeInternalPath(value: string | null | undefined, fallback: str
 
 export function newUserLandingPath(callbackURL: string) {
   const [path, query] = callbackURL.split("?", 2);
+  if (path === "/oauth/authorize" && query) return callbackURL;
   if (path === "/connect" && query) {
     const params = new URLSearchParams(query);
     if (params.get("request") && params.get("code")) return callbackURL;

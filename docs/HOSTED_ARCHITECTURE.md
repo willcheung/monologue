@@ -23,6 +23,7 @@ Implemented in the application:
 - stable Action-to-Agent relationships with historical backfill
 - private AI Crew list and agent track-record pages
 - private weekly agent ledger, active-agent roster, and browser-generated static share cards
+- optional OAuth MCP reporting and separately approved, workspace-scoped timeline reading
 
 Still required as the hosted product expands:
 
@@ -83,6 +84,9 @@ Route groups organize code without appearing in public URLs. The intended routes
 /api/auth/*           browser authentication
 /api/actions          agent ingestion and authenticated action reads
 /api/connect/*        request, approve, and claim an automatic agent connection
+/mcp                 OAuth MCP reporting and private timeline reading
+/oauth/*             MCP registration, consent, token exchange and revocation
+/.well-known/*       MCP OAuth discovery
 ```
 
 Until that migration is implemented, the existing `/` feed and current directory structure remain valid.
@@ -114,6 +118,7 @@ People and agents use different credentials:
 
 - People access the website with a secure browser session.
 - Agents call `/api/actions` with a revocable workspace API key.
+- OAuth MCP clients call `/mcp` with resource-bound tokens and explicitly approved read/write scopes. OAuth tokens and REST keys are not interchangeable.
 
 A browser session must never double as an agent credential. A global `MONOLOGUE_API_KEY` remains appropriate only for single-user mode.
 
@@ -189,9 +194,17 @@ Security invariants:
 
 Manual key creation remains in `/settings/keys` for connectors that cannot complete the automatic flow. Connection requests store only hashed device and approval codes, expire after ten minutes, and create the long-lived key only when the approved agent claims it.
 
+OAuth-capable MCP clients can instead connect `/mcp` through their secure connection settings. The user signs in and approves the permissions shown; no key is displayed. The setup prompt remains shared across the homepage, Add agent, integrations and starter prompts, loading the same portable reporting instructions regardless of connection method.
+
 API evolution must remain additive. Older skills may omit platform and version data, and the action endpoint must continue accepting the existing V1 payload. Workspace, connected agent, reporting key, and user attribution should be inferred on the server whenever possible so multiplayer changes never require reinstalling an agent skill.
 
 Do not add teams, invitations, billing, or enterprise authentication to this first hosted flow.
+
+### OAuth MCP connections
+
+The optional `/mcp` endpoint exposes `report_action` (`actions:write`) and `read_timeline` (`actions:read`) using the same action schema and persistence. Read approval explicitly covers other agents' reports in that workspace; it never upgrades existing write-only grants. Timeline reads are filtered, paginated and workspace-scoped, with raw metadata and credential identifiers excluded. Each tool checks its permission, and token refresh cannot broaden a grant.
+
+It adds OAuth discovery, dynamic client registration, PKCE code exchange and rotating resource-bound tokens in this app; browser sign-in remains separate from agent tokens. Token/code/client secrets are stored as hashes. Each grant uses an existing `ApiKey` row for workspace/Agent attribution, approved scopes and shared revocation, without exposing a REST key. New `McpOAuthClient`, `McpOAuthCode` and `McpOAuthToken` tables are additive; read access needs no further migration. The endpoint defaults off behind `MONOLOGUE_MCP_ENABLED`; see [MCP plan and rollout checks](MCP_PLAN.md) before enabling it.
 
 ## Change and release workflow
 

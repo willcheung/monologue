@@ -4,6 +4,7 @@ import { Header } from "@/components/header";
 import { isCloudMode } from "@/lib/runtime";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { db } from "@/lib/db";
+import { mcpEnabled, mcpResource } from "@/lib/mcp-oauth";
 
 export const dynamic = "force-dynamic";
 
@@ -18,5 +19,5 @@ export default async function AgentKeysPage() {
   });
   const initialKeys = keys.map((key) => ({ ...key, createdAt: key.createdAt.toISOString(), lastUsedAt: key.lastUsedAt?.toISOString() ?? null, revokedAt: key.revokedAt?.toISOString() ?? null }));
   const hasActiveKey = keys.some((key) => !key.revokedAt);
-  return <><Header product signedIn /><main className="settings-shell"><span className="kicker">Add agent</span><h1>{hasActiveKey ? "Connected agents." : "Add an agent."}</h1><p className="setup-lede">{hasActiveKey ? "See which agents can add actions to your feed and revoke access anytime." : "Give your agent one prompt to connect it to your private feed."}</p><ApiKeyManager initialKeys={initialKeys} /></main></>;
+  return <><Header product signedIn /><main className="settings-shell"><span className="kicker">Add agent</span><h1>{hasActiveKey ? "Connected agents." : "Add an agent."}</h1><p className="setup-lede">{hasActiveKey ? "See which agents can read or add actions to your feed and revoke access anytime." : "Give your agent one prompt to connect it to your private feed."}</p><ApiKeyManager initialKeys={initialKeys} mcpUrl={mcpEnabled() ? mcpResource() : undefined} /></main></>;
 }

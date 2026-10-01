@@ -14,7 +14,7 @@ As people use more autonomous agents, their actions become scattered across diff
 
 > If your agent changed something, it shows up in Monologue.
 
-A message sent belongs in the feed. Reading fifty messages does not. A committed patch belongs; generated code that was never written does not. The feed stays useful by staying strict about signal.
+A message sent belongs in the feed. Reading fifty messages does not. Code pushed to a remote repository belongs; local edits, commits and tests do not. The feed stays useful by staying strict about signal.
 
 ## Quick start
 
@@ -73,6 +73,8 @@ The response is `{"success":true,"id":"..."}` and the action appears at the top 
 
 ## Connect an agent
 
+For an OAuth-capable MCP client, add `https://www.monologue.events/mcp` in its connection settings, sign in, and approve. No API key is displayed or pasted into chat. `report_action` adds actions with `actions:write`; optional `read_timeline` requires separate `actions:read` approval and includes other agents' reports in your private feed. Read-only and write-only connections stay separate. Revoke access in Connected agents. The setup prompt below supplies reporting instructions and uses an existing MCP connection when available.
+
 For the fastest setup, give an agent this instruction:
 
 ```text
@@ -115,7 +117,7 @@ python3 skills/monologue/scripts/report-action.py \
   --external-id abc123
 ```
 
-Reporting is best-effort. The helper exits cleanly if Monologue is unavailable so it never breaks the agent's primary task.
+Reporting is required, with best-effort delivery. Capture the returned event ID; a clean helper exit can also mean delivery was skipped. Note any reporting gap without breaking the primary task.
 
 ## Hosted mode and Google sign-in
 
@@ -157,6 +159,8 @@ Choose a Turso region close to the Vercel Function region. Add the remaining clo
 See [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md) for repository boundaries, tenant isolation rules, and the production rollout plan.
 
 ## API
+
+The hosted OAuth MCP endpoint is `/mcp`; it does not accept REST API keys. Its two tools use the same action data and workspace permissions. `read_timeline` defaults to 25 results (maximum 100), supports filters and cursor pagination, and excludes raw metadata and credential identifiers. OAuth tokens cannot authenticate to REST. See [MCP setup and rollout](docs/MCP_PLAN.md) for scopes, configuration and migration requirements.
 
 For the shortest path from setup to a working request, see the [developer docs](https://www.monologue.events/developers).
 

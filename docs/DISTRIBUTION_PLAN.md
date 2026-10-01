@@ -64,6 +64,8 @@ Next dependency: an OpenClaw test installation/version and a safe test destinati
 
 ## Phase 3 — Expand what converts
 
+OAuth MCP adds a shared connection path at `https://www.monologue.events/mcp` without platform-specific hooks. Keep the portable reporting skill, setup prompt and API-key fallback. Its two tools are `report_action` and separately approved `read_timeline`; see [the MCP rollout checks](MCP_PLAN.md). Deployment is not a marketplace listing: test the full OAuth flow in each target client before submitting there.
+
 - Add more setup pages only for agents with a useful, tested installation path.
 - Add starter kits based on actual workflows; do not fork the Monologue skill for every role.
 - Submit a skill/plugin bundle to the ChatGPT/Codex directory after fresh-session setup and reporting are reliable. Review is a dependency, not the launch deadline.

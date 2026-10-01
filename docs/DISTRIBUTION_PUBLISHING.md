@@ -52,7 +52,7 @@ clawhub whoami
 clawhub skill publish ./skills/monologue \
   --slug monologue \
   --name "Monologue" \
-  --version 1.2.8 \
+  --version 1.2.9 \
   --categories integrations,productivity,agents \
   --topics "agent-feed,action-history,receipts"
 ```
@@ -90,7 +90,7 @@ Source: [marketplace validation and installation](https://code.claude.com/docs/e
 
 **Status:** Portable setup guides are implemented; native adapters and partner listings are not.
 
-For a future ChatGPT/Codex submission, use [OpenAI's submission guide](https://developers.openai.com/plugins/deploy/submission) and [skill packaging](https://developers.openai.com/plugins/build/skills). A skill-only submission may be enough; do not build MCP/OAuth solely to obtain a listing. Submit only after the supported setup flow is tested on the target surfaces. This channel is not required for launch.
+For a future ChatGPT/Codex submission, use [OpenAI's submission guide](https://developers.openai.com/plugins/deploy/submission) and [skill packaging](https://developers.openai.com/plugins/build/skills). The OAuth MCP endpoint is `https://www.monologue.events/mcp`; `chatgpt-app-submission.json` is a draft based on the actual tool schemas, not a submitted or approved listing. Test connection, consent, reporting, timeline reading and revocation in the target client before submitting. This reviewed channel is not required for launch. The portable skill and API-key path remain available to other agents.
 
 ## 5. Starter prompts, search, and sharing
 

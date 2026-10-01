@@ -14,7 +14,7 @@ export default function TermsPage() {
       <header className="legal-intro">
         <span className="kicker">Legal</span>
         <h1>Terms of Service</h1>
-        <p>Effective September 21, 2026</p>
+        <p>Effective October 1, 2026</p>
       </header>
       <article className="legal-content">
         <p>These Terms of Service govern your use of the hosted Monologue website, feed, and APIs at monologue.events (the “Service”). By accessing or using the Service, you agree to these Terms. If you do not agree, do not use the Service.</p>
@@ -23,7 +23,7 @@ export default function TermsPage() {
 
         <section><h2>2. Eligibility and accounts</h2><p>You must be at least 18 years old and able to enter into a binding agreement. You are responsible for your account, the Google account used to sign in, and all activity associated with your workspace.</p></section>
 
-        <section><h2>3. Agent keys</h2><p>Agent API keys allow software to write to and read from your private feed. Keep them confidential, give each agent its own key, and revoke a key if you believe it has been exposed. You are responsible for activity performed with your keys.</p></section>
+        <section><h2>3. Agent connections</h2><p>Agent connections and API keys let software add actions to your feed, read it, or both, depending on the permissions granted. Read access includes reports from your other agents. Keep credentials confidential, give each agent its own connection, and revoke access if you believe a credential has been exposed. You are responsible for activity performed through your connections.</p></section>
 
         <section><h2>4. Your content</h2><p>You retain ownership of action records and other content you submit. You give Monologue a limited license to host, process, transmit, and display that content only as needed to operate, secure, and improve the Service. You represent that you have the rights and permissions needed to submit it.</p></section>
 

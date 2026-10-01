@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/header";
 import { CopySetupButton } from "@/components/copy-setup-button";
 import { getIntegration, INTEGRATIONS } from "@/lib/distribution-content";
-import { SETUP_PROMPT } from "@/lib/setup-prompt";
+import { MCP_URL, SETUP_PROMPT } from "@/lib/setup-prompt";
 
 export function generateStaticParams() {
   return INTEGRATIONS.map(({ slug }) => ({ slug }));
@@ -25,7 +25,7 @@ export default async function IntegrationPage({ params }: { params: Promise<{ sl
   return <><Header /><main className="distribution-shell">
     <section className="distribution-intro"><Link href="/integrations" className="distribution-back">← All agents</Link><span className="kicker">{integration.method}</span><h1>Connect {integration.name}.</h1><p>{integration.description}</p></section>
     <section className="distribution-setup"><h2>Paste this into {integration.name}</h2><pre>{SETUP_PROMPT}</pre><CopySetupButton /><p>{integration.note}</p>{integration.commands.length > 0 && <details><summary>Prefer installing from your terminal?</summary><pre>{integration.commands.join("\n")}</pre></details>}</section>
-    <section className="distribution-note"><h2>Approve, then keep using your agent</h2><p>Open the private approval link your agent gives you. Sign in and approve the named agent. It receives a write-only key and stores it securely; you do not need to paste that key into chat.</p><p>If your agent cannot store a key securely, sign in at <Link href="/keys">monologue.events/keys</Link> and create an API key for its secure credentials screen.</p><p>After the next real action, <Link href="/feed">check your feed</Link>. Look for the outcome and a link to the result when available. Ask your agent for the returned Monologue event ID if a report is missing.</p></section>
+    <section className="distribution-note"><h2>Approve, then keep using your agent</h2><p>Already connected to Monologue? The prompt loads the reporting instructions without creating another connection.</p><p>If your agent supports OAuth MCP, add <code>{MCP_URL}</code> in its connection settings, sign in, and approve. No API key to paste. Reading your private feed, including other agents&apos; reports, needs separate permission.</p><p>Otherwise, open the private approval link your agent gives you. It receives a write-only key and stores it securely. If automatic setup is unavailable, sign in at <Link href="/keys">monologue.events/keys</Link> and create an API key for its secure credentials screen—never ordinary chat.</p><p>After the next real action, <Link href="/feed">check your feed</Link>. Look for the outcome and a link to the result when available. Ask your agent for the returned Monologue event ID if a report is missing.</p></section>
     <section className="distribution-example"><span className="kicker">Example</span><p>{integration.example}</p><small>Research, drafts, and local development stay out of the feed. Reports can be incomplete or mistaken; Monologue is a record, not independent verification.</small></section>
     <p className="distribution-next">Need a useful first task? <Link href="/templates">Pick a starter prompt</Link>. Building your own connector? <Link href="/developers">See the API</Link>.</p>
   </main></>;
