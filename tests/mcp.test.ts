@@ -9,7 +9,7 @@ import { PrismaLibSQL } from "@prisma/adapter-libsql";
 const fixture = vi.hoisted(() => ({ db: undefined as unknown as import("@prisma/client").PrismaClient }));
 vi.mock("@/lib/db", () => ({ get db() { return fixture.db; } }));
 import { approveOAuthConnection, authenticateMcpRequest, exchangeOAuthToken, hashOAuthSecret, mcpResource, registerOAuthClient, revokeOAuthToken, validateAuthorization, validRedirectUri } from "@/lib/mcp-oauth";
-import { handleMcpRequest, mcpOptions } from "@/lib/mcp-server";
+import { handleMcpRequest, mcpOptions, reportActionOutputSchema } from "@/lib/mcp-server";
 import { readTimelineOutputSchema } from "@/lib/mcp-timeline";
 import { GET as resourceMetadata } from "@/app/.well-known/oauth-protected-resource/route";
 import { GET as oauthMetadata } from "@/app/.well-known/oauth-authorization-server/route";
@@ -42,6 +42,131 @@ beforeAll(async () => {
   await fixture.db.user.create({ data: { id: "u2", name: "Test Two", email: "two@example.test" } });
   await fixture.db.workspace.create({ data: { id: "w1", name: "Feed One", ownerId: "u1" } });
   await fixture.db.workspace.create({ data: { id: "w2", name: "Feed Two", ownerId: "u2" } });
+});
+
+// Protocol regression for the submitted cases, NOT an LLM prompt-selection eval.
+// Existing setup applies migrations to a disposable DB; never touches a live feed.
+describe("Marketplace review protocol", () => {
+  const review = (JSON.parse(readFileSync("packaging/openai/plugin.json", "utf8")) as {
+    extensions: { "com.openai": { review: { test_cases: {
+      positive: { prompt: string; tools_triggered: string }[];
+      negative: { prompt: string }[];
+    } } } };
+  }).extensions["com.openai"].review.test_cases;
+  const connectionReport = {
+    verb: "Connected", summary: "Connected this agent to Monologue", category: "account",
+    status: "completed", system: "Monologue", externalId: "monologue-review-connection-1",
+  };
+  let token: string;
+  let firstId: string;
+  let foreignAgentId: string;
+  let otherId: string;
+  let githubId: string;
+
+  const call = async (name: string, arguments_: object) =>
+    (await (await rpc(token, "tools/call", { name, arguments: arguments_ })).json()).result;
+
+  beforeAll(async () => {
+    for (const [userId, workspaceId] of [["review-user", "review-feed"], ["foreign-review-user", "foreign-review-feed"]]) {
+      await fixture.db.user.create({ data: { id: userId, name: "Disposable reviewer", email: `${userId}@example.test` } });
+      await fixture.db.workspace.create({ data: { id: workspaceId, name: "Disposable review feed", ownerId: userId } });
+    }
+    const g = await grant("review-feed", "review-user", "none", "actions:read actions:write", "Review agent");
+    token = (await exchangeOAuthToken(g.form)).access_token;
+    const other = await grant("review-feed", "review-user", "none", "actions:write", "Other review agent");
+    const otherToken = (await exchangeOAuthToken(other.form)).access_token;
+    const foreign = await grant("foreign-review-feed", "foreign-review-user", "none", "actions:read actions:write", "Foreign review agent");
+    const foreignToken = (await exchangeOAuthToken(foreign.form)).access_token;
+    foreignAgentId = (await authenticateMcpRequest(bearer(foreignToken)))!.agent.id;
+    // Synthetic external actions exist ONLY in this disposable database.
+    const inputs = [
+      { access: otherToken, verb: "Pushed", summary: "Fixture: code pushed", category: "code", status: "completed", system: "GitHub", externalId: "review-code", url: "https://example.test/commit/1" },
+      { access: token, verb: "Submitted", summary: "Fixture: submission pending", category: "other", status: "pending", system: "Review Marketplace", externalId: "review-pending", url: "https://example.test/listing/1" },
+      { access: otherToken, verb: "Sent", summary: "Fixture: message failed", category: "communication", status: "failed", system: "Review Mail", externalId: "review-failed", url: "https://example.test/message/1" },
+      { access: foreignToken, verb: "Pushed", summary: "Foreign private marker", category: "code", status: "completed", system: "GitHub", externalId: "review-foreign", url: "https://example.test/private/1" },
+    ];
+    for (const { access, ...input } of inputs) {
+      const result = await (await rpc(access, "tools/call", { name: "report_action", arguments: input })).json();
+      const report = reportActionOutputSchema.parse(result.result.structuredContent);
+      if (input.externalId === "review-code") githubId = report.id;
+      if (input.externalId === "review-failed") otherId = report.id;
+    }
+  });
+
+  it("positive 1: persists the exact connection report and returns its real event ID", async () => {
+    const testCase = review.positive[0];
+    expect(testCase.tools_triggered).toBe("report_action");
+    for (const value of Object.values(connectionReport)) expect(testCase.prompt).toContain(value);
+    const count = await fixture.db.action.count({ where: { workspaceId: "review-feed" } });
+    const result = await call(testCase.tools_triggered, connectionReport);
+    expect(result.isError).not.toBe(true);
+    const report = reportActionOutputSchema.parse(result.structuredContent);
+    expect(report.duplicate).toBe(false);
+    firstId = report.id;
+    expect(await fixture.db.action.findUniqueOrThrow({ where: { id: firstId } })).toMatchObject({
+      ...connectionReport, workspaceId: "review-feed", agentName: "Review agent", source: "self_reported",
+    });
+    expect(await fixture.db.action.count({ where: { workspaceId: "review-feed" } })).toBe(count + 1);
+  });
+
+  it("positive 2: retries the same fields without inserting a second event", async () => {
+    const testCase = review.positive[1];
+    expect(testCase.tools_triggered).toBe("report_action");
+    for (const value of Object.values(connectionReport)) expect(testCase.prompt).toContain(value);
+    const count = await fixture.db.action.count();
+    const result = await call(testCase.tools_triggered, connectionReport);
+    expect(reportActionOutputSchema.parse(result.structuredContent)).toEqual({ success: true, id: firstId, duplicate: true });
+    expect(await fixture.db.action.count()).toBe(count);
+  });
+
+  it("positive 3: returns cross-agent reports with statuses and links without logging the read", async () => {
+    expect(review.positive[2].tools_triggered).toBe("read_timeline");
+    const count = await fixture.db.action.count();
+    const result = await call(review.positive[2].tools_triggered, { limit: 5 });
+    const timeline = readTimelineOutputSchema.parse(result.structuredContent);
+    expect(timeline.actions).toHaveLength(4);
+    expect(timeline.actions.map(action => action.agentName)).toContain("Other review agent");
+    expect(timeline.actions.map(action => action.id)).toContain(firstId);
+    expect(timeline.actions.find(action => action.id === otherId)).toMatchObject({ status: "failed", url: "https://example.test/message/1" });
+    expect(timeline.actions.find(action => action.externalId === "review-pending")).toMatchObject({ status: "pending", url: "https://example.test/listing/1" });
+    for (const action of timeline.actions) {
+      expect(action.source).toBe("self_reported");
+      expect(action.agentName).not.toBe("Foreign review agent");
+    }
+    expect(await fixture.db.action.count()).toBe(count);
+  });
+
+  it("positive 4: filters GitHub/code reports and preserves result links", async () => {
+    expect(review.positive[3].tools_triggered).toBe("read_timeline");
+    const count = await fixture.db.action.count();
+    const result = await call(review.positive[3].tools_triggered, { system: "GitHub", category: "code", limit: 5 });
+    const timeline = readTimelineOutputSchema.parse(result.structuredContent);
+    expect(timeline.actions).toHaveLength(1);
+    expect(timeline.actions[0]).toMatchObject({ id: githubId, system: "GitHub", category: "code", url: "https://example.test/commit/1" });
+    expect(await fixture.db.action.count()).toBe(count);
+  });
+
+  it("positive 5: returns no matches and no cursor for the exact review search", async () => {
+    expect(review.positive[4].tools_triggered).toBe("read_timeline");
+    const search = "monologue-review-no-match-7d6399186b9348a2";
+    expect(review.positive[4].prompt).toContain(search);
+    const count = await fixture.db.action.count();
+    const result = await call(review.positive[4].tools_triggered, { search, limit: 1 });
+    expect(readTimelineOutputSchema.parse(result.structuredContent)).toEqual({ actions: [], nextCursor: null });
+    expect(await fixture.db.action.count()).toBe(count);
+  });
+
+  it("negative 3 server guard: rejects workspace injection and returns no foreign-agent actions", async () => {
+    const count = await fixture.db.action.count();
+    const injected = await call("read_timeline", { workspaceId: "foreign-review-feed" });
+    expect(injected?.isError).toBe(true);
+    expect(injected.structuredContent).toBeUndefined();
+    const filtered = await call("read_timeline", { agentId: foreignAgentId });
+    expect(readTimelineOutputSchema.parse(filtered.structuredContent)).toEqual({ actions: [], nextCursor: null });
+    expect(await fixture.db.action.count()).toBe(count);
+    // Draft/local-dev refusal and no-tool selection require an installed-model eval.
+    expect(review.negative).toHaveLength(3);
+  });
 });
 afterAll(async () => { await fixture.db?.$disconnect(); if (directory) rmSync(directory, { recursive: true }); vi.unstubAllEnvs(); });
 

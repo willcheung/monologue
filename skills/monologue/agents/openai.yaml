@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monologue"
+  short_description: "Record what your agents did for you"
+  default_prompt: "Use $monologue to report the external action I just completed and return its event ID."
