@@ -60,7 +60,7 @@ Do not create separate marketing, cloud-app, or skill repositories. A separate p
 | Database connection selection | `lib/db.ts` |
 | Models and committed migrations | `prisma/` |
 | Agent-facing installation package | `skills/monologue/` |
-| OpenAI plugin metadata and MCP packaging templates | `packaging/openai/` |
+| Public OpenAI plugin example and MCP packaging templates | `packaging/openai/` |
 | Automated behavior checks | `tests/` |
 | Human-facing technical decisions | `docs/` |
 
@@ -220,7 +220,7 @@ It adds OAuth discovery, dynamic client registration, PKCE code exchange and rot
 
 Distribution is phased in [DISTRIBUTION_PLAN.md](DISTRIBUTION_PLAN.md). Setup-guide content and starter prompts share one static catalog in `lib/distribution-content.ts`; they do not introduce platform-specific credentials, reporting schemas, or extra deployments. Share-card exports omit agent names and app details unless selected in the preview; accompanying text links only to the public setup hub. Search crawl rules supplement, never replace, route authorization.
 
-OpenAI plugin ZIPs are generated with `npm run plugin:package` from `packaging/openai/`, the canonical `skills/monologue/` directory, the repository license and current `public/brand/` marks. The explicit file allowlist excludes app source, secrets, private QA app mappings, customer data and test notes. Generated files stay under ignored `dist/`; no second skill or MCP implementation is maintained. See [the submission checklist](OPENAI_PLUGIN_SUBMISSION.md).
+OpenAI plugin ZIPs are generated with `npm run plugin:package` from the public `packaging/openai/plugin.example.json`, the canonical skill, license and current brand marks. Account-specific releases may use ignored `packaging/openai/plugin.json`; this override, operational drafts in `private/`, and generated ZIPs in `dist/` must never be committed or included in Vercel uploads. The explicit ZIP allowlist excludes app source, secrets, private QA mappings, customer data and test notes. Public tests require no private submission files. See [packaging and privacy boundaries](OPENAI_PLUGIN_SUBMISSION.md).
 
 ## When a new repository is justified
 

@@ -1,12 +1,16 @@
 import { copyFile, mkdir, mkdtemp, readFile, rename, rm, lstat } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+export const manifestSource = existsSync(join(repoRoot, "packaging/openai/plugin.json"))
+  ? "packaging/openai/plugin.json"
+  : "packaging/openai/plugin.example.json";
 // Explicit inputs: never archive a repository, secret store, or customer data.
 export const packageFiles = {
-  "plugin.json": "packaging/openai/plugin.json",
+  "plugin.json": manifestSource,
   "mcp.json": "packaging/openai/mcp.json",
   "LICENSE": "LICENSE",
   "skills/monologue/SKILL.md": "skills/monologue/SKILL.md",
@@ -18,8 +22,7 @@ export const packageFiles = {
 
 export function validatePackage(manifest, mcp) {
   const openai = manifest.extensions?.["com.openai"];
-  // Existing OpenAI listing identity, distinct from the display and skill names.
-  if (manifest.name !== "app-6ab9600c375481919d9b0e301e480292" || !/^\d+\.\d+\.\d+$/.test(manifest.version)) throw new Error("Invalid package identity/version");
+  if (typeof manifest.name !== "string" || manifest.name.length > 64 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(manifest.name) || !/^\d+\.\d+\.\d+$/.test(manifest.version)) throw new Error("Invalid package identity/version");
   if (manifest.$schema !== "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json") throw new Error("Wrong manifest schema");
   if (mcp.$schema !== "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json") throw new Error("Wrong MCP schema");
   if (Object.keys(mcp.mcpServers).join() !== "monologue" || mcp.mcpServers.monologue.type !== "streamable-http" || mcp.mcpServers.monologue.url !== "https://www.monologue.events/mcp" || mcp.mcpServers.monologue.headers) throw new Error("Use only the public OAuth MCP endpoint, without embedded credentials");

@@ -9,8 +9,9 @@ import { PrismaLibSQL } from "@prisma/adapter-libsql";
 const fixture = vi.hoisted(() => ({ db: undefined as unknown as import("@prisma/client").PrismaClient }));
 vi.mock("@/lib/db", () => ({ get db() { return fixture.db; } }));
 import { approveOAuthConnection, authenticateMcpRequest, exchangeOAuthToken, hashOAuthSecret, mcpResource, registerOAuthClient, revokeOAuthToken, validateAuthorization, validRedirectUri } from "@/lib/mcp-oauth";
-import { handleMcpRequest, mcpOptions, reportActionOutputSchema } from "@/lib/mcp-server";
-import { readTimelineOutputSchema } from "@/lib/mcp-timeline";
+import { handleMcpRequest, mcpOptions, reportActionOutputSchema, reportActionSchema, reportActionAnnotations } from "@/lib/mcp-server";
+import { z } from "zod";
+import { readTimelineOutputSchema, readTimelineSchema } from "@/lib/mcp-timeline";
 import { GET as resourceMetadata } from "@/app/.well-known/oauth-protected-resource/route";
 import { GET as oauthMetadata } from "@/app/.well-known/oauth-authorization-server/route";
 import { POST as tokenRoute } from "@/app/oauth/token/route";
@@ -47,7 +48,7 @@ beforeAll(async () => {
 // Protocol regression for the submitted cases, NOT an LLM prompt-selection eval.
 // Existing setup applies migrations to a disposable DB; never touches a live feed.
 describe("Marketplace review protocol", () => {
-  const review = (JSON.parse(readFileSync("packaging/openai/plugin.json", "utf8")) as {
+  const review = (JSON.parse(readFileSync("packaging/openai/plugin.example.json", "utf8")) as {
     extensions: { "com.openai": { review: { test_cases: {
       positive: { prompt: string; tools_triggered: string }[];
       negative: { prompt: string }[];
@@ -254,15 +255,13 @@ describe("MCP OAuth and reporting", () => {
     const g = await grant(), tokens = await exchangeOAuthToken(g.form);
     const listed = await (await rpc(tokens.access_token, "tools/list")).json();
     expect(listed.result.tools.map((t: { name: string }) => t.name)).toEqual(["report_action", "read_timeline"]);
-    const submission = JSON.parse(readFileSync("chatgpt-app-submission.json", "utf8"));
-    expect(submission.tools.report_action.input_schema).toEqual(listed.result.tools[0].inputSchema);
-    expect(submission.tools.report_action.output_schema).toEqual(listed.result.tools[0].outputSchema);
-    expect(submission.tools.report_action.annotations).toEqual(listed.result.tools[0].annotations);
+    expect(listed.result.tools[0].inputSchema).toEqual(z.toJSONSchema(reportActionSchema, { io: "input" }));
+    expect(listed.result.tools[0].outputSchema).toEqual(z.toJSONSchema(reportActionOutputSchema));
+    expect(listed.result.tools[0].annotations).toEqual(reportActionAnnotations);
     expect(listed.result.tools[0].securitySchemes).toEqual([{ type: "oauth2", scopes: ["actions:write"] }]);
-    expect(submission.tools.report_action.securitySchemes).toEqual(listed.result.tools[0].securitySchemes);
-    expect(submission.tools.read_timeline.input_schema).toEqual(listed.result.tools[1].inputSchema);
-    expect(submission.tools.read_timeline.output_schema).toEqual(listed.result.tools[1].outputSchema);
-    expect(submission.tools.read_timeline.annotations).toEqual(listed.result.tools[1].annotations);
+    expect(listed.result.tools[1].inputSchema).toEqual(z.toJSONSchema(readTimelineSchema, { io: "input" }));
+    expect(listed.result.tools[1].outputSchema).toEqual(z.toJSONSchema(readTimelineOutputSchema));
+    expect(listed.result.tools[1].annotations).toEqual({ readOnlyHint: true, openWorldHint: false, destructiveHint: false, idempotentHint: true });
     expect(listed.result.tools[1].securitySchemes).toEqual([{ type: "oauth2", scopes: ["actions:read"] }]);
     expect(listed.result.tools[0].inputSchema.properties.agentId).toBeUndefined();
     expect(listed.result.tools[0].inputSchema.properties.source).toBeUndefined();
