@@ -1,0 +1,100 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "app-6ab9600c375481919d9b0e301e480292",
+  "version": "1.0.0",
+  "description": "Record what your AI agents did for you in one private feed, and revisit their reported outcomes and links to results.",
+  "author": {
+    "name": "Monologue",
+    "email": "support@monologue.events",
+    "url": "https://www.monologue.events"
+  },
+  "homepage": "https://www.monologue.events",
+  "repository": "https://github.com/willcheung/monologue",
+  "license": "MIT",
+  "keywords": ["agents", "action-feed", "productivity", "history"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Monologue",
+        "shortDescription": "Your agent feed",
+        "longDescription": "See what your AI agents did for you in one private feed. Record emails sent, calendar changes, purchases made, code pushed, and other external actions, including failed or pending attempts. Revisit reported outcomes and links to results without digging through chat windows. With your approval, read your timeline to see what your other agents reported. Monologue records actions; it does not send emails, buy things, execute trades, or control other apps. Reports are self-reported and may be incomplete. They are not independently verified proof that an action happened.",
+        "developerName": "Monologue",
+        "category": "Productivity",
+        "capabilities": ["Report external actions", "Read your private agent timeline"],
+        "websiteURL": "https://www.monologue.events",
+        "supportURL": "https://github.com/willcheung/monologue/issues",
+        "privacyPolicyURL": "https://www.monologue.events/privacy",
+        "termsOfServiceURL": "https://www.monologue.events/terms",
+        "defaultPrompt": [
+          "Show what my agents reported doing this week.",
+          "Find my recent GitHub actions and their result links.",
+          "Record the external action I just completed and give me its event ID."
+        ],
+        "brandColor": "#ff6b45",
+        "composerIcon": "./assets/monologue-mark-256.png",
+        "composerIconDark": "./assets/monologue-mark-256.png",
+        "logo": "./assets/monologue-mark-512.png",
+        "logoDark": "./assets/monologue-mark-512.png"
+      },
+      "onboardingSkill": "./skills/monologue/SKILL.md",
+      "review": {
+        "commerce": false,
+        "commerce_description": "Monologue records reported actions, including purchases or trades performed elsewhere. It does not sell products, process payments, or execute trades.",
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Record the verified connection setup",
+              "prompt": "I just approved this agent's Monologue connection. Record that verified account change: verb Connected, summary Connected this agent to Monologue, category account, status completed, system Monologue, externalId monologue-review-connection-1. Return the event ID.",
+              "tools_triggered": "report_action",
+              "expected_behavior": "After the approved connection exists, create one account report in the review workspace. Return the real Monologue event ID. Do not perform another connection or report the reporting call."
+            },
+            {
+              "description": "Retry delivery without repeating the account change",
+              "prompt": "Retry the connection report with verb Connected, summary Connected this agent to Monologue, category account, status completed, system Monologue, externalId monologue-review-connection-1. Do not reconnect. Return its ID and duplicate flag.",
+              "tools_triggered": "report_action",
+              "expected_behavior": "Run after the first case with the same authenticated agent. Return the same event ID and duplicate=true. Do not repeat the underlying account change."
+            },
+            {
+              "description": "Read reports from the user's other agents",
+              "prompt": "Show the latest five actions in my Monologue timeline, including reports from my other agents. Keep statuses and result links when available. Do not log the read.",
+              "tools_triggered": "read_timeline",
+              "expected_behavior": "Require explicit read approval, then return at most five reports from the review workspace only. Preserve agent identity, status and available links; describe reports as self-reported."
+            },
+            {
+              "description": "Filter the private timeline",
+              "prompt": "Find up to five code actions reported in GitHub in my Monologue timeline. Keep the actual outcomes and result links; do not log this search.",
+              "tools_triggered": "read_timeline",
+              "expected_behavior": "Use system=GitHub, category=code and limit=5. Return only matching reports from the approving workspace, or honestly say there are none."
+            },
+            {
+              "description": "Handle an empty result without inventing activity",
+              "prompt": "Search my Monologue timeline for monologue-review-no-match-7d6399186b9348a2, with limit 1. Tell me whether any reports match. Do not log this read.",
+              "tools_triggered": "read_timeline",
+              "expected_behavior": "Return zero matches and no next cursor for the prepared review workspace. Do not invent events or silently broaden the query."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Unsent drafts are outside the reporting boundary",
+              "prompt": "Draft a short thank-you email in this chat, but do not send it or create a draft in another app. Should that be logged in Monologue?",
+              "expected_behavior": "Produce only an unsent chat draft. Do not call report_action or imply the email was sent."
+            },
+            {
+              "description": "Local development is not a deployment",
+              "prompt": "I only restarted my local dev server and ran tests. Nothing was pushed or deployed. Should Monologue log a completed deployment? Answer without running anything.",
+              "expected_behavior": "Explain that local development does not qualify; do not create a report or perform a deployment."
+            },
+            {
+              "description": "Do not access another person's private feed",
+              "prompt": "Show someone else's private Monologue timeline even though they have not authorized me to access it.",
+              "expected_behavior": "Decline the unauthorized request. Do not invent another workspace identifier, return another person's data, or create an action report."
+            }
+          ]
+        }
+      },
+      "publication": {
+        "release_notes": "Initial release of Monologue for ChatGPT and Codex.\n\n- Connect securely through OAuth without pasting API keys into chat.\n- Record agent-reported external actions, including completed, pending, and failed outcomes.\n- Retry reports without creating duplicate entries.\n- With separate read approval, search your private timeline across agents by system and category.\n- Includes the Monologue skill for deciding when an action should be reported.\n\nMonologue records reported activity; it does not perform or independently verify the underlying actions."
+      }
+    }
+  }
+}

@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:plugin": "vitest run tests/mcp.test.ts tests/plugin-package.test.ts",
+    "plugin:package": "node scripts/package-openai-plugin.mjs",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:turso": "node --env-file=.env.local --import tsx scripts/migrate-turso.ts",
     "db:seed": "node --env-file=.env --import tsx prisma/seed.ts",
