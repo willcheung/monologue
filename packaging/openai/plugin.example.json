@@ -1,6 +1,6 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "app-6ab9600c375481919d9b0e301e480292",
+  "name": "monologue",
   "version": "1.0.0",
   "description": "Record what your AI agents did for you in one private feed, and revisit their reported outcomes and links to results.",
   "author": {
@@ -11,7 +11,12 @@
   "homepage": "https://www.monologue.events",
   "repository": "https://github.com/willcheung/monologue",
   "license": "MIT",
-  "keywords": ["agents", "action-feed", "productivity", "history"],
+  "keywords": [
+    "agents",
+    "action-feed",
+    "productivity",
+    "history"
+  ],
   "extensions": {
     "com.openai": {
       "interface": {
@@ -20,7 +25,10 @@
         "longDescription": "See what your AI agents did for you in one private feed. Record emails sent, calendar changes, purchases made, code pushed, and other external actions, including failed or pending attempts. Revisit reported outcomes and links to results without digging through chat windows. With your approval, read your timeline to see what your other agents reported. Monologue records actions; it does not send emails, buy things, execute trades, or control other apps. Reports are self-reported and may be incomplete. They are not independently verified proof that an action happened.",
         "developerName": "Monologue",
         "category": "Productivity",
-        "capabilities": ["Report external actions", "Read your private agent timeline"],
+        "capabilities": [
+          "Report external actions",
+          "Read your private agent timeline"
+        ],
         "websiteURL": "https://www.monologue.events",
         "supportURL": "https://github.com/willcheung/monologue/issues",
         "privacyPolicyURL": "https://www.monologue.events/privacy",

@@ -11,3 +11,17 @@ __pycache__/
 .vercel
 .env*.local
 /dist/
+.env.*
+!.env.example
+/private/
+/packaging/openai/plugin.json
+/chatgpt-app-submission.json
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p12

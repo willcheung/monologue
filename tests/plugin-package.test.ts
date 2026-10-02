@@ -12,7 +12,7 @@ import { buildPackage, validatePackage, packageFiles } from "../scripts/package-
 
 async function configs() {
   return {
-    manifest: JSON.parse(await readFile("packaging/openai/plugin.json", "utf8")),
+    manifest: JSON.parse(await readFile(packageFiles["plugin.json"], "utf8")),
     mcp: JSON.parse(await readFile("packaging/openai/mcp.json", "utf8")),
   };
 }
@@ -27,7 +27,7 @@ describe("OpenAI plugin package", () => {
       expect(unpack("skills/monologue/SKILL.md")).toEqual(await readFile("skills/monologue/SKILL.md"));
       expect(unpack("assets/monologue-mark-512.png")).toEqual(await readFile("public/brand/monologue-mark-512.png"));
       const manifest = JSON.parse(unpack("plugin.json").toString());
-      expect(manifest.name).toBe("app-6ab9600c375481919d9b0e301e480292");
+      expect(manifest.name).toBe((await configs()).manifest.name);
       expect(manifest.extensions["com.openai"].interface.displayName).toBe("Monologue");
       const mcp = JSON.parse(unpack("mcp.json").toString());
       const skillText = unpack("skills/monologue/SKILL.md").toString();
@@ -51,7 +51,7 @@ describe("OpenAI plugin package", () => {
   it("rejects stale references, private app mappings, credential headers and invalid review inventories", async () => {
     const { manifest, mcp } = await configs();
     const wrongIdentity = structuredClone(manifest);
-    wrongIdentity.name = "monologue";
+    wrongIdentity.name = "invalid name with spaces";
     expect(() => validatePackage(wrongIdentity, mcp)).toThrow(/Invalid package identity/);
     const missingLogo = structuredClone(manifest);
     missingLogo.extensions["com.openai"].interface.logo = "./missing.png";

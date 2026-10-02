@@ -3,3 +3,16 @@
 !.env.example
 prisma/*.db
 prisma/*.db-journal
+private/
+dist/
+packaging/
+chatgpt-app-submission.json
+tests/
+docs/
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p12

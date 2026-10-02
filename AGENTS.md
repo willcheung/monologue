@@ -19,5 +19,6 @@ Read [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) before changing product co
 - In hosted mode, every action read and write must be scoped to a workspace. Never accept a workspace ID from an untrusted payload as authorization.
 - Google sign-in is authentication only. Request identity scopes only; Gmail, Calendar, Drive, and other Google API access require separate future integrations and explicit consent.
 - Never commit secrets, database files, generated build output, raw API keys, OAuth client secrets, or production data.
+- Keep real marketplace submissions, reviewer details, private QA notes and demo URLs in ignored local release files. Public packaging must use reusable examples and work without those files. Run `npm run test:privacy` before pushing; never force-add ignored release material.
 - SQLite remains the local persistence layer. The planned hosted database is SQLite-compatible libSQL/Turso so both modes can share one schema.
 - Prefer one application and one deployment. A new repository requires a concrete ownership or release boundary documented in the architecture guide first.
