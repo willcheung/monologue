@@ -20,6 +20,8 @@ Before submission, run those exact cases with the installed plugin and a dedicat
 
 Prepare reviewer access, a demo video, domain verification, publisher identity, policy compliance and selected countries before review. Keep public support, privacy and terms accurate. Marketplace submission is separate from application deployment.
 
+For domain verification, set `MONOLOGUE_OPENAI_DOMAIN_VERIFICATION_TOKEN` in production deployment configuration to the exact token shown by OpenAI, then deploy. The public `/.well-known/openai-apps-challenge` endpoint returns that token as plain text (404 when unconfigured). Keep the actual token out of Git and plugin ZIPs. Use **Verify Domain** in the portal, complete MCP connection, and check the tool scan before submitting.
+
 ## Privacy boundary
 
 Never force-add ignored release files. The privacy regression check rejects tracked overrides, submission drafts, private notes, env files other than `.env.example`, databases, key files and non-brand ZIP archives. Vercel exclusions are a second boundary, not a replacement for Git hygiene.
