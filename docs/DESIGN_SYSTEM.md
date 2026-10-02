@@ -44,6 +44,7 @@ Use the same category emoji and color mapping everywhere by going through `categ
 - Primary action verb: bold Gaegu inside a sans-serif sentence.
 - Body copy: sans serif, comfortable line-height.
 - Metadata: sans serif, muted, never so small that it becomes decorative texture.
+- Setup-prompt button labels: 20px display font across the site.
 - Uppercase labels: short only, with modest tracking.
 
 Handwriting is an accent, not the whole interface. Names, timestamps, values, URLs, filters, and detail content stay easy to scan.
@@ -53,6 +54,7 @@ Handwriting is an accent, not the whole interface. Names, timestamps, values, UR
 - Reuse existing buttons, pills, avatars, action icons, timeline rows, dialogs, and empty states before making a variant.
 - Primary buttons use ink; coral is an accent, not a large background color.
 - Prefer one clear primary action per section.
+- Agent setup has one default action: **Copy setup prompt**. Keep technical connection instructions in the agent-facing guide and developer docs; show manual API-key setup as a collapsed fallback. Never promise that a prompt can silently add an MCP connection in every client.
 - Drawers are for complete action details. The timeline itself should already explain the action.
 - Share artifacts are static snapshots. They must not reveal future activity or create ongoing access.
 - Links to proof or receipts should be visible when present, but raw metadata stays in details.

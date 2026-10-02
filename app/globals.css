@@ -49,6 +49,9 @@ footer { border-top:1px solid var(--line); width:min(1060px,calc(100% - 40px)); 
 .dev-docs-prompt { margin:13px 0 15px; }.dev-docs-prompt code { display:block; width:100%; padding:16px 18px!important; border:1px solid var(--line); border-radius:12px; background:#fff!important; font-size:14px!important; }.dev-docs-setup .setup-copy-button { min-height:46px; padding:0 17px; border-radius:12px; box-shadow:none; }
 .dev-docs-agent-tip { margin:0 0 27px; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:#fff; }
 .key-manager>.install-config:first-child { margin:0 0 24px; padding:0 0 24px; border-top:0; border-bottom:1px solid var(--line); }
+.key-manager>.install-config>p { font-size:14px; line-height:1.6; }
+.api-key-fallback>summary { cursor:pointer; min-height:44px; align-content:center; font-size:14px; font-weight:650; }
+.api-key-fallback>p { color:var(--muted); font-size:13px; line-height:1.6; }
 .steps-illustration { width:min(780px,100%); margin:0 auto 32px; }
 .steps-illustration img { display:block; width:100%; height:auto; }
 .steps-illustration .steps-illustration-mobile { display:none; }
@@ -165,6 +168,7 @@ footer { border-top:1px solid var(--line); width:min(1060px,calc(100% - 40px)); 
 .sketch-ledger-chart { min-width:0; overflow:hidden; align-self:center; font-family:var(--font-display); }.sketch-ledger-chart svg { width:100%; height:auto; display:block; overflow:visible; }.sketch-ledger-chart text { text-anchor:middle; fill:#292722; font-family:var(--font-display); }.sketch-count { font-size:16px; font-weight:700; }.sketch-weekday { font-size:16px; font-weight:700; }.sketch-date { fill:#777269!important; font-size:13px; }.sketch-chart-legend { display:flex; justify-content:center; flex-wrap:wrap; gap:8px 15px; margin-top:-2px; padding:0 8px; }.sketch-chart-legend span { display:flex; align-items:center; gap:6px; font-size:15px; font-weight:700; }.sketch-chart-legend i { width:11px; height:9px; border:2px solid #34322d; }
 .share-preview-recap { font-family:var(--font-display); background-color:#fffef9; background-image:linear-gradient(#eeece5 1px,transparent 1px),linear-gradient(90deg,#f3ead2 1px,transparent 1px); background-size:18px 18px; }.share-preview-recap h3,.share-preview-recap>strong,.share-preview-recap>p,.share-preview-recap .share-preview-brand { font-family:var(--font-display); }.share-preview-recap h3 { font-weight:700; letter-spacing:-1px; }.share-preview-recap .share-mini-bars { border-bottom:2px solid #34322d; }.share-preview-recap .share-stacked-bar u { border-width:0 1px; border-style:solid; }.share-preview-recap .share-chart-legend span { font-family:var(--font-display); font-size:9px; }
 .brand strong { font-size:23px; }.kicker { font-family:var(--font-display); font-size:15px; letter-spacing:.08em; }.header-nav,.sign-out-button { font-family:var(--font-display); font-size:16px; }.share-trigger,.primary-button,.secondary-button,.setup-copy-button,.crew-add,.filter-menu summary,.share-actions button { font-family:var(--font-display); font-size:16px; }
+.setup-copy-button,.install-config>.setup-copy-button { font-size:20px; }
 .timeline-main>p { font-family:var(--font-sans); }.timeline-main>p strong { font-family:var(--font-display); font-size:1.12em; }
 @media (max-width:700px) { .sketch-chart-legend { gap:6px 9px; }.sketch-chart-legend span { font-size:10px; }.sketch-chart-legend i { width:9px; height:7px; } }
 @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; animation:none!important; transition:none!important; } }

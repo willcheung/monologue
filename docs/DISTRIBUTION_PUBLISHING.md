@@ -52,7 +52,7 @@ clawhub whoami
 clawhub skill publish ./skills/monologue \
   --slug monologue \
   --name "Monologue" \
-  --version 1.2.9 \
+  --version 1.2.10 \
   --categories integrations,productivity,agents \
   --topics "agent-feed,action-history,receipts"
 ```

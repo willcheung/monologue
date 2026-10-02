@@ -10,7 +10,7 @@ describe("hosted agent setup", () => {
     const response = await getMarkdown();
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toBe("text/markdown");
+    expect(response.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
     expect(await response.text()).toBe(canonical);
     expect(canonical).toContain("https://www.monologue.events/api/actions");
     expect(canonical).toContain("/api/connect/request");

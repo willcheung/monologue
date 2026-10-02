@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SETUP_PROMPT } from "@/lib/setup-prompt";
+import { CopySetupButton } from "@/components/copy-setup-button";
 
 export type KeyRecord = {
   id: string;
@@ -18,7 +18,7 @@ export function ApiKeyManager({ initialKeys = [], mcpUrl }: { initialKeys?: KeyR
   const [name, setName] = useState("My first agent");
   const [newKey, setNewKey] = useState<string | null>(null);
   const [keyRevealed, setKeyRevealed] = useState(false);
-  const [copied, setCopied] = useState<"key" | "install" | "mcp" | null>(null);
+  const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +31,7 @@ export function ApiKeyManager({ initialKeys = [], mcpUrl }: { initialKeys?: KeyR
 
   async function createKey(event: React.FormEvent) {
     event.preventDefault();
-    setBusy(true); setError(null); setNewKey(null); setKeyRevealed(false); setCopied(null);
+    setBusy(true); setError(null); setNewKey(null); setKeyRevealed(false); setCopied(false);
     const response = await fetch("/api/keys", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -43,10 +43,10 @@ export function ApiKeyManager({ initialKeys = [], mcpUrl }: { initialKeys?: KeyR
     setBusy(false);
   }
 
-  async function copy(value: string, type: "key" | "install" | "mcp") {
+  async function copy(value: string) {
     await navigator.clipboard.writeText(value);
-    setCopied(type);
-    window.setTimeout(() => setCopied(null), 1800);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
   }
 
   async function revokeKey(id: string) {
@@ -61,35 +61,30 @@ export function ApiKeyManager({ initialKeys = [], mcpUrl }: { initialKeys?: KeyR
   }
 
   return <div className="key-manager">
-    {mcpUrl && <div className="install-config">
-      <span>Connect with MCP</span>
-      <pre>{mcpUrl}</pre>
-      <p>Add this URL in your agent&apos;s MCP connection settings, then sign in and approve. No API key to paste. Reading your feed requires separate permission, including your other agents&apos; actions.</p>
-      <button type="button" onClick={() => copy(mcpUrl, "mcp")}>{copied === "mcp" ? "Copied MCP URL" : "Copy MCP URL"}</button>
-    </div>}
     <div className="install-config">
-      <span>Connect an agent</span>
-      <pre>{SETUP_PROMPT}</pre>
-      <p>Paste this public prompt to load the reporting instructions. Your agent uses its existing Monologue connection, or helps you connect securely. Never paste a key into chat.</p>
-      <button type="button" onClick={() => copy(SETUP_PROMPT, "install")}>{copied === "install" ? "Copied setup prompt" : "Copy setup prompt"}</button>
+      <h2>{mcpUrl ? "Connect an agent with MCP" : "Connect an agent"}</h2>
+      <p>Copy the prompt into your agent, then follow its instructions to sign in and approve. No key to copy or paste.</p>
+      <CopySetupButton />
     </div>
-    <h2>API keys</h2>
-    <p>For custom connectors or agents that can&apos;t connect automatically. Each new key is shown once.</p>
+    <details className="api-key-fallback">
+    <summary>Connect an agent with an API key</summary>
+    <p>Use this if your agent can&apos;t connect with the setup prompt. Save the key in its secure credentials screen, never in chat.</p>
     <form className="key-form" onSubmit={createKey}>
       <label>Agent name<input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} required /></label>
       <button type="submit" disabled={busy}>{busy ? "Working…" : "Create API key"}</button>
     </form>
-    {error && <p className="form-error">{error}</p>}
     {newKey && <div className="new-key">
       <strong>Your new key</strong>
       <p>Save this as <code>MONOLOGUE_API_KEY</code> through your agent&apos;s secure Connect or secrets screen. Your agent will keep using it, so you should not need to enter it again. Never paste it into regular chat. Monologue will not show it again.</p>
       <code className="secret-value">{keyRevealed ? newKey : `${newKey.slice(0, 9)}${"•".repeat(24)}`}</code>
       <div className="secret-actions">
-        <button type="button" onClick={() => copy(newKey, "key")}>{copied === "key" ? "Copied key" : "Copy key"}</button>
+        <button type="button" onClick={() => copy(newKey)}>{copied ? "Copied key" : "Copy key"}</button>
         <button className="quiet-button" type="button" onClick={() => setKeyRevealed((value) => !value)}>{keyRevealed ? "Hide" : "Reveal"}</button>
         <button className="quiet-button" type="button" onClick={() => setNewKey(null)}>I&apos;ve saved it</button>
       </div>
     </div>}
+    </details>
+    {error && <p className="form-error" role="alert">{error}</p>}
     {keys.length > 0 && <div className="key-list">{keys.map((key) => <div className="key-row" key={key.id}>
       <div><strong>{key.name}</strong><span>{key.prefix === "OAuth connection" ? "MCP connection" : `${key.prefix}••••`} · {key.scopes.includes("actions:read") ? key.scopes.includes("actions:write") ? "Read and add actions" : "Read timeline only" : "Add actions only"} · {key.revokedAt ? "Revoked" : key.lastUsedAt ? "Used recently" : "Never used"}</span></div>
       {!key.revokedAt && <button type="button" disabled={busy} onClick={() => revokeKey(key.id)}>Revoke</button>}

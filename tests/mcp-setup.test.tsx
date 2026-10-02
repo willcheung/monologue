@@ -14,14 +14,18 @@ describe("MCP setup guidance", () => {
       { id: "test-read", name: "Reader", prefix: "OAuth connection", scopes: "actions:read", createdAt: "2026-10-01", lastUsedAt: null, revokedAt: null },
       { id: "test-both", name: "Both", prefix: "OAuth connection", scopes: "actions:write actions:read", createdAt: "2026-10-01", lastUsedAt: null, revokedAt: null },
     ]} />);
-    expect(html).toContain(MCP_URL);
-    expect(html).toContain(SETUP_PROMPT);
+    expect(html).toContain("Connect an agent with MCP");
+    expect(html.match(/Copy setup prompt/g)).toHaveLength(1);
+    expect(html).not.toContain("Copy MCP URL");
+    expect(html).not.toContain(MCP_URL);
+    expect(html).toContain('<details class="api-key-fallback"><summary>Connect an agent with an API key</summary>');
+    expect(html).not.toContain('<details open');
     expect(html).toContain("Add actions only");
     expect(html).toContain("Read timeline only");
     expect(html).toContain("Read and add actions");
     expect(html).not.toContain("OAuth connection••••");
     expect(html).not.toContain("mlg_mcp_");
-    expect(renderToStaticMarkup(<ApiKeyManager />)).not.toContain("Copy MCP URL");
+    expect(renderToStaticMarkup(<ApiKeyManager />)).toContain("<h2>Connect an agent</h2>");
   });
 
   it("documents both tools, explicit read approval and the existing REST fallback", () => {
