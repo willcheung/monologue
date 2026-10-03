@@ -10,13 +10,12 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:plugin": "vitest run tests/mcp.test.ts tests/plugin-package.test.ts",
     "test:privacy": "vitest run tests/public-repo.test.ts",
-    "plugin:package": "node scripts/package-openai-plugin.mjs",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:turso": "node --env-file=.env.local --import tsx scripts/migrate-turso.ts",
     "db:seed": "node --env-file=.env --import tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "test:mcp": "vitest run tests/mcp.test.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.5",

@@ -25,3 +25,12 @@ __pycache__/
 *.pem
 *.key
 *.p12
+
+# Plugin packaging is private, including accidental legacy locations.
+/packaging/
+/.claude-plugin/
+/.mcp.json
+/scripts/package-*-plugin.mjs
+/tests/*plugin*package*.test.ts
+/docs/CLAUDE_PLUGIN.md
+/docs/OPENAI_PLUGIN_SUBMISSION.md

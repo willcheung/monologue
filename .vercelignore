@@ -16,3 +16,6 @@ docs/
 *.pem
 *.key
 *.p12
+.claude-plugin/
+.mcp.json
+scripts/package-*-plugin.mjs

@@ -45,15 +45,8 @@ beforeAll(async () => {
   await fixture.db.workspace.create({ data: { id: "w2", name: "Feed Two", ownerId: "u2" } });
 });
 
-// Protocol regression for the submitted cases, NOT an LLM prompt-selection eval.
-// Existing setup applies migrations to a disposable DB; never touches a live feed.
-describe("Marketplace review protocol", () => {
-  const review = (JSON.parse(readFileSync("packaging/openai/plugin.example.json", "utf8")) as {
-    extensions: { "com.openai": { review: { test_cases: {
-      positive: { prompt: string; tools_triggered: string }[];
-      negative: { prompt: string }[];
-    } } } };
-  }).extensions["com.openai"].review.test_cases;
+// Protocol regressions use a disposable database and require no release files.
+describe("MCP reporting and cross-agent timeline", () => {
   const connectionReport = {
     verb: "Connected", summary: "Connected this agent to Monologue", category: "account",
     status: "completed", system: "Monologue", externalId: "monologue-review-connection-1",
@@ -94,12 +87,9 @@ describe("Marketplace review protocol", () => {
     }
   });
 
-  it("positive 1: persists the exact connection report and returns its real event ID", async () => {
-    const testCase = review.positive[0];
-    expect(testCase.tools_triggered).toBe("report_action");
-    for (const value of Object.values(connectionReport)) expect(testCase.prompt).toContain(value);
+  it("persists a connection report and returns its real event ID", async () => {
     const count = await fixture.db.action.count({ where: { workspaceId: "review-feed" } });
-    const result = await call(testCase.tools_triggered, connectionReport);
+    const result = await call("report_action", connectionReport);
     expect(result.isError).not.toBe(true);
     const report = reportActionOutputSchema.parse(result.structuredContent);
     expect(report.duplicate).toBe(false);
@@ -110,20 +100,16 @@ describe("Marketplace review protocol", () => {
     expect(await fixture.db.action.count({ where: { workspaceId: "review-feed" } })).toBe(count + 1);
   });
 
-  it("positive 2: retries the same fields without inserting a second event", async () => {
-    const testCase = review.positive[1];
-    expect(testCase.tools_triggered).toBe("report_action");
-    for (const value of Object.values(connectionReport)) expect(testCase.prompt).toContain(value);
+  it("retries the same fields without inserting a second event", async () => {
     const count = await fixture.db.action.count();
-    const result = await call(testCase.tools_triggered, connectionReport);
+    const result = await call("report_action", connectionReport);
     expect(reportActionOutputSchema.parse(result.structuredContent)).toEqual({ success: true, id: firstId, duplicate: true });
     expect(await fixture.db.action.count()).toBe(count);
   });
 
-  it("positive 3: returns cross-agent reports with statuses and links without logging the read", async () => {
-    expect(review.positive[2].tools_triggered).toBe("read_timeline");
+  it("returns cross-agent reports with statuses and links without logging the read", async () => {
     const count = await fixture.db.action.count();
-    const result = await call(review.positive[2].tools_triggered, { limit: 5 });
+    const result = await call("read_timeline", { limit: 5 });
     const timeline = readTimelineOutputSchema.parse(result.structuredContent);
     expect(timeline.actions).toHaveLength(4);
     expect(timeline.actions.map(action => action.agentName)).toContain("Other review agent");
@@ -137,27 +123,24 @@ describe("Marketplace review protocol", () => {
     expect(await fixture.db.action.count()).toBe(count);
   });
 
-  it("positive 4: filters GitHub/code reports and preserves result links", async () => {
-    expect(review.positive[3].tools_triggered).toBe("read_timeline");
+  it("filters GitHub/code reports and preserves result links", async () => {
     const count = await fixture.db.action.count();
-    const result = await call(review.positive[3].tools_triggered, { system: "GitHub", category: "code", limit: 5 });
+    const result = await call("read_timeline", { system: "GitHub", category: "code", limit: 5 });
     const timeline = readTimelineOutputSchema.parse(result.structuredContent);
     expect(timeline.actions).toHaveLength(1);
     expect(timeline.actions[0]).toMatchObject({ id: githubId, system: "GitHub", category: "code", url: "https://example.test/commit/1" });
     expect(await fixture.db.action.count()).toBe(count);
   });
 
-  it("positive 5: returns no matches and no cursor for the exact review search", async () => {
-    expect(review.positive[4].tools_triggered).toBe("read_timeline");
+  it("returns no matches and no cursor for an unmatched search", async () => {
     const search = "monologue-review-no-match-7d6399186b9348a2";
-    expect(review.positive[4].prompt).toContain(search);
     const count = await fixture.db.action.count();
-    const result = await call(review.positive[4].tools_triggered, { search, limit: 1 });
+    const result = await call("read_timeline", { search, limit: 1 });
     expect(readTimelineOutputSchema.parse(result.structuredContent)).toEqual({ actions: [], nextCursor: null });
     expect(await fixture.db.action.count()).toBe(count);
   });
 
-  it("negative 3 server guard: rejects workspace injection and returns no foreign-agent actions", async () => {
+  it("rejects workspace injection and returns no foreign-agent actions", async () => {
     const count = await fixture.db.action.count();
     const injected = await call("read_timeline", { workspaceId: "foreign-review-feed" });
     expect(injected?.isError).toBe(true);
@@ -165,8 +148,6 @@ describe("Marketplace review protocol", () => {
     const filtered = await call("read_timeline", { agentId: foreignAgentId });
     expect(readTimelineOutputSchema.parse(filtered.structuredContent)).toEqual({ actions: [], nextCursor: null });
     expect(await fixture.db.action.count()).toBe(count);
-    // Draft/local-dev refusal and no-tool selection require an installed-model eval.
-    expect(review.negative).toHaveLength(3);
   });
 });
 afterAll(async () => { await fixture.db?.$disconnect(); if (directory) rmSync(directory, { recursive: true }); vi.unstubAllEnvs(); });

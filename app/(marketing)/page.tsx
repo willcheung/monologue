@@ -81,7 +81,7 @@ export default function MarketingPage() {
         <div className="feature-copy">
           <span className="kicker">Your AI crew</span>
           <h2>Know who did what.</h2>
-          <p>See what your agents did and check their work anytime.</p>
+          <p>See what your agents did and check their work anytime. With your permission, an agent can check what your other agents reported before starting related work.</p>
           <Link href={cloud ? "/sign-in?next=%2Fagents" : "/agents"}>Meet your agents <ArrowRight size={15} /></Link>
         </div>
         <div className="crew-preview" aria-label="Example agent profiles">
