@@ -1,8 +1,8 @@
-# Hosted Monologue architecture
+# Monologue deployment architecture
 
 This document is the source of truth for where Monologue code belongs and how the open-source and hosted versions stay together.
 
-## Implementation status
+## Application capabilities
 
 Implemented in the application:
 
@@ -16,19 +16,12 @@ Implemented in the application:
 - stable agent identity with optional platform and skill-version metadata
 - write-only automatic agent keys with backward-compatible legacy keys
 - local SQLite and hosted libSQL/Turso database connections
-- production deployment at `https://www.monologue.events`
 - public agent setup page at `/agent-setup` and raw skill at `/agent-setup/SKILL.md`
-- production Turso schema, Google sign-in, and end-to-end hosted ingestion
 - server-owned self-reported provenance for agent-key ingestion
 - stable Action-to-Agent relationships with historical backfill
 - private AI Crew list and agent track-record pages
 - private weekly agent ledger, active-agent roster, and browser-generated static share cards
 - optional OAuth MCP reporting and separately approved, workspace-scoped timeline reading
-
-Still required as the hosted product expands:
-
-- complete public OAuth branding and move the Google app beyond test users
-- add a stable staging environment with an isolated database and OAuth client
 
 ## Repository policy
 
@@ -66,7 +59,7 @@ Do not create separate marketing, cloud-app, or skill repositories. A separate p
 | Automated behavior checks | `tests/` |
 | Human-facing technical decisions | `docs/` |
 
-Route groups organize code without appearing in public URLs. The intended routes are:
+Route groups organize code without appearing in public URLs. The application routes are:
 
 ```text
 /                    marketing homepage
@@ -91,8 +84,6 @@ Route groups organize code without appearing in public URLs. The intended routes
 /oauth/*             MCP registration, consent, token exchange and revocation
 /.well-known/*       MCP OAuth discovery
 ```
-
-Until that migration is implemented, the existing `/` feed and current directory structure remain valid.
 
 ## Runtime modes
 
@@ -161,10 +152,10 @@ Expected Google OAuth redirect URIs:
 ```text
 http://localhost:3000/api/auth/callback/google
 https://staging.example.com/api/auth/callback/google
-https://www.monologue.events/api/auth/callback/google
+https://monologue.example.com/api/auth/callback/google
 ```
 
-Replace the example domains once the Monologue domain is selected. Redirect URIs must match exactly, including scheme, host, path, and trailing-slash behavior. Use separate OAuth clients for local/staging and production when practical so credentials and consent configuration remain isolated.
+Replace the example domains with your own deployment origins. Redirect URIs must match exactly, including scheme, host, path, and trailing-slash behavior. Use separate OAuth clients for local/staging and production when practical so credentials and consent configuration remain isolated.
 
 Do not add enterprise SSO, Google Workspace domain restrictions, or organization switching until the product actually needs them.
 
