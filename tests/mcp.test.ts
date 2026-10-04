@@ -239,10 +239,12 @@ describe("MCP OAuth and reporting", () => {
     expect(listed.result.tools[0].inputSchema).toEqual(z.toJSONSchema(reportActionSchema, { io: "input" }));
     expect(listed.result.tools[0].outputSchema).toEqual(z.toJSONSchema(reportActionOutputSchema));
     expect(listed.result.tools[0].annotations).toEqual(reportActionAnnotations);
+    expect(listed.result.tools[0].annotations.title).toBe("Report an action");
+    expect(listed.result.tools[0].description).toContain("http://localhost:3001/developers");
     expect(listed.result.tools[0].securitySchemes).toEqual([{ type: "oauth2", scopes: ["actions:write"] }]);
     expect(listed.result.tools[1].inputSchema).toEqual(z.toJSONSchema(readTimelineSchema, { io: "input" }));
     expect(listed.result.tools[1].outputSchema).toEqual(z.toJSONSchema(readTimelineOutputSchema));
-    expect(listed.result.tools[1].annotations).toEqual({ readOnlyHint: true, openWorldHint: false, destructiveHint: false, idempotentHint: true });
+    expect(listed.result.tools[1].annotations).toEqual({ title: "Read your timeline", readOnlyHint: true, openWorldHint: false, destructiveHint: false, idempotentHint: true });
     expect(listed.result.tools[1].securitySchemes).toEqual([{ type: "oauth2", scopes: ["actions:read"] }]);
     expect(listed.result.tools[0].inputSchema.properties.agentId).toBeUndefined();
     expect(listed.result.tools[0].inputSchema.properties.source).toBeUndefined();
