@@ -1,0 +1,118 @@
+.reportNote {
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.feedDiagram {
+  width: min(850px, 100%);
+  min-width: 0;
+}
+
+.crewSection {
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: 48px;
+}
+
+.reportingAgents {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reportingAgents > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.reportingAgents > div > span:last-child {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mergeReports {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  height: 46px;
+  margin: 8px 0 0;
+}
+
+.mergeReports > span {
+  width: 1px;
+  height: 25px;
+  justify-self: center;
+  background: var(--line);
+}
+
+.mergeReports::before {
+  content: "";
+  position: absolute;
+  top: 24px;
+  left: 16.666%;
+  right: 16.666%;
+  border-top: 1px solid var(--line);
+}
+
+.mergeReports::after {
+  content: "";
+  position: absolute;
+  top: 24px;
+  bottom: 0;
+  left: 50%;
+  border-left: 1px solid var(--line);
+}
+
+.signalCards > .appearsCard {
+  border-color: #d5e2d7;
+  background: #eef6ef;
+}
+
+.appearsCard h3 {
+  color: #4f775b;
+}
+
+.signalCards > .staysOutCard {
+  border-color: #efcbc5;
+  background: #fff8f6;
+}
+
+.staysOutCard h3 {
+  color: #a34d47;
+}
+
+.connectActions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (min-width: 701px) and (max-width: 900px) {
+  .crewSection {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 24px;
+  }
+}
+
+@media (max-width: 700px) {
+  .crewSection {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+  }
+
+  .reportingAgents {
+    gap: 6px;
+  }
+
+  .reportingAgents > div > span:last-child {
+    font-size: 11px;
+  }
+
+}
