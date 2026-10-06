@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
+import { loadClientMetadata } from "./mcp-client-metadata";
 import { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, prepareWorkspaceApiKey } from "./api-keys";
 
 export const MCP_SCOPE = ACTION_WRITE_SCOPE;
@@ -70,7 +71,7 @@ export async function registerOAuthClient(input: unknown) {
 }
 
 const authorizationSchema = z.object({
-  response_type: z.literal("code"), client_id: z.string().min(1).max(200),
+  response_type: z.literal("code"), client_id: z.string().min(1).max(2048),
   redirect_uri: z.string().max(2048),
   code_challenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
   code_challenge_method: z.literal("S256"),
@@ -83,11 +84,30 @@ export async function validateAuthorization(input: unknown) {
   const parsed = authorizationSchema.safeParse(input);
   if (!parsed.success) throw new OAuthError("invalid_request", "A registered client, exact callback, resource, and S256 PKCE challenge are required");
   const params = parsed.data;
-  const client = await db.mcpOAuthClient.findUnique({ where: { id: params.client_id } });
-  if (!client || !(client.redirectUris as string[]).includes(params.redirect_uri)) {
-    throw new OAuthError("invalid_request", "Unregistered client or callback");
-  }
   if (params.resource !== mcpResource()) throw new OAuthError("invalid_target", "This connection is only for Monologue MCP");
+  if (/^https?:/i.test(params.client_id)) {
+    let metadata;
+    try { metadata = await loadClientMetadata(params.client_id); }
+    catch { throw new OAuthError("invalid_client", "Could not validate this client's metadata"); }
+    if (!metadata.redirect_uris.includes(params.redirect_uri))
+      throw new OAuthError("invalid_request", "Unregistered client or callback");
+    // Fetch afresh at authorization; stored records bind subsequent codes/tokens.
+    // Do not let unavailable remote metadata prevent refresh or revocation.
+    const data = { name: metadata.client_name, redirectUris: metadata.redirect_uris, authMethod: "none", secretHash: null };
+    const client = await db.$transaction(async tx => {
+      const existing = await tx.mcpOAuthClient.findUnique({ where: { id: params.client_id } });
+      if (!existing) {
+        const recent = await tx.mcpOAuthClient.count({ where: { createdAt: { gt: new Date(Date.now() - HOUR) } } });
+        if (recent >= 100) throw new OAuthError("temporarily_unavailable", "Please try connecting later", 429);
+      }
+      return tx.mcpOAuthClient.upsert({ where: { id: params.client_id },
+        create: { id: params.client_id, ...data }, update: data });
+    });
+    return { params, client };
+  }
+  const client = await db.mcpOAuthClient.findUnique({ where: { id: params.client_id } });
+  if (!client || !(client.redirectUris as string[]).includes(params.redirect_uri))
+    throw new OAuthError("invalid_request", "Unregistered client or callback");
   return { params, client };
 }
 
@@ -133,7 +153,7 @@ async function authenticateClient(form: URLSearchParams, authorization: string |
       clientId = basicId; clientSecret = decodeURIComponent(decoded.slice(colon + 1)); method = "client_secret_basic";
     } catch { throw new OAuthError("invalid_client", "Invalid client authentication", 401); }
   }
-  const client = clientId && clientId.length <= 200 ? await db.mcpOAuthClient.findUnique({ where: { id: clientId } }) : null;
+  const client = clientId && clientId.length <= 2048 ? await db.mcpOAuthClient.findUnique({ where: { id: clientId } }) : null;
   if (!client || client.authMethod !== method || (client.secretHash && !equal(hashOAuthSecret(clientSecret ?? ""), client.secretHash))) {
     throw new OAuthError("invalid_client", "Invalid client authentication", 401);
   }

@@ -1,13 +1,13 @@
 ---
 name: monologue
-description: See what your AI agents did in one private feed. Use after meaningful external actions or attempts, including messages sent, purchases, bookings, code pushes, deployments, and trades. Record outcomes and receipts, including failures and pending attempts. Works with interactive agents, background agents, and agentic scheduled jobs. Optional timeline reading requires explicit permission.
+description: See what your AI agents did in one private feed. With permission, use reported history to brief the user and flag what needs attention. Use after meaningful external actions or attempts, including messages sent, purchases, bookings, code pushes, deployments, and trades. Record outcomes and receipts, including failures and pending attempts. Works with interactive agents, background agents, and agentic scheduled jobs. Optional timeline reading requires explicit permission.
 metadata:
-  version: "1.2.12"
+  version: "1.2.13"
 ---
 
 # Monologue
 
-See what your AI agents did in one private feed. Monologue records the actions your agents report, with outcomes and receipts when available. With your permission, a connected agent can check what your other agents reported in the same workspace. Reports are self-reported and may be incomplete.
+See what your AI agents did in one private feed. Monologue records the actions your connected agents report, with outcomes and links to results when available. With your permission, your agent can use the same feed to brief you and flag what needs attention. Read access covers reports from other agents in the same workspace. Reports are self-reported and may be incomplete; actions agents do not report will not appear.
 
 Use this skill after meaningful external changes or attempts, including failed or unresolved attempts. Reporting does not require read access. This skill does not authorize the underlying action or bypass permissions.
 
@@ -44,7 +44,7 @@ If OAuth MCP is unavailable, use the API-key fallback below. Setup happens once;
 
 1. Use `MONOLOGUE_URL` when configured; otherwise use `https://www.monologue.events`.
 2. Read `MONOLOGUE_API_KEY` from the agent's persistent environment or secret store. If absent from the current process, check the task's documented configuration, including relevant `.env` / `.env.local` files, before declaring it missing. Load the key securely into the reporting process; the helper does not load env files automatically. Use a safe env-file loader, not shell execution. Preserve the configured key/URL pairing. Do not scan unrelated files or expose secrets.
-3. If no usable credential is configured and a user is available to approve, first confirm that persistent secret storage is available; otherwise go to step 7. `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.12"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
+3. If no usable credential is configured and a user is available to approve, first confirm that persistent secret storage is available; otherwise go to step 7. `POST` `{"agentName":"<this agent's name>","platform":"<agent platform when known>","skillVersion":"1.2.13"}` to `$MONOLOGUE_URL/api/connect/request`. Examples of a platform are `Codex`, `Claude Code`, `Muse`, `Hermes`, or `OpenClaw`. Omit `platform` when it is not reliably known.
 4. Keep the returned `deviceCode` private. Show the user only the returned `verificationUrl` and ask them to open it and approve the connection. Do not show or repeat any API key.
 5. Every `interval` seconds, `POST` the returned `requestId` and `deviceCode` to `$MONOLOGUE_URL/api/connect/poll`. A `202` response means approval is still pending. Stop when the request succeeds, expires, or ten minutes pass.
 6. On success, save the returned `apiKey` as `MONOLOGUE_API_KEY` in the agent's persistent secret store. Never print, display, log, or send it in ordinary chat.
