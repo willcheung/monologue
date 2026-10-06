@@ -218,3 +218,10 @@ The Action API and `source` field can later accept webhooks, connectors, MCP, br
 ## License
 
 MIT
+
+
+### Shared-workspace development preview
+
+Run `npm run dev:workspace`, then open `http://localhost:3100/feed`. This starts the same application with an isolated SQLite database and synthetic sample accounts. Use the sample-account selector to try personal/shared feeds, invitations, member removal, assistant destinations, and daily report settings. Team settings include a development-only Free/Plus switch.
+
+The launcher suppresses hosted database/provider credentials and binds to loopback. No production data is loaded, no email or Slack messages are sent, and no daily delivery job or checkout is connected. Stop with Ctrl+C. Development account switching is unavailable in production. See [workspace architecture](docs/HOSTED_ARCHITECTURE.md#shared-workspaces) for authorization and migration details.

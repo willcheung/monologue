@@ -30,9 +30,11 @@ function calendarLabel(dateValue: Date, localTime: boolean) {
   return { month, day, relative, accessible };
 }
 
-export function FeedTimeline({ actions, queryString, basePath = "/feed" }: { actions: Action[]; queryString: string; basePath?: string }) {
+type AttributedAction = Action & { reportedByUser?: { name: string } | null };
+
+export function FeedTimeline({ actions, queryString, basePath = "/feed" }: { actions: AttributedAction[]; queryString: string; basePath?: string }) {
   const localTime = useBrowserTime();
-  const groups = new Map<string, { date: Date; actions: Action[] }>();
+  const groups = new Map<string, { date: Date; actions: AttributedAction[] }>();
 
   for (const action of actions) {
     const key = dateParts(action.occurredAt, localTime).key;

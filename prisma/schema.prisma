@@ -31,10 +31,11 @@ model Action {
   createdAt       DateTime  @default(now())
   workspaceId     String
   workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reportedByUserId String?
+  reportedByUser User? @relation("ActionPerson", fields: [reportedByUserId], references: [id], onDelete: SetNull)
   reportedByKeyId String?
   reportedByKey   ApiKey?   @relation("ActionReporter", fields: [reportedByKeyId], references: [id], onDelete: SetNull)
 
-  @@unique([workspaceId, agentName, system, externalId])
   @@unique([workspaceId, agentId, system, externalId])
   @@index([workspaceId, occurredAt])
   @@index([workspaceId, agentName])
@@ -49,7 +50,14 @@ model Action {
 model Workspace {
   id               String            @id @default(cuid())
   name             String
-  ownerId          String?           @unique
+  ownerId          String?
+  personalOwnerId  String? @unique
+  kind             String @default("personal")
+  plan             String @default("free")
+  membershipVersion Int @default(0)
+  members          WorkspaceMember[]
+  invitations      WorkspaceInvitation[]
+  reportSettings   WorkspaceReportSettings?
   owner            User?             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   actions          Action[]
   apiKeys          ApiKey[]
@@ -57,6 +65,8 @@ model Workspace {
   agentConnections AgentConnection[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+
+  @@index([ownerId])
 }
 
 model ApiKey {
@@ -183,7 +193,10 @@ model User {
   updatedAt           DateTime          @updatedAt
   sessions            Session[]
   accounts            Account[]
-  workspace           Workspace?
+  workspaces          Workspace[]
+  memberships         WorkspaceMember[]
+  invitationsSent     WorkspaceInvitation[] @relation("InvitationSender")
+  reportedActions     Action[] @relation("ActionPerson")
   connectedAgents     Agent[]           @relation("AgentConnector")
   createdApiKeys      ApiKey[]          @relation("ApiKeyCreator")
   approvedConnections AgentConnection[] @relation("ConnectionApprover")
@@ -236,4 +249,42 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model WorkspaceMember {
+  id String @id @default(cuid())
+  workspaceId String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role String @default("member")
+  joinedAt DateTime @default(now())
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model WorkspaceInvitation {
+  id String @id @default(cuid())
+  workspaceId String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email String
+  tokenHash String @unique
+  invitedByUserId String
+  invitedByUser User @relation("InvitationSender", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  acceptedAt DateTime?
+  cancelledAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([workspaceId, email])
+}
+
+model WorkspaceReportSettings {
+  workspaceId String @id
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  emailEnabled Boolean @default(false)
+  slackEnabled Boolean @default(false)
+  slackChannel String?
+  hour Int @default(9)
+  timeZone String @default("America/Los_Angeles")
+  updatedAt DateTime @updatedAt
 }

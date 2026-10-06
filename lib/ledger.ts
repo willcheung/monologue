@@ -110,3 +110,23 @@ export function buildWeeklyLedger(actions: LedgerAction[], now = new Date(), tim
     days,
   };
 }
+
+export function weeklyLedgerBounds(now = new Date(), timeZone = "UTC") {
+  const endKey = dayKey(now, timeZone);
+  const startKey = shiftDayKey(endKey, -6);
+  const clock = new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
+  function midnight(key: string) {
+    const target = Date.parse(`${key}T00:00:00Z`);
+    let candidate = target;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const parts = clock.formatToParts(new Date(candidate));
+      const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(value => value.type === type)!.value;
+      const wallTime = Date.parse(`${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}:${part("second")}Z`);
+      const correction = target - wallTime;
+      if (!correction) break;
+      candidate += correction;
+    }
+    return new Date(candidate);
+  }
+  return { from: midnight(startKey), to: new Date(midnight(shiftDayKey(endKey, 1)).getTime() - 1) };
+}

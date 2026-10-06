@@ -9,12 +9,12 @@ import DevelopersPage from "@/app/(marketing)/developers/page";
 
 describe("MCP setup guidance", () => {
   it("keeps the shared prompt and clearly labels connection permissions without exposing credentials", () => {
-    const html = renderToStaticMarkup(<ApiKeyManager mcpUrl={MCP_URL} initialKeys={[
+    const html = renderToStaticMarkup(<ApiKeyManager initialKeys={[
       { id: "test-write", name: "Writer", prefix: "OAuth connection", scopes: "actions:write", createdAt: "2026-10-01", lastUsedAt: null, revokedAt: null },
       { id: "test-read", name: "Reader", prefix: "OAuth connection", scopes: "actions:read", createdAt: "2026-10-01", lastUsedAt: null, revokedAt: null },
       { id: "test-both", name: "Both", prefix: "OAuth connection", scopes: "actions:write actions:read", createdAt: "2026-10-01", lastUsedAt: null, revokedAt: null },
     ]} />);
-    expect(html).toContain("Connect an agent with MCP");
+    expect(html).toContain("<h2>Connect an agent</h2>");
     expect(html.match(/Copy setup prompt/g)).toHaveLength(1);
     expect(html).not.toContain("Copy MCP URL");
     expect(html).not.toContain(MCP_URL);

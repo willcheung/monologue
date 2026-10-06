@@ -18,6 +18,11 @@ describe("safe internal redirects", () => {
     expect(newUserLandingPath("/agents")).toBe("/settings/keys");
   });
 
+  it("preserves a new signup's workspace invitation", () => {
+    expect(newUserLandingPath("/join?token=sample-invite")).toBe("/join?token=sample-invite");
+    expect(newUserLandingPath("/join")).toBe("/settings/keys");
+  });
+
   it("preserves a new signup's in-progress agent approval", () => {
     expect(newUserLandingPath("/connect?request=abc&code=def"))
       .toBe("/connect?request=abc&code=def");

@@ -15,7 +15,8 @@
     "db:migrate:turso": "node --env-file=.env.local --import tsx scripts/migrate-turso.ts",
     "db:seed": "node --env-file=.env --import tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
-    "test:mcp": "vitest run tests/mcp.test.ts"
+    "test:mcp": "vitest run tests/mcp.test.ts",
+    "dev:workspace": "node scripts/workspace-dev.mjs"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.5",

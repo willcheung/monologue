@@ -22,6 +22,8 @@ Implemented in the application:
 - private AI Crew list and agent track-record pages
 - private weekly agent ledger, active-agent roster, and browser-generated static share cards
 - optional OAuth MCP reporting and separately approved, workspace-scoped timeline reading
+- personal and shared workspaces, member invitations, workspace selection, and person attribution
+- private daily workspace summaries and contextual prompts for agent-generated briefings
 
 ## Repository policy
 
@@ -73,10 +75,15 @@ Route groups organize code without appearing in public URLs. The application rou
 /welcome             optional agent setup guide
 /connect             approve a short-lived agent connection
 /feed                authenticated action feed
-/agents              authenticated AI Crew
+/agents              authenticated selected-workspace agent roster
 /agents/[agentId]    authenticated private agent profile and track record
-/recap               authenticated private seven-day agent ledger
+/recap               authenticated private weekly recap and daily summary
 /settings/keys       add agents and manage agent keys
+/workspaces          list, select and create personal/shared workspaces
+/settings/workspaces redirect to /workspaces
+/settings/workspace  selected workspace: invite and manage members
+/join                accept an email-bound workspace invitation
+/reports             redirect to Recap’s daily summary
 /api/auth/*           browser authentication
 /api/actions          agent ingestion and authenticated action reads
 /api/connect/*        request, approve, and claim an automatic agent connection
@@ -157,7 +164,7 @@ https://monologue.example.com/api/auth/callback/google
 
 Replace the example domains with your own deployment origins. Redirect URIs must match exactly, including scheme, host, path, and trailing-slash behavior. Use separate OAuth clients for local/staging and production when practical so credentials and consent configuration remain isolated.
 
-Do not add enterprise SSO, Google Workspace domain restrictions, or organization switching until the product actually needs them.
+Workspace selection is based on explicit membership. Enterprise SSO and Google Workspace domain restrictions remain outside this implementation.
 
 ## Hosted data ownership
 
@@ -192,7 +199,7 @@ OAuth-capable MCP clients can instead connect `/mcp` through their secure connec
 
 API evolution must remain additive. Older skills may omit platform and version data, and the action endpoint must continue accepting the existing V1 payload. Workspace, connected agent, reporting key, and user attribution should be inferred on the server whenever possible so multiplayer changes never require reinstalling an agent skill.
 
-Do not add teams, invitations, billing, or enterprise authentication to this first hosted flow.
+Personal remains the default. Shared workspaces extend this flow through explicit invitations; enterprise authentication and live billing are outside the current development implementation.
 
 ### OAuth MCP connections
 
@@ -232,3 +239,40 @@ A new repository requires all three:
 3. no duplication of Monologue application or domain logic
 
 If all three are not true, the code belongs here.
+
+
+## Shared workspaces
+
+Each person has one personal workspace identified by unique personalOwnerId and can own or join multiple shared workspaces. Existing owner workspaces are backfilled without moving actions or credentials. Browser workspace selection is an HTTP-only cookie; resolve ownership or membership on every request. Requests bound to a displayed workspace use a checked workspace header or explicit consent field so changing another tab cannot silently reroute a mutation. Agent credentials remain fixed to their selected workspace regardless of browser selection.
+
+Owners manage invitations, members, and report settings. Members see the shared feed and connect/manage their own assistants. Personal workspaces cannot accept members. Invitations store hashed tokens, expire after seven days, and require the authenticated user's verified email to match the invited address. Pending invitations reserve seats. Seat checks acquire a transactional workspace write lock before counting reservations. Free shared workspaces allow three people including the owner; the current Plus entitlement allows ten. No general tool-permission or execution-approval system is added.
+
+Removing a member revokes their workspace credentials and approved connection claims while preserving action history and original person attribution. REST/MCP credentials and OAuth code/refresh exchange check current membership. Same-named assistants are resolved by workspace and connecting person. Retry deduplication uses stable agent identity when present; legacy name-based uniqueness applies only to actions without an agent ID.
+
+Recap shows the selected workspace's seven-day ledger and last 24 hours on the same page, with original person attribution in shared workspaces and completed/attention counts. Paid controls and delivery settings are absent from the product UI. The existing report-settings persistence and entitlement helpers remain dormant for compatibility; they do not connect providers, start a scheduler or send messages. Report aggregation does not add activity events or change agent reporting behavior.
+
+Recap generates copyable weekly briefing, project catch-up and coordination-check prompts for the displayed workspace and the same seven calendar days, including timezone and daylight-saving boundaries. Every prompt includes this instance's MCP setup, reuses an existing connection when available, and requests explicit read approval if missing. The agent handles connection setup through its supported secure flow; the UI has no separate connection checklist and does not preflight a browser account's connection inventory. Disabled MCP instructs the agent to stop and ask for instance setup. Each prompt requests paginated read_timeline results, scoped report links and a distinction between reported facts and inferences. Supporting links carry an explicit workspace ID resolved against current membership. Older `/reports` links forward their workspace to Recap’s daily section, where membership is checked before any report query. Recap also checks explicit workspace links against current membership. Old weekly-briefing feed links redirect to Recap. Prompt copying does not authorize reading or execute work.
+
+## Isolated workspace development
+
+Run `npm run dev:workspace` to migrate and seed `prisma/workspace-dev.db` and start a loopback-only app at `http://localhost:3100/feed`. The launcher provides its own local configuration, suppresses inherited hosted credentials, and never copies customer data. Seed data is synthetic and confined to that database. Sample people and a shared project let contributors test joining, privacy, daily summaries and contextual briefing prompts without external services.
+
+Development impersonation requires NODE_ENV=development, MONOLOGUE_WORKSPACE_DEV=1, a loopback HTTP auth origin, a file database, no hosted database credentials, and no Vercel deployment marker. It returns unavailable in production. Real cloud deployment continues to require browser authentication and hosted environment configuration. The development server binds only to 127.0.0.1 and should not be exposed publicly.
+
+My agents lists only the displayed workspace’s roster, including teammates’ assistants in shared workspaces. Resolve explicit workspace destinations against authenticated membership before loading agents or their counts; personal and other-workspace agents are excluded. Product feed, My agents, Recap and setup navigation retain the displayed workspace ID, independently of another tab’s selected cookie. Switching workspaces from My agents, Recap or Add agent keeps that destination open with the new checked workspace. Direct agent profiles resolve their workspace against current access independently of the active workspace cookie. Opening full activity explicitly selects that workspace before loading its feed. Personal settings redirect to the workspace list.
+
+The far-right Workspaces dropdown uses the existing membership-checked selection endpoint. After selection it opens the feed with an explicit workspace ID, keeping the visible destination stable across tabs. All product pages use one main navigation with a workspace-bound Add agent link and the far-right chooser; there is no secondary workspace title or menu bar. Shared workspace Settings links live beside Open workspace on `/workspaces`. Create workspace links to the single form at the top of `/workspaces`; personal workspaces still have no settings page.
+
+Authenticated Add agent builds its prompt for this configured instance and intended workspace. It reuses the same portable reporting skill but replaces hosted setup defaults for self-hosted/dev instances, requires explicit destination approval, preserves existing credential pairings and requests reporting access only. The public marketing setup prompt remains unchanged. Unauthorized explicit Add agent destinations return 404 after authentication. Profile headers use their membership-checked workspace; full activity links include both workspace and agent IDs so another tab cannot silently reroute them.
+
+## Operator-owned legal documents
+
+The public repository contains reusable `/terms` and `/privacy` renderers, not the hosted operator's policy text. Supply each document through the server-only `MONOLOGUE_TERMS_DOCUMENT` and `MONOLOGUE_PRIVACY_DOCUMENT` environment variables. Hosted policy drafts, operator identity, contact details and review notes stay in ignored private files or deployment configuration. Public builds and self-hosted installations work without those files. Without configured documents, pages explain that the operator has not supplied its policies, and sign-in does not claim agreement to missing terms.
+
+Each variable contains a JSON object with `updated` and `nodes`. A node is text or an object with `tag`, `children` and an optional safe `href` for an anchor. Allowed tags are `p`, `section`, `h2`, `h3`, `a`, `strong`, `em`, `ul` and `li`. For example: `{"updated":"January 1, 2026","nodes":[{"tag":"p","children":["Contact this installation's operator for its policies."]}]}`. Documents are limited to 32 KiB each; deployed environments must also fit the provider's combined environment-variable limit. Rendering escapes text and rejects executable markup and unsafe link protocols. Set values at deployment, without committing the operator's documents or placing them in public client configuration.
+
+Core workspace models, membership checks and agent/feed/MCP authorization remain in the open-source implementation. Future commercial integrations and hosted operations may use a private layer without duplicating these boundaries.
+
+The migration runner applies additive migrations and their checksum receipts in one write transaction. Historical migrations that toggle `PRAGMA foreign_keys` retain their original execution behavior; rehearse those on an isolated database and preserve a backup. Applied migration SQL/checksums must not be rewritten.
+
+Self-service account deletion and stored agreement-version evidence are not implemented. Sign-in shows button-linked legal notice only when both operator documents are configured; this does not create a durable acceptance record. Private legal review and release decisions belong under ignored `private/`.

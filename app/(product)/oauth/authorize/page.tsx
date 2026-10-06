@@ -29,15 +29,17 @@ export default async function OAuthAuthorizePage({ searchParams }: { searchParam
     if (!session?.user) redirect("/sign-in");
     const checked = await validateAuthorization(params);
     if (form.get("decision") !== "approve") redirect(authorizationRedirect(checked.params, { error: "access_denied" }));
-    redirect(await approveOAuthConnection(checked.params, session.workspace.id, session.user.id));
+    const workspaceId = form.get("workspaceId");
+    if (typeof workspaceId !== "string" || !session.workspaces.some(workspace => workspace.id === workspaceId)) throw new Error("Workspace unavailable");
+    redirect(await approveOAuthConnection(checked.params, workspaceId, session.user.id));
   }
-  return <><Header product signedIn /><main className="connection-shell"><div className="connection-card">
+  return <><Header product signedIn workspaceContext={context} /><main className="connection-shell"><div className="connection-card">
     <span className="kicker">Connect your agent</span><h1>Connect {client.name}?</h1>
-    {canRead ? <p>This connection can <strong>read your entire private timeline</strong>, including actions reported by your other agents.{canWrite ? " It can also add actions to your feed." : " It cannot add actions."} It cannot act in your other apps.</p>
+    {canRead ? <p>This connection can <strong>read the selected workspace’s entire timeline</strong>, including actions reported by its members’ agents.{canWrite ? " It can also add actions to your feed." : " It cannot add actions."} It cannot act in your other apps.</p>
       : <p>This connection can add actions to your private feed. It cannot read your feed or act in your other apps.</p>}
     <p>Connecting to <strong>{context.workspace.name}</strong>.</p>
     <p>Client name supplied by the app; not verified by Monologue. After approval, you’ll return to <strong>{new URL(params.redirect_uri).host}</strong>.</p>
     <p>You can revoke access anytime in Connected agents.</p>
-    <form action={consent} className="secret-actions"><button className="primary-button" name="decision" value="approve">Connect agent</button><button className="quiet-button" name="decision" value="deny">Cancel</button></form>
+    <form action={consent} className="secret-actions"><label>Workspace<select name="workspaceId" defaultValue={context.workspace.id}>{context.workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.kind === "personal" ? "Personal" : workspace.name}</option>)}</select></label><button className="primary-button" name="decision" value="approve">Connect agent</button><button className="quiet-button" name="decision" value="deny">Cancel</button></form>
   </div></main></>;
 }

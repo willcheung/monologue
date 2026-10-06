@@ -21,6 +21,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { auth, type OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js";
 import type { OAuthClientInformationMixed, OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
+import { removeWorkspaceMember } from "@/lib/workspace-service";
 import { newUserLandingPath } from "@/lib/redirects";
 import { authenticateApiRequest } from "@/lib/api-keys";
 
@@ -398,6 +399,29 @@ describe("MCP OAuth and reporting", () => {
     const context = await authenticateMcpRequest(bearer(renewed.access_token));
     await fixture.db.apiKey.update({ where: { id: context!.keyId }, data: { revokedAt: new Date() } });
     expect((await rpc(renewed.access_token, "tools/call", { name: "read_timeline", arguments: {} })).status).toBe(401);
+  });
+
+  it("keeps team members' same-named MCP agents distinct and revokes removed members", async () => {
+    const workspace = await fixture.db.workspace.create({ data: { name: "MCP shared fixture", kind: "shared", ownerId: "u1", members: { create: [{ userId: "u1", role: "owner" }, { userId: "u2", role: "member" }] } } });
+    const a = await grant(workspace.id, "u1", "none", "actions:write", "Team Codex");
+    const b = await grant(workspace.id, "u2", "none", "actions:write actions:read", "Team Codex");
+    const owner = await exchangeOAuthToken(a.form), member = await exchangeOAuthToken(b.form);
+    const ownerContext = (await authenticateMcpRequest(bearer(owner.access_token)))!;
+    const memberContext = (await authenticateMcpRequest(bearer(member.access_token)))!;
+    expect(memberContext.agent.id).not.toBe(ownerContext.agent.id);
+    const arguments_ = { verb: "sent", summary: "Fixture: customer message", category: "communication", status: "completed", system: "Mail", externalId: "team-shared-object" };
+    for (const access of [owner.access_token, member.access_token]) {
+      const result = await (await rpc(access, "tools/call", { name: "report_action", arguments: arguments_ })).json();
+      expect(result.result.structuredContent).toMatchObject({ success: true, duplicate: false });
+    }
+    const rows = await fixture.db.action.findMany({ where: { workspaceId: workspace.id } });
+    expect(rows).toHaveLength(2); expect(new Set(rows.map(row => row.reportedByUserId)).size).toBe(2);
+    await removeWorkspaceMember(workspace.id, "u1", "u2");
+    expect(await authenticateMcpRequest(bearer(member.access_token))).toBeNull();
+    expect((await rpc(member.access_token, "tools/call", { name: "read_timeline", arguments: {} })).status).toBe(401);
+    await expect(exchangeOAuthToken(new URLSearchParams({ grant_type: "refresh_token", client_id: b.client.client_id, resource: mcpResource(), refresh_token: member.refresh_token }))).rejects.toMatchObject({ code: "invalid_grant" });
+    expect(await authenticateMcpRequest(bearer(owner.access_token))).not.toBeNull();
+    expect(await fixture.db.action.count({ where: { workspaceId: workspace.id } })).toBe(2);
   });
 
   it("allows a separately approved read-only connection without allowing writes", async () => {

@@ -28,7 +28,7 @@ function summaryWithLeadingAction(summary: string) {
   return <><strong>{summary.slice(0, splitAt)}</strong>{summary.slice(splitAt)}</>;
 }
 
-export function ActionCard({ action, queryString = "", basePath = "/feed", localTime = false }: { action: Action; queryString?: string; basePath?: string; localTime?: boolean }) {
+export function ActionCard({ action, queryString = "", basePath = "/feed", localTime = false }: { action: Action & { reportedByUser?: { name: string } | null }; queryString?: string; basePath?: string; localTime?: boolean }) {
   const href = `${basePath}?${queryString ? `${queryString}&` : ""}action=${action.id}`;
   const category = categoryPresentation(action.category);
   const change = knownChange(action.metadata);
@@ -45,6 +45,7 @@ export function ActionCard({ action, queryString = "", basePath = "/feed", local
         <div className="timeline-main">
           <div className="timeline-topline">
             <strong>{action.agentName}</strong>
+            {action.reportedByUser && <span className="action-person">{action.reportedByUser.name}</span>}
             <span className="category-label">{category.label}</span>
             {exceptionalStatus && <span className={`status status-${action.status}`}>
               {action.status === "failed" ? <AlertCircle size={12} /> : <Clock3 size={12} />}{action.status}

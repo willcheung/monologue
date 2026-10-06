@@ -18,6 +18,7 @@ export type AgentCardData = {
   id: string;
   name: string;
   platform: string | null;
+  connectedByName?: string | null;
   description: string | null;
   actionCount: number;
   lastActive: Date | null;
@@ -30,7 +31,7 @@ export function AgentCard({ agent }: { agent: AgentCardData }) {
   return <Link href={`/agents/${agent.id}`} className="agent-card">
     <div className="agent-card-heading">
       <AgentAvatar name={agent.name} />
-      <div><span>{agent.platform ?? "AI agent"}</span><h2>{agent.name}</h2></div>
+      <div><span>{agent.platform ?? "AI agent"}</span><h2>{agent.name}</h2>{agent.connectedByName && <small className="action-person">{agent.connectedByName}</small>}</div>
       <ArrowUpRight size={18} />
     </div>
     <p>{agent.description ?? "An agent with a track record in your Monologue feed."} <em>{agent.mostLikely}</em></p>

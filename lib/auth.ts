@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { db } from "./db";
+import { ensurePersonalWorkspace } from "./workspace-service";
 import { isCloudMode, requireCloudEnvironment } from "./runtime";
 
 requireCloudEnvironment();
@@ -26,12 +27,7 @@ export const auth = betterAuth({
       create: {
         after: async (user) => {
           if (!isCloudMode()) return;
-          const firstName = user.name.trim().split(/\s+/)[0];
-          await db.workspace.upsert({
-            where: { ownerId: user.id },
-            update: {},
-            create: { ownerId: user.id, name: firstName ? `${firstName}'s feed` : "My agent feed" },
-          });
+          await ensurePersonalWorkspace(user.id);
         },
       },
     },

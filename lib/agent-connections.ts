@@ -1,5 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { db } from "./db";
+import { requireWorkspaceAccess, workspaceAccess } from "./workspace-access";
 import { ACTION_WRITE_SCOPE, prepareWorkspaceApiKey } from "./api-keys";
 
 const CONNECTION_LIFETIME_MS = 10 * 60 * 1000;
@@ -46,6 +47,7 @@ export async function getAgentConnectionForApproval(id: string, approvalCode: st
 }
 
 export async function approveAgentConnection(id: string, approvalCode: string, workspaceId: string, approvedByUserId: string) {
+  await requireWorkspaceAccess(db, workspaceId, approvedByUserId);
   const connection = await getAgentConnectionForApproval(id, approvalCode);
   if (!connection) return { status: "invalid" as const };
   if (connection.expiresAt <= new Date()) return { status: "expired" as const };
@@ -75,6 +77,8 @@ export async function claimAgentConnection(id: string, deviceCode: string) {
       return { status: "claimed" as const };
     }
 
+    if (!connection.approvedByUserId || !await workspaceAccess(transaction, connection.workspaceId, connection.approvedByUserId)) return { status: "invalid" as const };
+
     const claimed = await transaction.agentConnection.updateMany({
       where: { id, status: "approved", workspaceId: connection.workspaceId },
       data: { status: "claimed", claimedAt: new Date() },
@@ -85,6 +89,7 @@ export async function claimAgentConnection(id: string, deviceCode: string) {
       where: {
         workspaceId: connection.workspaceId,
         name: connection.agentName,
+        connectedByUserId: connection.approvedByUserId,
         OR: connection.platform ? [{ platform: connection.platform }, { platform: null }] : [{ platform: null }],
       },
       orderBy: { createdAt: "asc" },
