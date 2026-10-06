@@ -1,23 +1,23 @@
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, ArrowUpRight, Check, Share2 } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, Share2, X } from "lucide-react";
 import { ActionIcon } from "@/components/action-icon";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { CopySetupButton } from "@/components/copy-setup-button";
 import { Header } from "@/components/header";
 import { RotatingActionHeadline } from "@/components/rotating-action-headline";
 import { isCloudMode } from "@/lib/runtime";
+import styles from "./homepage.module.css";
 
 const examples = [
-  { time: "2:43 PM", agent: "Codex", category: "code", label: "Code", verb: "Pushed", detail: "the responsive Monologue feed implementation.", system: "GitHub", context: "Monologue" },
+  { time: "2:43 PM", agent: "Hermes · Henry", category: "code", label: "Code", verb: "Pushed", detail: "the Monologue feed update.", system: "GitHub", context: "Monologue" },
   { time: "1:17 PM", agent: "Muse · Maya", category: "communication", label: "Communication", verb: "Sent", detail: "Sarah a follow-up email confirming Friday's interview.", system: "Gmail", context: "Job Search" },
   { time: "11:04 AM", agent: "Claude · Cal", category: "calendar", label: "Calendar", verb: "Rescheduled", detail: "the dentist appointment.", system: "Google Calendar", before: "Tuesday · 3:00 PM", after: "Thursday · 11:00 AM" },
 ];
 
 const crew = [
-  { name: "Codex", role: "Coding agent", systems: "GitHub · Vercel", actions: 184 },
+  { name: "Hermes · Henry", role: "General agent", systems: "GitHub · Vercel", actions: 184 },
   { name: "Muse · Maya", role: "Personal agent", systems: "Gmail · Calendar", actions: 76 },
-  { name: "Hermes · Scout", role: "General agent", systems: "Notion · Stripe", actions: 41 },
+  { name: "Claude · Cal", role: "Calendar agent", systems: "Google Calendar", actions: 41 },
 ];
 
 const recapDays = [
@@ -40,14 +40,19 @@ export default function MarketingPage() {
         <div className="hero-copy">
           <span className="kicker">Your agent feed</span>
           <RotatingActionHeadline />
-          <p>Emails sent, purchases made, code pushed—all in one private feed.</p>
+          <p>Emails sent. Purchases made. Code shipped.<br />See what your AI agents did in one private feed.</p>
           <div className="hero-actions">
-            <Link className="primary-button hero-primary" href={startHref}>{cloud ? "Try it free" : "Open your feed"}<ArrowRight size={17} /></Link>
+            <Link className="primary-button hero-primary" href={startHref}>Get started<ArrowRight size={17} /></Link>
             <CopySetupButton />
           </div>
         </div>
-        <div className="feed-preview" aria-label="Example agent feed">
-          <div className="preview-heading"><strong>Latest changes</strong><span>3 actions</span></div>
+        <div className={styles.feedDiagram}>
+          <div className={styles.reportingAgents} aria-label="Three agents reporting to your timeline">
+            {examples.map((item) => <div key={item.agent}><AgentAvatar name={item.agent} /><span>{item.agent}</span></div>)}
+          </div>
+          <div className={styles.mergeReports} aria-hidden="true"><span /><span /><span /></div>
+          <div className="feed-preview" aria-label="Example agent feed">
+          <div className="preview-heading"><strong>Latest changes</strong><span>Example feed · 3 actions</span></div>
           <div className="preview-day-group">
             <div className="preview-calendar-day" aria-label="September 22, yesterday"><span>SEP</span><strong>22</strong><small>YESTERDAY</small></div>
             <div className="preview-action-list">
@@ -66,22 +71,24 @@ export default function MarketingPage() {
               </article>)}
             </div>
           </div>
+          </div>
         </div>
       </section>
       <section className="signal-section">
         <span className="kicker">One simple rule</span>
-        <h2>If your agent changed something, it shows up here.</h2>
-        <p className="signal-lede">Sent an email? Made a purchase? Pushed code? That goes in. Reading, searching, and planning don&apos;t.</p>
-        <div className="signal-grid">
-          <div><h3><Check size={18} />What appears</h3><p>Emails sent, purchases made, calendar events changed, files written, code pushed, and deployments completed.</p></div>
-          <div><h3>What stays out</h3><p>Research, browsing, analysis, planning, drafts, recommendations, internal thoughts, and read-only tool calls.</p></div>
+        <h2>A record of what changed.</h2>
+        <p className="signal-lede">Your agents report what they changed. You get one feed to check.</p>
+        <div className={`signal-grid ${styles.signalCards}`}>
+          <div className={styles.appearsCard}><h3><Check size={18} aria-hidden="true" />What appears</h3><p>Emails sent, purchases made, calendar events changed, files written, code pushed, and deployments completed.</p></div>
+          <div className={styles.staysOutCard}><h3><X size={18} aria-hidden="true" />What stays out</h3><p>Keep private data, passwords, and API keys out of reports. Browsing, planning, drafts, and internal thoughts stay out too.</p></div>
         </div>
+        <p className={styles.reportNote}>Reports come from your connected agents. Actions they don&apos;t report won&apos;t appear.</p>
       </section>
-      <section className="feature-section" id="features" aria-label="Agent profiles">
+      <section className={`feature-section ${styles.crewSection}`} id="features" aria-label="Agent profiles" aria-labelledby="chief-heading">
         <div className="feature-copy">
-          <span className="kicker">Your AI crew</span>
-          <h2>Know who did what.</h2>
-          <p>See what your agents did and check their work anytime. With your permission, an agent can check what your other agents reported before starting related work.</p>
+          <span className="kicker">More context on your agent crew</span>
+          <h2 id="chief-heading">Give you and your AI agent a chief-of-staff view.</h2>
+          <p>See what your agents did. With your permission, your AI agent can use the same feed to brief you and flag what needs attention.</p>
           <Link href={cloud ? "/sign-in?next=%2Fagents" : "/agents"}>Meet your agents <ArrowRight size={15} /></Link>
         </div>
         <div className="crew-preview" aria-label="Example agent profiles">
@@ -93,12 +100,12 @@ export default function MarketingPage() {
           </div>)}
         </div>
       </section>
-      <section className="feature-section feature-section-reverse" aria-label="Seven-day recap">
+      <section className="feature-section feature-section-reverse" aria-labelledby="agent-outputs-heading">
         <div className="feature-copy">
           <span className="kicker">Your 7-day recap</span>
-          <h2>Your week, without the scroll.</h2>
-          <p>See what your agents got done, then share a static snapshot without sharing access to your feed.</p>
-          <Link href={cloud ? "/sign-in?next=%2Frecap" : "/recap"}>See your recap <ArrowRight size={15} /></Link>
+          <h2 id="agent-outputs-heading">Your week, without the scroll.</h2>
+          <p>See what your agents got done, then share a snapshot. Your feed stays private.</p>
+          <Link href={cloud ? "/sign-in?next=%2Frecap" : "/recap"}>See your 7-day recap <ArrowRight size={15} /></Link>
         </div>
         <div className="recap-preview" aria-label="Example seven-day recap">
           <div className="recap-preview-total"><span>This week</span><strong>23</strong><small>actions completed</small></div>
@@ -110,17 +117,13 @@ export default function MarketingPage() {
       </section>
       <section className="steps-section" id="how-it-works">
         <span className="kicker">Up and running quickly</span>
-        <h2>Connect any agent in three steps.</h2>
-        <ol><li><span>1</span><div><strong>Give your agent one prompt</strong><p>It installs Monologue and gives you a secure connection link.</p></div></li><li><span>2</span><div><strong>Approve the connection</strong><p>Sign in once. There are no keys to copy or paste.</p></div></li><li><span>3</span><div><strong>See what changes</strong><p>Consequential actions appear in one readable timeline.</p></div></li></ol>
-        <div className="steps-illustration">
-          <Image className="steps-illustration-desktop" src="/illustrations/agent-cards-desktop.png" width={2172} height={724} sizes="(max-width: 820px) 100vw, 780px" alt="Monologue connects Muse, Codex, Claude, Hermes, and OpenClaw in one feed." />
-          <Image className="steps-illustration-mobile" src="/illustrations/agent-cards-mobile.png" width={1024} height={1536} sizes="(max-width: 700px) 100vw, 1px" alt="Monologue connects Muse, Codex, Claude, Hermes, and OpenClaw in one feed." />
-        </div>
-        <Link className="primary-button" href={startHref}>{cloud ? "Start your feed" : "Try the local feed"}<ArrowRight size={17} /></Link>
+        <h2>Connect your AI agent in three steps.</h2>
+        <ol><li><span>1</span><div><strong>Give your agent the setup prompt</strong><p>Your agent follows the instructions to connect.</p></div></li><li><span>2</span><div><strong>Approve the connection</strong><p>Use a secure link or your agent&apos;s connection settings.</p></div></li><li><span>3</span><div><strong>See what it reports</strong><p>Actions appear in your private feed.</p></div></li></ol>
+        <div className={styles.connectActions}><Link className="primary-button hero-primary" href={startHref}>Get started<ArrowRight size={17} /></Link><CopySetupButton /></div>
       </section>
       <section className="why-section">
         <span className="kicker">Why we made it</span>
-        <div><h2>A human record for an automated world.</h2><p>We built Monologue so we could see what our agents did without digging through every chat window. The handwritten, slightly retro look comes from an old habit worth keeping: write things down so you can go back and check.</p></div>
+        <div><h2>A shared history for you and your agents.</h2><p>We built Monologue to see what our agents did without opening every chat. Your AI agent can use that history too.</p></div>
       </section>
     </main>
   </>;

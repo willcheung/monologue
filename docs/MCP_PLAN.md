@@ -4,11 +4,11 @@ The remote endpoint runs in the existing Next.js app, using the official MCP SDK
 
 ## Implementation
 
-The stateless `/mcp` endpoint uses the existing action schema and persistence for reporting and workspace-scoped timeline reading. OAuth discovery, dynamic client registration, mandatory S256 PKCE, resource-bound tokens, rotating refresh tokens, and revocation reuse browser sign-in and Connected agents controls. Credentials are stored as hashes. See the connection, configuration, and local testing instructions below.
+The stateless `/mcp` endpoint uses the existing action schema and persistence for reporting and workspace-scoped timeline reading. OAuth discovery, dynamic client registration, URL-based Client ID Metadata Documents (CIMD), mandatory S256 PKCE, resource-bound tokens, rotating refresh tokens, and revocation reuse browser sign-in and Connected agents controls. Credentials are stored as hashes. See the connection, configuration, and local testing instructions below.
 
 ## Scope and choices
 
-One app, one database, one action schema. Standard OAuth-capable MCP clients use dynamic registration; CIMD is not implemented. Anonymous registrations do not grant access: every grant needs a signed-in user's explicit approval. Consent shows the registered client's name as unverified and its exact callback host. Local loopback callbacks are supported for desktop clients; remote callbacks require HTTPS.
+One app, one database, one action schema. OAuth-capable MCP clients can use dynamic registration or public-client CIMD. CIMD metadata is fetched afresh during authorization, validated and stored in the existing client table. Token exchange, refresh and revocation do not depend on remote metadata availability. See [metadata fetching limits and security boundaries](HOSTED_ARCHITECTURE.md#url-based-oauth-client-metadata). Anonymous registrations do not grant access: every grant needs a signed-in user's explicit approval. Consent shows the registered client's name as unverified and its exact callback host. Local loopback callbacks are supported for desktop clients; remote callbacks require HTTPS.
 
 `actions:write` remains the default when no scope is requested and in the initial authorization challenge. Clients can request `actions:read`, `actions:write`, or both. Approval explicitly explains that read access covers the entire private timeline, including other agents' reports. Existing write-only grants never gain read permission automatically. Changing permissions requires a new approval; code exchange and refresh must preserve the approved scopes. No additional schema change is needed for read access.
 
@@ -21,7 +21,7 @@ References: [OpenAI authentication](https://developers.openai.com/plugins/build/
 ## Connection flow
 
 1. Add `https://<your-deployment>/mcp` to an OAuth-capable client's MCP connections.
-2. The client discovers OAuth and registers its callback automatically. The user signs into Monologue with the existing Google sign-in and approves the displayed read and/or write permissions.
+2. The client discovers OAuth and uses its HTTPS client metadata document or dynamically registers its callback. The user signs into Monologue with the existing Google sign-in and approves the displayed read and/or write permissions.
 3. The client exchanges the code with PKCE and securely stores OAuth tokens. No API key is displayed or pasted into chat.
 4. After an external action, the agent calls `report_action` and receives `{ success, id, duplicate }`. The portable skill supplies the reporting boundary and prefers this tool when connected.
 5. Revoke the MCP connection in `/settings/keys` to reject both existing access tokens and refreshes.
@@ -46,12 +46,12 @@ The consent screen shows the app-supplied name as unverified and displays its ca
 
 Use a staging-only database and Google OAuth client. Apply `20261001000000_mcp_oauth` with the existing migration runner **before** enabling/deploying. Then test a real client: sign-in (including first signup), cancel/approve, report a clearly labeled test action, request and approve read access, read another agent's report, renew, revoke, and confirm both tools are scoped to that user's feed. Confirm existing write-only connections remain unable to read. Local tests do not replace this end-to-end test.
 
-Rollback by disabling the flag; leave the additive tables in place. Public registration is capped at 100/hour globally and approvals at 20/hour per workspace; these are basic safeguards, not a full anti-abuse system. Expired codes and token families can be pruned after their expiry; retain rotated tokens through refresh expiry for replay detection. V1 does not schedule cleanup or support CIMD-only clients.
+Rollback by disabling the flag; leave the additive tables in place. Public registration is capped at 100/hour globally and approvals at 20/hour per workspace; these are basic safeguards, not a full anti-abuse system. Expired codes and token families can be pruned after their expiry; retain rotated tokens through refresh expiry for replay detection. No scheduled cleanup is introduced. CIMD supports public clients with mandatory S256 PKCE; private_key_jwt and client-secret authentication from metadata documents are not supported. HTTPS metadata uses port 443 and a non-root path without query strings or fragments; redirects and non-public network addresses are rejected.
 
 ## Local verification
 
-`npm test` applies all migrations to a disposable SQLite database. MCP tests use actual SDK transport/tool schemas and an actual SDK client with discovery, dynamic registration, PKCE exchange, initialization, reporting and automatic refresh. Separate consent tests check sign-in continuation, read/write permission explanations, cancellation, explicit approval and session-derived workspace binding. Tests also cover wrong callbacks/resources/verifiers, expiry, replay, duplicate reports, revocation, origin rejection, cross-workspace isolation, cross-agent reads, stable pagination, filters and rejection of permission escalation during code exchange or refresh.
+`npm test` applies all migrations to a disposable SQLite database. MCP tests use actual SDK transport/tool schemas and an actual SDK client with discovery, dynamic registration and CIMD authorization, PKCE exchange, initialization, reporting and automatic refresh. Separate consent tests check sign-in continuation, read/write permission explanations, cancellation, explicit approval and session-derived workspace binding. Tests also cover wrong callbacks/resources/verifiers, expiry, replay, duplicate reports, revocation, origin rejection, cross-workspace isolation, cross-agent reads, stable pagination, filters and rejection of permission escalation during code exchange or refresh.
 
-Run an installed client against a dedicated test workspace to verify model behavior; protocol tests alone cannot establish tool selection or instruction following. Public protocol tests are independent of private marketplace packages.
+Run an installed client against a dedicated test workspace to verify model behavior; protocol tests alone cannot establish tool selection or instruction following. CIMD loader tests cover DNS pinning, non-public addresses, response limits, invalid metadata, remote failures and timeouts. Public protocol tests are independent of private marketplace packages.
 
 To repeat protocol and persistence checks using the hosted libSQL adapter against a temporary local database: `MCP_TEST_LIBSQL=1 npm test -- --run tests/mcp.test.ts`.
