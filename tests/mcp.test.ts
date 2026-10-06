@@ -6,8 +6,9 @@ import { createHash } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
 
-const fixture = vi.hoisted(() => ({ db: undefined as unknown as import("@prisma/client").PrismaClient }));
+const fixture = vi.hoisted(() => ({ metadata: vi.fn(), db: undefined as unknown as import("@prisma/client").PrismaClient }));
 vi.mock("@/lib/db", () => ({ get db() { return fixture.db; } }));
+vi.mock("@/lib/mcp-client-metadata", () => ({ loadClientMetadata: fixture.metadata }));
 import { approveOAuthConnection, authenticateMcpRequest, exchangeOAuthToken, hashOAuthSecret, mcpResource, registerOAuthClient, revokeOAuthToken, validateAuthorization, validRedirectUri } from "@/lib/mcp-oauth";
 import { handleMcpRequest, mcpOptions, reportActionOutputSchema, reportActionSchema, reportActionAnnotations } from "@/lib/mcp-server";
 import { z } from "zod";
@@ -45,15 +46,8 @@ beforeAll(async () => {
   await fixture.db.workspace.create({ data: { id: "w2", name: "Feed Two", ownerId: "u2" } });
 });
 
-// Protocol regression for the submitted cases, NOT an LLM prompt-selection eval.
-// Existing setup applies migrations to a disposable DB; never touches a live feed.
-describe("Marketplace review protocol", () => {
-  const review = (JSON.parse(readFileSync("packaging/openai/plugin.example.json", "utf8")) as {
-    extensions: { "com.openai": { review: { test_cases: {
-      positive: { prompt: string; tools_triggered: string }[];
-      negative: { prompt: string }[];
-    } } } };
-  }).extensions["com.openai"].review.test_cases;
+// Protocol regressions use a disposable database and require no release files.
+describe("MCP reporting and cross-agent timeline", () => {
   const connectionReport = {
     verb: "Connected", summary: "Connected this agent to Monologue", category: "account",
     status: "completed", system: "Monologue", externalId: "monologue-review-connection-1",
@@ -94,12 +88,9 @@ describe("Marketplace review protocol", () => {
     }
   });
 
-  it("positive 1: persists the exact connection report and returns its real event ID", async () => {
-    const testCase = review.positive[0];
-    expect(testCase.tools_triggered).toBe("report_action");
-    for (const value of Object.values(connectionReport)) expect(testCase.prompt).toContain(value);
+  it("persists a connection report and returns its real event ID", async () => {
     const count = await fixture.db.action.count({ where: { workspaceId: "review-feed" } });
-    const result = await call(testCase.tools_triggered, connectionReport);
+    const result = await call("report_action", connectionReport);
     expect(result.isError).not.toBe(true);
     const report = reportActionOutputSchema.parse(result.structuredContent);
     expect(report.duplicate).toBe(false);
@@ -110,20 +101,16 @@ describe("Marketplace review protocol", () => {
     expect(await fixture.db.action.count({ where: { workspaceId: "review-feed" } })).toBe(count + 1);
   });
 
-  it("positive 2: retries the same fields without inserting a second event", async () => {
-    const testCase = review.positive[1];
-    expect(testCase.tools_triggered).toBe("report_action");
-    for (const value of Object.values(connectionReport)) expect(testCase.prompt).toContain(value);
+  it("retries the same fields without inserting a second event", async () => {
     const count = await fixture.db.action.count();
-    const result = await call(testCase.tools_triggered, connectionReport);
+    const result = await call("report_action", connectionReport);
     expect(reportActionOutputSchema.parse(result.structuredContent)).toEqual({ success: true, id: firstId, duplicate: true });
     expect(await fixture.db.action.count()).toBe(count);
   });
 
-  it("positive 3: returns cross-agent reports with statuses and links without logging the read", async () => {
-    expect(review.positive[2].tools_triggered).toBe("read_timeline");
+  it("returns cross-agent reports with statuses and links without logging the read", async () => {
     const count = await fixture.db.action.count();
-    const result = await call(review.positive[2].tools_triggered, { limit: 5 });
+    const result = await call("read_timeline", { limit: 5 });
     const timeline = readTimelineOutputSchema.parse(result.structuredContent);
     expect(timeline.actions).toHaveLength(4);
     expect(timeline.actions.map(action => action.agentName)).toContain("Other review agent");
@@ -137,27 +124,24 @@ describe("Marketplace review protocol", () => {
     expect(await fixture.db.action.count()).toBe(count);
   });
 
-  it("positive 4: filters GitHub/code reports and preserves result links", async () => {
-    expect(review.positive[3].tools_triggered).toBe("read_timeline");
+  it("filters GitHub/code reports and preserves result links", async () => {
     const count = await fixture.db.action.count();
-    const result = await call(review.positive[3].tools_triggered, { system: "GitHub", category: "code", limit: 5 });
+    const result = await call("read_timeline", { system: "GitHub", category: "code", limit: 5 });
     const timeline = readTimelineOutputSchema.parse(result.structuredContent);
     expect(timeline.actions).toHaveLength(1);
     expect(timeline.actions[0]).toMatchObject({ id: githubId, system: "GitHub", category: "code", url: "https://example.test/commit/1" });
     expect(await fixture.db.action.count()).toBe(count);
   });
 
-  it("positive 5: returns no matches and no cursor for the exact review search", async () => {
-    expect(review.positive[4].tools_triggered).toBe("read_timeline");
+  it("returns no matches and no cursor for an unmatched search", async () => {
     const search = "monologue-review-no-match-7d6399186b9348a2";
-    expect(review.positive[4].prompt).toContain(search);
     const count = await fixture.db.action.count();
-    const result = await call(review.positive[4].tools_triggered, { search, limit: 1 });
+    const result = await call("read_timeline", { search, limit: 1 });
     expect(readTimelineOutputSchema.parse(result.structuredContent)).toEqual({ actions: [], nextCursor: null });
     expect(await fixture.db.action.count()).toBe(count);
   });
 
-  it("negative 3 server guard: rejects workspace injection and returns no foreign-agent actions", async () => {
+  it("rejects workspace injection and returns no foreign-agent actions", async () => {
     const count = await fixture.db.action.count();
     const injected = await call("read_timeline", { workspaceId: "foreign-review-feed" });
     expect(injected?.isError).toBe(true);
@@ -165,8 +149,6 @@ describe("Marketplace review protocol", () => {
     const filtered = await call("read_timeline", { agentId: foreignAgentId });
     expect(readTimelineOutputSchema.parse(filtered.structuredContent)).toEqual({ actions: [], nextCursor: null });
     expect(await fixture.db.action.count()).toBe(count);
-    // Draft/local-dev refusal and no-tool selection require an installed-model eval.
-    expect(review.negative).toHaveLength(3);
   });
 });
 afterAll(async () => { await fixture.db?.$disconnect(); if (directory) rmSync(directory, { recursive: true }); vi.unstubAllEnvs(); });
@@ -188,7 +170,7 @@ async function rpc(token: string, method: string, params?: object) {
 describe("MCP OAuth and reporting", () => {
   it("advertises discovery and both supported scopes, but challenges for write-only by default", async () => {
     expect(await (await resourceMetadata()).json()).toMatchObject({ resource: mcpResource(), scopes_supported: ["actions:write", "actions:read"] });
-    expect(await (await oauthMetadata()).json()).toMatchObject({ code_challenge_methods_supported: ["S256"], authorization_response_iss_parameter_supported: true });
+    expect(await (await oauthMetadata()).json()).toMatchObject({ code_challenge_methods_supported: ["S256"], client_id_metadata_document_supported: true, authorization_response_iss_parameter_supported: true });
     const response = await handleMcpRequest(new Request(mcpResource()));
     expect(response.status).toBe(401);
     expect(response.headers.get("www-authenticate")).toContain("oauth-protected-resource");
@@ -258,10 +240,12 @@ describe("MCP OAuth and reporting", () => {
     expect(listed.result.tools[0].inputSchema).toEqual(z.toJSONSchema(reportActionSchema, { io: "input" }));
     expect(listed.result.tools[0].outputSchema).toEqual(z.toJSONSchema(reportActionOutputSchema));
     expect(listed.result.tools[0].annotations).toEqual(reportActionAnnotations);
+    expect(listed.result.tools[0].annotations.title).toBe("Report an action");
+    expect(listed.result.tools[0].description).toContain("http://localhost:3001/developers");
     expect(listed.result.tools[0].securitySchemes).toEqual([{ type: "oauth2", scopes: ["actions:write"] }]);
     expect(listed.result.tools[1].inputSchema).toEqual(z.toJSONSchema(readTimelineSchema, { io: "input" }));
     expect(listed.result.tools[1].outputSchema).toEqual(z.toJSONSchema(readTimelineOutputSchema));
-    expect(listed.result.tools[1].annotations).toEqual({ readOnlyHint: true, openWorldHint: false, destructiveHint: false, idempotentHint: true });
+    expect(listed.result.tools[1].annotations).toEqual({ title: "Read your timeline", readOnlyHint: true, openWorldHint: false, destructiveHint: false, idempotentHint: true });
     expect(listed.result.tools[1].securitySchemes).toEqual([{ type: "oauth2", scopes: ["actions:read"] }]);
     expect(listed.result.tools[0].inputSchema.properties.agentId).toBeUndefined();
     expect(listed.result.tools[0].inputSchema.properties.source).toBeUndefined();
@@ -427,5 +411,79 @@ describe("MCP OAuth and reporting", () => {
     } })).json();
     expect(denied.result.isError).toBe(true); expect(denied.result._meta["mcp/www_authenticate"][0]).toContain("actions:write actions:read");
     expect(await fixture.db.action.count()).toBe(count);
+  });
+});
+
+
+describe("CIMD OAuth grants", () => {
+  const id = "https://metadata.example/oauth/client.json";
+  const metadata = { client_id: id, client_name: "CIMD test agent", redirect_uris: ["https://metadata.example/callback"], token_endpoint_auth_method: "none" };
+  const params = { response_type: "code", client_id: id, redirect_uri: metadata.redirect_uris[0], code_challenge: createHash("sha256").update(verifier).digest("base64url"), code_challenge_method: "S256", resource: "http://localhost:3001/mcp" };
+  beforeAll(async () => {
+    await fixture.db.user.create({ data: { id: "cimd-user", name: "CIMD user", email: "cimd@example.test" } });
+    await fixture.db.workspace.create({ data: { id: "cimd-feed", name: "CIMD feed", ownerId: "cimd-user" } });
+  });
+  it("rejects failed metadata and unregistered callbacks without creating a client", async () => {
+    fixture.metadata.mockRejectedValueOnce(new Error("private network details"));
+    await expect(validateAuthorization(params)).rejects.toMatchObject({ code: "invalid_client", message: "Could not validate this client's metadata" });
+    fixture.metadata.mockResolvedValue(metadata);
+    await expect(validateAuthorization({ ...params, redirect_uri: "https://evil.example/callback" })).rejects.toMatchObject({ code: "invalid_request" });
+    expect(await fixture.db.mcpOAuthClient.findUnique({ where: { id } })).toBeNull();
+  });
+  it.each(["actions:write", "actions:read", "actions:write actions:read"])("uses URL clients for code exchange, refresh and revocation (%s)", async scope => {
+    fixture.metadata.mockResolvedValue(metadata);
+    const callback = new URL(await approveOAuthConnection({ ...params, scope }, "cimd-feed", "cimd-user"));
+    const form = new URLSearchParams({ grant_type: "authorization_code", client_id: id, redirect_uri: params.redirect_uri, code: callback.searchParams.get("code")!, code_verifier: verifier, resource: mcpResource() });
+    const wrong = new URLSearchParams(form); wrong.set("code_verifier", "x".repeat(43));
+    await expect(exchangeOAuthToken(wrong)).rejects.toMatchObject({ code: "invalid_grant" });
+    fixture.metadata.mockRejectedValue(new Error("metadata now offline"));
+    const tokens = await exchangeOAuthToken(form);
+    expect(tokens.scope).toBe(scope);
+    expect(await authenticateMcpRequest(bearer(tokens.access_token))).toMatchObject({ workspaceId: "cimd-feed" });
+    const timeline = (await (await rpc(tokens.access_token, "tools/call", { name: "read_timeline", arguments: {} })).json()).result;
+    expect(Boolean(timeline.isError)).toBe(!scope.includes("actions:read"));
+    const refresh = new URLSearchParams({ grant_type: "refresh_token", client_id: id, resource: mcpResource(), refresh_token: tokens.refresh_token });
+    const broader = new URLSearchParams(refresh); broader.set("scope", "actions:write actions:read");
+    if (scope !== "actions:write actions:read") await expect(exchangeOAuthToken(broader)).rejects.toMatchObject({ code: "invalid_scope" });
+    const renewed = await exchangeOAuthToken(refresh); expect(renewed.scope).toBe(scope);
+    await revokeOAuthToken(new URLSearchParams({ client_id: id, token: renewed.refresh_token }), null);
+    expect(await authenticateMcpRequest(bearer(renewed.access_token))).toBeNull();
+    await expect(validateAuthorization(params)).rejects.toMatchObject({ code: "invalid_client" });
+  });
+  it("completes the SDK's CIMD flow without dynamic registration", async () => {
+    fixture.metadata.mockResolvedValue(metadata);
+    let tokens: OAuthTokens | undefined, information: OAuthClientInformationMixed | undefined;
+    let savedVerifier = "", authorizationUrl: URL | undefined;
+    const provider: OAuthClientProvider = {
+      clientMetadataUrl: id, redirectUrl: metadata.redirect_uris[0],
+      clientMetadata: { ...metadata, token_endpoint_auth_method: "none", grant_types: ["authorization_code", "refresh_token"], response_types: ["code"] },
+      clientInformation: () => information, saveClientInformation: value => { information = value; },
+      tokens: () => tokens, saveTokens: value => { tokens = value; },
+      saveCodeVerifier: value => { savedVerifier = value; }, codeVerifier: () => savedVerifier,
+      state: () => "cimd-sdk-state", redirectToAuthorization: value => { authorizationUrl = value; },
+    };
+    const fetchLocal: typeof fetch = async (input, init) => {
+      const req = new Request(input, init), pathname = new URL(req.url).pathname;
+      if (pathname.startsWith("/.well-known/oauth-protected-resource")) return resourceMetadata();
+      if (pathname === "/.well-known/oauth-authorization-server") return oauthMetadata();
+      if (pathname === "/oauth/token") return tokenRoute(req);
+      throw new Error(`Unexpected SDK request: ${pathname}`);
+    };
+    expect(await auth(provider, { serverUrl: new URL(mcpResource()), fetchFn: fetchLocal,
+      resourceMetadataUrl: new URL("/.well-known/oauth-protected-resource", mcpResource()), scope: "actions:write" })).toBe("REDIRECT");
+    expect(authorizationUrl!.searchParams.get("client_id")).toBe(id);
+    const callback = new URL(await approveOAuthConnection(Object.fromEntries(authorizationUrl!.searchParams), "cimd-feed", "cimd-user"));
+    expect(callback.searchParams.get("state")).toBe("cimd-sdk-state");
+    const transport = new StreamableHTTPClientTransport(new URL(mcpResource()), { authProvider: provider, fetch: fetchLocal });
+    await transport.finishAuth(callback.searchParams.get("code")!);
+    expect(tokens!.scope).toBe("actions:write");
+    expect(await authenticateMcpRequest(bearer(tokens!.access_token))).toMatchObject({ workspaceId: "cimd-feed" });
+  });
+
+  it("refreshes callback metadata for new authorizations without accepting stale callbacks", async () => {
+    fixture.metadata.mockResolvedValue({ ...metadata, redirect_uris: ["https://metadata.example/new-callback"] });
+    await expect(validateAuthorization(params)).rejects.toMatchObject({ code: "invalid_request" });
+    expect((await validateAuthorization({ ...params, redirect_uri: "https://metadata.example/new-callback" })).client.redirectUris).toEqual(["https://metadata.example/new-callback"]);
+    fixture.metadata.mockReset();
   });
 });

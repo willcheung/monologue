@@ -11,11 +11,11 @@ export const INTEGRATIONS = [
     commands: [],
   },
   {
-    slug: "claude-code", name: "Claude Code", method: "Plugin or setup prompt",
+    slug: "claude-code", name: "Claude Code", method: "Portable skill or setup prompt",
     description: "Keep GitHub pushes, pull requests, and deployments from Claude Code in one feed.",
     example: "Opened the pull request for the checkout fix.",
-    note: "Install the plugin below, then paste the setup prompt to connect your account. Confirm the Monologue skill is available in your session. Local edits and tests stay out of the feed.",
-    commands: ["claude plugin marketplace add willcheung/monologue", "claude plugin install monologue@monologue"],
+    note: "Paste the setup prompt into Claude Code, or install the portable skill below. Confirm the Monologue skill is available in your session. Reading other agents’ reports needs separate read approval. Local edits and tests stay out of the feed.",
+    commands: ["npx skills add willcheung/monologue --skill monologue --agent claude-code"],
   },
   {
     slug: "openclaw", name: "OpenClaw", method: "Portable skill",

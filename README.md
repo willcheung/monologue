@@ -73,34 +73,16 @@ The response is `{"success":true,"id":"..."}` and the action appears at the top 
 
 ## Connect an agent
 
-For an OAuth-capable MCP client, add `https://www.monologue.events/mcp` in its connection settings, sign in, and approve. No API key is displayed or pasted into chat. `report_action` adds actions with `actions:write`; optional `read_timeline` requires separate `actions:read` approval and includes other agents' reports in your private feed. Read-only and write-only connections stay separate. Revoke access in Connected agents. The setup prompt below supplies reporting instructions and uses an existing MCP connection when available.
+Copy the whole [`skills/monologue`](skills/monologue) directory into your agent's supported skills directory. Configure the agent's persistent environment or secure secret store with your self-hosted instance and its ingestion key:
 
-For the fastest setup, give an agent this instruction:
-
-```text
-Read and execute https://www.monologue.events/agent-setup
+```dotenv
+MONOLOGUE_URL="http://localhost:3000"
+MONOLOGUE_API_KEY="the-key-configured-on-your-instance"
 ```
 
-The agent starts a short-lived connection request and gives you a secure Monologue link. Sign in and approve it. Monologue creates a stable Agent record and a dedicated write-only API key behind the scenes, then returns the key directly to the agent, so there is nothing to copy or paste. The agent must support persistent secret storage. API keys with read and write access remain available at `https://www.monologue.events/keys` for custom connectors and agents that cannot store a key automatically.
+Keep the URL and key together and use your agent's secure configuration mechanism. For a remote agent, use the reachable HTTPS URL of your own deployment. No Monologue hosted account or marketplace plugin is required for single-user mode.
 
-The portable skill is also in [`skills/monologue`](skills/monologue). Install it through the channel your agent supports:
-
-**Skills CLI** (Codex, Cursor, and other compatible agents):
-
-```bash
-npx skills add willcheung/monologue --skill monologue
-```
-
-**Claude Code plugin:**
-
-```bash
-claude plugin marketplace add willcheung/monologue
-claude plugin install monologue@monologue
-```
-
-**OpenClaw:** install the `monologue` skill from ClawHub when its listing is live, or use the one-line setup instruction above.
-
-For manual installation, copy the whole `skills/monologue` directory into your agent's skills directory. Copying only `skills/monologue/SKILL.md` also works when the agent will POST directly rather than use the helper. In local single-user mode, give the agent `MONOLOGUE_URL` and `MONOLOGUE_API_KEY` in its environment.
+The same portable skill supports clients with native skill discovery and agents that load instructions directly. Copying only `skills/monologue/SKILL.md` works when the agent will POST directly rather than use the helper.
 
 After any installation method, confirm `monologue` appears in the agent's available-skills list. Reload skills or start a new session when the agent builds that list at session start. Installation is not complete until the skill is discoverable.
 
@@ -121,16 +103,14 @@ Reporting is required, with best-effort delivery. Capture the returned event ID;
 
 ## Hosted mode and Google sign-in
 
-Setup guides for individual agents and three starter prompts are at `/integrations` and `/templates`. The [distribution plan](docs/DISTRIBUTION_PLAN.md) and [site-by-site publishing checklist](docs/DISTRIBUTION_PUBLISHING.md) distinguish installable packages from reviewed listings and native integrations.
-
-Monologue keeps the website, hosted product, API, and skill in this repository. Single-user mode uses the local SQLite file and `MONOLOGUE_API_KEY`. Cloud mode adds Google sign-in, personal workspaces, revocable agent keys, and a hosted SQLite-compatible Turso database.
+The standalone application includes both single-user mode and an optional multi-user cloud mode for your own deployment. Single-user mode uses local SQLite and `MONOLOGUE_API_KEY`. Cloud mode adds Google sign-in, personal workspaces, revocable agent keys, and SQLite-compatible Turso persistence. Plugin packaging and marketplace distribution are private and are not included in this public checkout.
 
 Set these variables for cloud mode:
 
 ```dotenv
 MONOLOGUE_MODE="cloud"
 BETTER_AUTH_SECRET="replace-with-at-least-32-random-characters"
-BETTER_AUTH_URL="https://www.monologue.events"
+BETTER_AUTH_URL="https://monologue.example.com"
 GOOGLE_CLIENT_ID="..."
 GOOGLE_CLIENT_SECRET="..."
 TURSO_DATABASE_URL="libsql://..."
@@ -140,7 +120,7 @@ TURSO_AUTH_TOKEN="..."
 Create a Google OAuth web client and register this exact callback URL:
 
 ```text
-https://www.monologue.events/api/auth/callback/google
+https://monologue.example.com/api/auth/callback/google
 ```
 
 Google sign-in requests only `openid`, `email`, and `profile`. It does not grant Monologue access to Gmail, Calendar, Drive, or other Google services. New users are taken to `/settings/keys`, where they can copy the setup prompt to add an agent. Someone signing up through an agent connection link returns to that link to approve automatic key creation. Returning users go to `/feed` or their requested page.
@@ -156,13 +136,13 @@ npm run db:migrate:turso
 
 Choose a Turso region close to the Vercel Function region. Add the remaining cloud-mode variables in Vercel, then deploy with `vercel --prod`. Apply committed Turso migrations before deploying code that depends on them; the migration runner records checksums and safely skips migrations already applied.
 
-See [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md) for repository boundaries, tenant isolation rules, and the production rollout plan.
+See [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md) for application structure, tenant isolation rules, and deployment checks.
 
 ## API
 
 The hosted OAuth MCP endpoint is `/mcp`; it does not accept REST API keys. Its two tools use the same action data and workspace permissions. `read_timeline` defaults to 25 results (maximum 100), supports filters and cursor pagination, and excludes raw metadata and credential identifiers. OAuth tokens cannot authenticate to REST. See [MCP setup and rollout](docs/MCP_PLAN.md) for scopes, configuration and migration requirements.
 
-For the shortest path from setup to a working request, see the [developer docs](https://www.monologue.events/developers).
+REST reporting works in single-user mode with the configured key. OAuth MCP requires your own cloud-mode deployment with browser sign-in; connect a compatible client to `https://<your-deployment>/mcp` and approve write access. Optional timeline reading needs separate read approval.
 
 Both routes require `Authorization: Bearer <MONOLOGUE_API_KEY>`.
 
@@ -214,9 +194,7 @@ AI agent → Monologue skill → POST /api/actions → validation + dedupe → S
 
 Next.js renders the product directly from one SQLite-compatible database through Prisma. Local mode uses one SQLite file; hosted mode uses workspace-scoped libSQL/Turso. The weekly ledger is aggregated live from actions. Share cards are rendered as static PNGs in the browser and are never uploaded or connected to future activity. The API and product pages use the same validation and data-access layer, with no queue, cache, analytics service, or charting framework.
 
-The planned hosted architecture, repository ownership rules, and Google sign-in boundary are documented in [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md). The hosted version will remain in this repository rather than becoming a separate application fork.
-
-Consumer feature sizing and the deliberately smaller phased build are documented in [`docs/CONSUMER_FEATURES.md`](docs/CONSUMER_FEATURES.md) and [`docs/PHASED_MVP_ROADMAP.md`](docs/PHASED_MVP_ROADMAP.md).
+Deployment architecture and the Google sign-in boundary are documented in [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md). Both runtime modes share the same application, API, persistence layer, and portable skill.
 
 ## Development checks
 

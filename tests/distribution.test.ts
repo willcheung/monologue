@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { AGENT_STARTERS, getIntegration, INTEGRATIONS, PUBLIC_SITE_URL } from "@/lib/distribution-content";
 import { SETUP_PROMPT } from "@/lib/setup-prompt";
@@ -36,15 +34,4 @@ describe("distribution pages", () => {
     }
   });
 
-  it("resolves the Claude package to the one canonical portable skill", async () => {
-    const marketplace = JSON.parse(await readFile(path.join(process.cwd(), ".claude-plugin/marketplace.json"), "utf8"));
-    expect(marketplace.name).toBe("monologue");
-    expect(marketplace.plugins).toHaveLength(1);
-    const plugin = marketplace.plugins[0];
-    expect(plugin.name).toBe("monologue");
-    const root = path.resolve(process.cwd(), plugin.source);
-    const skillPath = path.join(root, plugin.skills[0], "SKILL.md");
-    expect(skillPath).toBe(path.join(process.cwd(), "skills/monologue/SKILL.md"));
-    expect(await readFile(skillPath, "utf8")).toContain("Mandatory completion check");
-  });
 });

@@ -1,8 +1,8 @@
-# Hosted Monologue architecture
+# Monologue deployment architecture
 
 This document is the source of truth for where Monologue code belongs and how the open-source and hosted versions stay together.
 
-## Implementation status
+## Application capabilities
 
 Implemented in the application:
 
@@ -16,19 +16,12 @@ Implemented in the application:
 - stable agent identity with optional platform and skill-version metadata
 - write-only automatic agent keys with backward-compatible legacy keys
 - local SQLite and hosted libSQL/Turso database connections
-- production deployment at `https://www.monologue.events`
 - public agent setup page at `/agent-setup` and raw skill at `/agent-setup/SKILL.md`
-- production Turso schema, Google sign-in, and end-to-end hosted ingestion
 - server-owned self-reported provenance for agent-key ingestion
 - stable Action-to-Agent relationships with historical backfill
 - private AI Crew list and agent track-record pages
 - private weekly agent ledger, active-agent roster, and browser-generated static share cards
 - optional OAuth MCP reporting and separately approved, workspace-scoped timeline reading
-
-Still required as the hosted product expands:
-
-- complete public OAuth branding and move the Google app beyond test users
-- add a stable staging environment with an isolated database and OAuth client
 
 ## Repository policy
 
@@ -39,7 +32,9 @@ Still required as the hosted product expands:
 - the action ingestion API
 - local and hosted persistence code
 - the portable Monologue skill
-- product documentation and tests
+- reusable product and technical documentation and tests
+
+Keep distribution strategy, product sizing, roadmaps, channel status, publisher checklists, and release evidence in ignored `private/` files. All plugin packaging, manifests, build scripts, package tests and marketplace guides are private as well. Public source and documentation support the standalone, self-hosted application and portable skill. Public build and test commands must work without private files. The hosted service uses the shared application code; private distribution wrappers reuse the canonical skill without duplicating the application.
 
 Do not create separate marketing, cloud-app, or skill repositories. A separate private operations repository may be created later only if infrastructure-as-code, incident material, or privileged operational tooling develops an independent ownership and release lifecycle. It must not duplicate application code.
 
@@ -60,11 +55,11 @@ Do not create separate marketing, cloud-app, or skill repositories. A separate p
 | Database connection selection | `lib/db.ts` |
 | Models and committed migrations | `prisma/` |
 | Agent-facing installation package | `skills/monologue/` |
-| Public OpenAI plugin example and MCP packaging templates | `packaging/openai/` |
+| Private plugin manifests, wrappers, builders and package checks | ignored `private/` |
 | Automated behavior checks | `tests/` |
 | Human-facing technical decisions | `docs/` |
 
-Route groups organize code without appearing in public URLs. The intended routes are:
+Route groups organize code without appearing in public URLs. The application routes are:
 
 ```text
 /                    marketing homepage
@@ -89,8 +84,6 @@ Route groups organize code without appearing in public URLs. The intended routes
 /oauth/*             MCP registration, consent, token exchange and revocation
 /.well-known/*       MCP OAuth discovery
 ```
-
-Until that migration is implemented, the existing `/` feed and current directory structure remain valid.
 
 ## Runtime modes
 
@@ -159,10 +152,10 @@ Expected Google OAuth redirect URIs:
 ```text
 http://localhost:3000/api/auth/callback/google
 https://staging.example.com/api/auth/callback/google
-https://www.monologue.events/api/auth/callback/google
+https://monologue.example.com/api/auth/callback/google
 ```
 
-Replace the example domains once the Monologue domain is selected. Redirect URIs must match exactly, including scheme, host, path, and trailing-slash behavior. Use separate OAuth clients for local/staging and production when practical so credentials and consent configuration remain isolated.
+Replace the example domains with your own deployment origins. Redirect URIs must match exactly, including scheme, host, path, and trailing-slash behavior. Use separate OAuth clients for local/staging and production when practical so credentials and consent configuration remain isolated.
 
 Do not add enterprise SSO, Google Workspace domain restrictions, or organization switching until the product actually needs them.
 
@@ -205,7 +198,15 @@ Do not add teams, invitations, billing, or enterprise authentication to this fir
 
 The optional `/mcp` endpoint exposes `report_action` (`actions:write`) and `read_timeline` (`actions:read`) using the same action schema and persistence. Read approval explicitly covers other agents' reports in that workspace; it never upgrades existing write-only grants. Timeline reads are filtered, paginated and workspace-scoped, with raw metadata and credential identifiers excluded. Each tool checks its permission, and token refresh cannot broaden a grant.
 
-It adds OAuth discovery, dynamic client registration, PKCE code exchange and rotating resource-bound tokens in this app; browser sign-in remains separate from agent tokens. Token/code/client secrets are stored as hashes. Each grant uses an existing `ApiKey` row for workspace/Agent attribution, approved scopes and shared revocation, without exposing a REST key. New `McpOAuthClient`, `McpOAuthCode` and `McpOAuthToken` tables are additive; read access needs no further migration. The endpoint defaults off behind `MONOLOGUE_MCP_ENABLED`; see [MCP plan and rollout checks](MCP_PLAN.md) before enabling it.
+It adds OAuth discovery, dynamic client registration, URL-based Client ID Metadata Documents (CIMD), PKCE code exchange and rotating resource-bound tokens in this app; browser sign-in remains separate from agent tokens. Token/code/client secrets are stored as hashes. Each grant uses an existing `ApiKey` row for workspace/Agent attribution, approved scopes and shared revocation, without exposing a REST key. New `McpOAuthClient`, `McpOAuthCode` and `McpOAuthToken` tables are additive; read access needs no further migration. The endpoint defaults off behind `MONOLOGUE_MCP_ENABLED`; see [MCP plan and rollout checks](MCP_PLAN.md) before enabling it.
+
+### URL-based OAuth client metadata
+
+CIMD clients use their public HTTPS metadata URL as the client ID. The authorization flow fetches and validates that document before presenting consent and again before issuing a code. The document must identify the exact requested client ID, a client name and valid callbacks. Only public-client authentication (`none`) is supported for CIMD; existing DCR confidential-client methods remain available. Client names are self-declared, not verified brands.
+
+Metadata fetching is bounded to five seconds including DNS, 32 KiB and eight concurrent loads per process. It permits HTTPS on port 443, requires a non-root path, rejects credentials, query strings, fragments and dot segments, and never follows redirects. All DNS answers must be public; a validated address is pinned to a fresh TLS socket with normal hostname/certificate verification. Private, loopback, link-local, mapped IPv6, transition, multicast and reserved ranges are rejected. Response bodies must be uncompressed JSON. Additional metadata (including logo and key URLs) is not fetched.
+
+Documents are fetched afresh on each authorization validation rather than cached. Invalid or unavailable metadata fails closed; previously stored callback data is not a fallback for new authorizations. The existing client table stores validated snapshots only after callback/resource validation, with the same hourly new-client bound as DCR. Existing code/token bindings, grant scopes, refresh rotation and revocation remain unchanged. Token exchange, refresh and revocation use stored records without remote metadata retrieval, so outages do not prevent revocation. No schema migration, new permission or second service is required.
 
 ## Change and release workflow
 
@@ -218,9 +219,9 @@ It adds OAuth discovery, dynamic client registration, PKCE code exchange and rot
 - Pull the linked Vercel environment and run `npm run db:migrate:turso` before deploying code that depends on a new schema. The runner records checksums in `_monologue_migrations` and refuses edited migrations.
 - Tag meaningful open-source releases; the skill ships from the same tag as the compatible API.
 
-Distribution is phased in [DISTRIBUTION_PLAN.md](DISTRIBUTION_PLAN.md). Setup-guide content and starter prompts share one static catalog in `lib/distribution-content.ts`; they do not introduce platform-specific credentials, reporting schemas, or extra deployments. Share-card exports omit agent names and app details unless selected in the preview; accompanying text links only to the public setup hub. Search crawl rules supplement, never replace, route authorization.
+Setup-guide content and starter prompts share one static catalog in `lib/distribution-content.ts`; they do not introduce platform-specific credentials, reporting schemas, or extra deployments. Share-card exports omit agent names and app details unless selected in the preview; accompanying text links only to the public setup hub. Search crawl rules supplement, never replace, route authorization.
 
-OpenAI plugin ZIPs are generated with `npm run plugin:package` from the public `packaging/openai/plugin.example.json`, the canonical skill, license and current brand marks. Account-specific releases may use ignored `packaging/openai/plugin.json`; this override, operational drafts in `private/`, and generated ZIPs in `dist/` must never be committed or included in Vercel uploads. The explicit ZIP allowlist excludes app source, secrets, private QA mappings, customer data and test notes. Public tests require no private submission files. See [packaging and privacy boundaries](OPENAI_PLUGIN_SUBMISSION.md).
+Plugin packaging and publisher operations stay in ignored `private/`; generated archives stay ignored in `dist/`. Neither is part of the open-source installation or required by public checks.
 
 ## When a new repository is justified
 
