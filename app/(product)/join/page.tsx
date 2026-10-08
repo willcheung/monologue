@@ -19,7 +19,7 @@ export default async function JoinPage({ searchParams }: { searchParams: Promise
   return <><Header product={Boolean(context?.user)} signedIn={Boolean(context?.user)} workspaceContext={context ?? undefined} /><main className="connection-shell"><div className="connection-card">{valid && context?.user ? <>
     <span className="kicker">You’re invited</span>
     <h1>{invitation.invitedByUser.name || "Your teammate"} invited you to {invitation.workspace.name}.</h1>
-    <p>See what your team’s AI assistants changed, in one shared feed. Your personal feed stays private.</p>
+    <p>See what your team’s AI agents did in one shared feed. Give your agents the context to coordinate work. Your personal feed stays private.</p>
     {matches ? <><p>You’re joining as <strong>{context.user.email}</strong>.</p><WorkspaceInvitation token={token} /></> : <>
       <p role="alert">This invitation is for <strong>{invitation.email}</strong>. You’re signed in as <strong>{context.user.email}</strong>.</p>
       <InvitationAccountSwitch token={token} />

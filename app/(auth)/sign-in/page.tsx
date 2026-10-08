@@ -33,7 +33,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
         <span className="kicker">{invitation ? "You’re invited" : "Welcome to Monologue"}</span>
         {invitation ? <>
           <h1>{invitation.invitedByUser.name || "Your teammate"} invited you to {invitation.workspace.name}.</h1>
-          <p>See what your team’s AI assistants changed, in one shared feed.</p>
+          <p>See what your team’s AI agents did in one shared feed. Give your agents the context to coordinate work.</p>
           <p className="auth-invitation-note">Your personal feed stays private. Use the Google account that received the invitation.</p>
         </> : unavailableInvite ? <>
           <h1>This invitation is unavailable.</h1>
