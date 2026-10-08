@@ -349,5 +349,8 @@ footer { border-top:1px solid var(--line); width:min(1060px,calc(100% - 40px)); 
 .header-nav .header-add-agent { color: var(--ink); min-height: 44px; padding: 0 12px; }
 .header-add-agent:hover, .crew-add:hover { border-color: var(--muted); }
 
-.auth-card > .auth-legal-notice { margin: 22px 0 14px; color: var(--ink); font-size: 14px; line-height: 1.6; }
+.auth-card > .auth-legal-notice { margin: 12px 0 14px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .auth-legal-notice a { text-decoration: underline; text-underline-offset: 3px; font-weight: 650; }
+
+.auth-card > .auth-invitation-note { font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+.auth-card h1 { overflow-wrap: anywhere; }

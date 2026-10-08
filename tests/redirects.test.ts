@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newUserLandingPath, safeInternalPath } from "@/lib/redirects";
+import { newUserLandingPath, safeInternalPath, invitationTokenFromNext } from "@/lib/redirects";
 
 describe("safe internal redirects", () => {
   it("keeps an internal connection callback", () => {
@@ -28,5 +28,15 @@ describe("safe internal redirects", () => {
       .toBe("/connect?request=abc&code=def");
     expect(newUserLandingPath("/connect?request=abc"))
       .toBe("/settings/keys");
+  });
+});
+
+describe("invitation callback extraction", () => {
+  it("accepts only a safe internal join path and a bounded token", () => {
+    const token = "a".repeat(43);
+    expect(invitationTokenFromNext(`/join?token=${token}`)).toBe(token);
+    for (const next of [`https://example.test/join?token=${token}`, `//example.test/join?token=${token}`, `/\\example.test/join?token=${token}`, `/join?token=${"a".repeat(129)}`, `/feed?token=${token}`]) expect(invitationTokenFromNext(next)).toBeNull();
+    expect(safeInternalPath("/\\example.test", "/feed")).toBe("/feed");
+    expect(safeInternalPath("/feed\n", "/safe")).toBe("/safe");
   });
 });

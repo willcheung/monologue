@@ -8,6 +8,7 @@ import { PrismaLibSQL } from "@prisma/adapter-libsql";
 const fixture = vi.hoisted(() => ({ db: undefined as unknown as PrismaClient }));
 vi.mock("@/lib/db", () => ({ get db() { return fixture.db; } }));
 vi.mock("server-only", () => ({}));
+import { getWorkspaceInvitationInfo } from "@/lib/workspace-invitation-info";
 import { getAccessibleAgentWorkspaceId, listAgentSummaries, listMyAgentSummaries } from "@/lib/agents";
 import { acceptWorkspaceInvitation, createSharedWorkspace, ensurePersonalWorkspace, hashInvitation, inviteWorkspaceMember, listWorkspaces, removeWorkspaceMember } from "@/lib/workspace-service";
 import { credentialMembershipValid, workspaceAccess } from "@/lib/workspace-access";
@@ -53,6 +54,16 @@ describe("shared workspaces", () => {
     await createSharedWorkspace("owner", "First team"); await createSharedWorkspace("owner", "Second team");
     expect((await listWorkspaces("owner")).filter(workspace => workspace.kind === "shared")).toHaveLength(2);
     expect(await workspaceAccess(fixture.db, personal.id, "member")).toBeNull();
+  });
+  it("reveals only the validated invitation welcome and rejects stale or unrelated tokens", async () => {
+    const workspace = await createSharedWorkspace("owner", "Welcome test");
+    const { invitation, token } = await inviteWorkspaceMember(workspace.id, "owner", "member@example.test");
+    expect(await getWorkspaceInvitationInfo(token)).toMatchObject({ email: "member@example.test", invitedByUser: { name: "owner" }, workspace: { id: workspace.id, name: "Welcome test" } });
+    expect(await getWorkspaceInvitationInfo("a".repeat(43))).toBeNull();
+    await fixture.db.workspaceInvitation.update({ where: { id: invitation.id }, data: { cancelledAt: new Date() } });
+    expect(await getWorkspaceInvitationInfo(token)).toBeNull();
+    await fixture.db.workspaceInvitation.update({ where: { id: invitation.id }, data: { cancelledAt: null, expiresAt: new Date(0) } });
+    expect(await getWorkspaceInvitationInfo(token)).toBeNull();
   });
   it("reserves three free seats including the owner and pending invitations", async () => {
     const workspace = await createSharedWorkspace("owner", "Seat test");

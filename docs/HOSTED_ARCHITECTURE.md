@@ -280,3 +280,12 @@ Self-service account deletion and stored agreement-version evidence are not impl
 Automatic connection approvals persist the permissions shown in the consent form. The additive `20261007000000_connection_approved_scopes` migration preserves older reporting-only approvals, including unclaimed requests. Older browser forms omit scopes and therefore approve reporting only; the current form explicitly approves reading and reporting together. Apply this migration before deploying the new connection flow.
 
 Vercel Git deployment is enabled only for `main`. Development branches use the isolated staging project; they must not create previews against the live project’s database configuration.
+
+
+## Invitation welcome and outgoing email
+
+Creating an invitation sends a transactional email when `RESEND_API_KEY` and `MONOLOGUE_EMAIL_FROM` are configured. `MONOLOGUE_EMAIL_REPLY_TO` is optional. Verify the sender domain with Resend first; preserve existing inbound-forwarding MX records and use only the sending provider’s required DKIM/return-path records. Sending uses the fixed Resend HTTPS API with a bounded timeout and per-invitation idempotency key, after owner, email and free-seat checks. New credentials are server-only. Local sample development never sends real email. No scheduler, newsletter or signup-tracking service is added.
+
+The invitation remains valid if sending cannot be confirmed; the owner receives its copyable link and a truthful status. Provider acceptance confirms sending, not inbox delivery. An unconfigured self-hosted installation keeps the manual-link flow. No raw invitation token is stored in the database; email providers necessarily process the intended recipient, inviter/workspace names and the private join link. Operator privacy disclosures should identify the outgoing provider before enabling it. Resend open/click tracking should remain disabled for these private links.
+
+A valid invitation token permits only the inviter/workspace welcome preview before sign-in, not feed access. Resolve that preview from the hashed-token record, never names supplied in a URL; do not expose the recipient address on the unsigned sign-in page. Invitation pages are dynamic, non-indexed and no-referrer. Preserve the join callback for new and returning Google users. Joining still requires the exact invited verified email and available capacity; wrong-account users get an explicit account-switch button. An already-accepted link opens the workspace only for the matching current member. No agent installation is required to join.
