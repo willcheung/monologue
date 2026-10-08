@@ -278,3 +278,5 @@ The migration runner applies additive migrations and their checksum receipts in 
 Self-service account deletion and stored agreement-version evidence are not implemented. Sign-in shows button-linked legal notice only when both operator documents are configured; this does not create a durable acceptance record. Private legal review and release decisions belong under ignored `private/`.
 
 Automatic connection approvals persist the permissions shown in the consent form. The additive `20261007000000_connection_approved_scopes` migration preserves older reporting-only approvals, including unclaimed requests. Older browser forms omit scopes and therefore approve reporting only; the current form explicitly approves reading and reporting together. Apply this migration before deploying the new connection flow.
+
+Vercel Git deployment is enabled only for `main`. Development branches use the isolated staging project; they must not create previews against the live project’s database configuration.
