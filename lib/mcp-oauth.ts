@@ -4,9 +4,10 @@ import type { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { loadClientMetadata } from "./mcp-client-metadata";
 import { credentialMembershipValid, workspaceAccess } from "./workspace-access";
-import { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, prepareWorkspaceApiKey } from "./api-keys";
+import { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, DEFAULT_AGENT_SCOPES, prepareWorkspaceApiKey } from "./api-keys";
 
 export const MCP_SCOPE = ACTION_WRITE_SCOPE;
+export const MCP_DEFAULT_SCOPES = DEFAULT_AGENT_SCOPES;
 export const MCP_SCOPES = [ACTION_WRITE_SCOPE, ACTION_READ_SCOPE];
 const scopeSchema = z.string().max(100).refine(value => {
   const scopes = value.trim().split(/\s+/);
@@ -76,7 +77,7 @@ const authorizationSchema = z.object({
   redirect_uri: z.string().max(2048),
   code_challenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
   code_challenge_method: z.literal("S256"),
-  resource: z.string().max(2048), scope: scopeSchema.default(MCP_SCOPE),
+  resource: z.string().max(2048), scope: scopeSchema.default(MCP_DEFAULT_SCOPES),
   state: z.string().max(2048).optional(),
 });
 export type AuthorizationInput = z.infer<typeof authorizationSchema>;

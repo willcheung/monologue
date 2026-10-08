@@ -20,7 +20,7 @@ export function AgentBriefing({ briefings, scopeLabel, error, defaultOpen = fals
       <p className="briefing-request">{briefing.request}</p>
       {error ? <p className="form-error" role="alert">{error}</p> : <>
         <CopySetupButton key={briefing.prompt} prompt={briefing.prompt} label="Copy briefing prompt" />
-        <p className="briefing-help">Paste it into your agent. Setup is included; reading needs your approval.</p>
+        <p className="briefing-help">Paste it into your agent. Setup is included; connect once to read and report in this workspace.</p>
       </>}
     </div>}
   </section>;

@@ -175,6 +175,7 @@ model AgentConnection {
   approvedByUser   User?      @relation("ConnectionApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
   expiresAt        DateTime
   approvedAt       DateTime?
+  approvedScopes   String     @default("actions:write")
   claimedAt        DateTime?
   createdAt        DateTime   @default(now())
 

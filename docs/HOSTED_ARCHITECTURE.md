@@ -14,14 +14,14 @@ Implemented in the application:
 - first-run onboarding and agent-key management
 - short-lived, no-copy agent connection approval
 - stable agent identity with optional platform and skill-version metadata
-- write-only automatic agent keys with backward-compatible legacy keys
+- read-and-write automatic agent keys with backward-compatible legacy keys
 - local SQLite and hosted libSQL/Turso database connections
 - public agent setup page at `/agent-setup` and raw skill at `/agent-setup/SKILL.md`
 - server-owned self-reported provenance for agent-key ingestion
 - stable Action-to-Agent relationships with historical backfill
 - private AI Crew list and agent track-record pages
 - private weekly agent ledger, active-agent roster, and browser-generated static share cards
-- optional OAuth MCP reporting and separately approved, workspace-scoped timeline reading
+- optional OAuth MCP reporting and timeline reading under one workspace-scoped connection approval
 - personal and shared workspaces, member invitations, workspace selection, and person attribution
 - private daily workspace summaries and contextual prompts for agent-generated briefings
 
@@ -175,7 +175,7 @@ Security invariants:
 - Resolve workspace membership from the authenticated session, never from a client-provided workspace ID alone.
 - Resolve agent workspace access from the API key record.
 - Derive agent identity from an associated Agent record when present. Legacy keys without one remain payload-compatible.
-- Default automatically connected keys to `actions:write`; do not let them read a future shared timeline.
+- Default new connections to `actions:write actions:read` in one user-approved workspace. Read and write access both follow the connecting user’s current membership; preserve existing limited grants until reconnection.
 - Preserve existing and manual key scopes so current integrations do not break.
 - Store only an API-key hash and a non-secret display prefix; show the raw key once.
 - Include `workspaceId` in action deduplication and relevant indexes.
@@ -190,7 +190,7 @@ Security invariants:
 4. `/settings/keys` presents the no-key setup prompt before manual API-key options.
 5. The agent creates a short-lived connection request and gives the user an approval link.
 6. The signed-in user approves the named agent. The browser never receives or displays its API key.
-7. Monologue creates a stable Agent identity and a write-only key. The agent claims that key once and stores it in its own secure secret store.
+7. Monologue creates a stable Agent identity and a read-and-write key. The agent claims that key once and stores it in its own secure secret store.
 8. The first reported action appears in `/feed`.
 
 Manual key creation remains in `/settings/keys` for connectors that cannot complete the automatic flow. Connection requests store only hashed device and approval codes, expire after ten minutes, and create the long-lived key only when the approved agent claims it.
@@ -203,7 +203,7 @@ Personal remains the default. Shared workspaces extend this flow through explici
 
 ### OAuth MCP connections
 
-The optional `/mcp` endpoint exposes `report_action` (`actions:write`) and `read_timeline` (`actions:read`) using the same action schema and persistence. Read approval explicitly covers other agents' reports in that workspace; it never upgrades existing write-only grants. Timeline reads are filtered, paginated and workspace-scoped, with raw metadata and credential identifiers excluded. Each tool checks its permission, and token refresh cannot broaden a grant.
+The optional `/mcp` endpoint exposes `report_action` (`actions:write`) and `read_timeline` (`actions:read`) using the same action schema and persistence. The standard connection approval covers reading and reporting, including other agents' reports in that workspace; it never upgrades existing write-only grants. Timeline reads are filtered, paginated and workspace-scoped, with raw metadata and credential identifiers excluded. Each tool checks its permission, and token refresh cannot broaden a grant.
 
 It adds OAuth discovery, dynamic client registration, URL-based Client ID Metadata Documents (CIMD), PKCE code exchange and rotating resource-bound tokens in this app; browser sign-in remains separate from agent tokens. Token/code/client secrets are stored as hashes. Each grant uses an existing `ApiKey` row for workspace/Agent attribution, approved scopes and shared revocation, without exposing a REST key. New `McpOAuthClient`, `McpOAuthCode` and `McpOAuthToken` tables are additive; read access needs no further migration. The endpoint defaults off behind `MONOLOGUE_MCP_ENABLED`; see [MCP plan and rollout checks](MCP_PLAN.md) before enabling it.
 
@@ -251,7 +251,7 @@ Removing a member revokes their workspace credentials and approved connection cl
 
 Recap shows the selected workspace's seven-day ledger and last 24 hours on the same page, with original person attribution in shared workspaces and completed/attention counts. Paid controls and delivery settings are absent from the product UI. The existing report-settings persistence and entitlement helpers remain dormant for compatibility; they do not connect providers, start a scheduler or send messages. Report aggregation does not add activity events or change agent reporting behavior.
 
-Recap generates copyable weekly briefing, project catch-up and coordination-check prompts for the displayed workspace and the same seven calendar days, including timezone and daylight-saving boundaries. Every prompt includes this instance's MCP setup, reuses an existing connection when available, and requests explicit read approval if missing. The agent handles connection setup through its supported secure flow; the UI has no separate connection checklist and does not preflight a browser account's connection inventory. Disabled MCP instructs the agent to stop and ask for instance setup. Each prompt requests paginated read_timeline results, scoped report links and a distinction between reported facts and inferences. Supporting links carry an explicit workspace ID resolved against current membership. Older `/reports` links forward their workspace to Recap’s daily section, where membership is checked before any report query. Recap also checks explicit workspace links against current membership. Old weekly-briefing feed links redirect to Recap. Prompt copying does not authorize reading or execute work.
+Recap generates copyable weekly briefing, project catch-up and coordination-check prompts for the displayed workspace and the same seven calendar days, including timezone and daylight-saving boundaries. Every prompt includes this instance's MCP setup, reuses an existing connection when available, and uses the same combined read-and-write setup prompt if missing. The agent handles connection setup through its supported secure flow; the UI has no separate connection checklist and does not preflight a browser account's connection inventory. Disabled MCP instructs the agent to stop and ask for instance setup. Each prompt requests paginated read_timeline results, scoped report links and a distinction between reported facts and inferences. Supporting links carry an explicit workspace ID resolved against current membership. Older `/reports` links forward their workspace to Recap’s daily section, where membership is checked before any report query. Recap also checks explicit workspace links against current membership. Old weekly-briefing feed links redirect to Recap. Prompt copying does not authorize reading or execute work.
 
 ## Isolated workspace development
 
@@ -263,7 +263,7 @@ My agents lists only the displayed workspace’s roster, including teammates’ 
 
 The far-right Workspaces dropdown uses the existing membership-checked selection endpoint. After selection it opens the feed with an explicit workspace ID, keeping the visible destination stable across tabs. All product pages use one main navigation with a workspace-bound Add agent link and the far-right chooser; there is no secondary workspace title or menu bar. Shared workspace Settings links live beside Open workspace on `/workspaces`. Create workspace links to the single form at the top of `/workspaces`; personal workspaces still have no settings page.
 
-Authenticated Add agent builds its prompt for this configured instance and intended workspace. It reuses the same portable reporting skill but replaces hosted setup defaults for self-hosted/dev instances, requires explicit destination approval, preserves existing credential pairings and requests reporting access only. The public marketing setup prompt remains unchanged. Unauthorized explicit Add agent destinations return 404 after authentication. Profile headers use their membership-checked workspace; full activity links include both workspace and agent IDs so another tab cannot silently reroute them.
+Authenticated Add agent builds its prompt for this configured instance and intended workspace. It reuses the same portable reporting skill but replaces hosted setup defaults for self-hosted/dev instances, requires one explicit connection approval for reading and reporting in the destination, preserves existing credential pairings and requests reading and reporting together in one approval. All setup surfaces use the same prompt factory, varying only by instance and selected workspace. Signed-out visitors choose a workspace during approval. Unauthorized explicit Add agent destinations return 404 after authentication. Profile headers use their membership-checked workspace; full activity links include both workspace and agent IDs so another tab cannot silently reroute them.
 
 ## Operator-owned legal documents
 
@@ -276,3 +276,5 @@ Core workspace models, membership checks and agent/feed/MCP authorization remain
 The migration runner applies additive migrations and their checksum receipts in one write transaction. Historical migrations that toggle `PRAGMA foreign_keys` retain their original execution behavior; rehearse those on an isolated database and preserve a backup. Applied migration SQL/checksums must not be rewritten.
 
 Self-service account deletion and stored agreement-version evidence are not implemented. Sign-in shows button-linked legal notice only when both operator documents are configured; this does not create a durable acceptance record. Private legal review and release decisions belong under ignored `private/`.
+
+Automatic connection approvals persist the permissions shown in the consent form. The additive `20261007000000_connection_approved_scopes` migration preserves older reporting-only approvals, including unclaimed requests. Older browser forms omit scopes and therefore approve reporting only; the current form explicitly approves reading and reporting together. Apply this migration before deploying the new connection flow.

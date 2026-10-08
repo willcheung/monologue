@@ -38,7 +38,7 @@ describe("MCP consent", () => {
     expect(readOnly).toContain("cannot add actions");
     fixtures.validate.mockResolvedValue({ params: { ...params, scope: "actions:write actions:read" }, client: { name: "Test agent" } });
     const both = renderToStaticMarkup(await page());
-    expect(both).toContain("read the selected workspace’s entire timeline"); expect(both).toContain("also add actions");
+    expect(both).toContain("read the selected workspace’s entire timeline"); expect(both).toContain("also add reports");
     const action = findForm(await page())!.props.action, approved = new FormData(); approved.set("decision", "approve"); approved.set("workspaceId", "owner-workspace");
     await expect(action(approved)).rejects.toThrow("redirect:");
     expect(fixtures.approve).toHaveBeenCalledWith({ ...params, scope: "actions:write actions:read" }, "owner-workspace", "owner-user");

@@ -35,8 +35,9 @@ export default async function OAuthAuthorizePage({ searchParams }: { searchParam
   }
   return <><Header product signedIn workspaceContext={context} /><main className="connection-shell"><div className="connection-card">
     <span className="kicker">Connect your agent</span><h1>Connect {client.name}?</h1>
-    {canRead ? <p>This connection can <strong>read the selected workspace’s entire timeline</strong>, including actions reported by its members’ agents.{canWrite ? " It can also add actions to your feed." : " It cannot add actions."} It cannot act in your other apps.</p>
+    {canRead ? <p>This connection can <strong>read the selected workspace’s entire timeline</strong>, including actions reported by its members’ agents.{canWrite ? " It can also add reports, with the same feed access you have in that workspace." : " It cannot add actions."} It cannot act in your other apps.</p>
       : <p>This connection can add actions to your private feed. It cannot read your feed or act in your other apps.</p>}
+    <p>Access follows your workspace membership and ends if you leave or the connection is revoked.</p>
     <p>Connecting to <strong>{context.workspace.name}</strong>.</p>
     <p>Client name supplied by the app; not verified by Monologue. After approval, you’ll return to <strong>{new URL(params.redirect_uri).host}</strong>.</p>
     <p>You can revoke access anytime in Connected agents.</p>

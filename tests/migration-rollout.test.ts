@@ -24,6 +24,7 @@ async function fixture() {
     INSERT INTO Agent (id,workspaceId,name,connectedByUserId,updatedAt) VALUES ('legacy-agent','legacy-workspace','Existing agent','legacy-owner',CURRENT_TIMESTAMP);
     INSERT INTO ApiKey (id,workspaceId,name,prefix,keyHash,agentId,createdByUserId) VALUES ('legacy-key','legacy-workspace','Existing connection','fixture','synthetic-key-hash','legacy-agent','legacy-owner');
     INSERT INTO Action (id,workspaceId,agentName,agentId,verb,summary,category,status,system,reportedByKeyId,externalId) VALUES ('legacy-action','legacy-workspace','Existing agent','legacy-agent','sent','Synthetic fixture receipt','communication','completed','Fixture','legacy-key','fixture-receipt');
+    INSERT INTO AgentConnection (id,agentName,deviceCodeHash,approvalCodeHash,status,workspaceId,approvedByUserId,expiresAt,approvedAt) VALUES ('legacy-approved','Existing agent','synthetic-device-hash','synthetic-approval-hash','approved','legacy-workspace','legacy-owner','2050-01-01',CURRENT_TIMESTAMP);
     INSERT INTO McpOAuthClient (id,name,redirectUris,authMethod) VALUES ('legacy-client','Fixture client','["https://example.test/callback"]','none');
     INSERT INTO McpOAuthToken (id,clientId,keyId,accessHash,refreshHash,resource,expiresAt,refreshExpiresAt) VALUES ('legacy-token','legacy-client','legacy-key','synthetic-access-hash','synthetic-refresh-hash','https://example.test/mcp','2050-01-01','2050-02-01');
   `);
@@ -40,6 +41,7 @@ describe("workspace migration rollout", () => {
     expect((await client.execute('SELECT id,workspaceId,reportedByUserId FROM Action')).rows).toMatchObject([{ id: "legacy-action", workspaceId: "legacy-workspace", reportedByUserId: "legacy-owner" }]);
     expect((await client.execute('SELECT keyHash FROM ApiKey')).rows).toMatchObject([{ keyHash: "synthetic-key-hash" }]);
     expect((await client.execute('SELECT accessHash,refreshHash FROM McpOAuthToken')).rows).toMatchObject([{ accessHash: "synthetic-access-hash", refreshHash: "synthetic-refresh-hash" }]);
+    expect((await client.execute("SELECT approvedScopes FROM AgentConnection WHERE id='legacy-approved'")).rows).toMatchObject([{ approvedScopes: "actions:write" }]);
     expect(run()).toContain(`Already applied ${workspaceMigration}`);
     expect((await client.execute('SELECT COUNT(*) AS count FROM WorkspaceMember')).rows[0].count).toBe(1);
   });

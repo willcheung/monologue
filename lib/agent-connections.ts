@@ -46,7 +46,7 @@ export async function getAgentConnectionForApproval(id: string, approvalCode: st
   return connection;
 }
 
-export async function approveAgentConnection(id: string, approvalCode: string, workspaceId: string, approvedByUserId: string) {
+export async function approveAgentConnection(id: string, approvalCode: string, workspaceId: string, approvedByUserId: string, scopes = ACTION_WRITE_SCOPE) {
   await requireWorkspaceAccess(db, workspaceId, approvedByUserId);
   const connection = await getAgentConnectionForApproval(id, approvalCode);
   if (!connection) return { status: "invalid" as const };
@@ -60,7 +60,7 @@ export async function approveAgentConnection(id: string, approvalCode: string, w
 
   const result = await db.agentConnection.updateMany({
     where: { id, status: "pending", workspaceId: null },
-    data: { status: "approved", workspaceId, approvedByUserId, approvedAt: new Date() },
+    data: { status: "approved", workspaceId, approvedByUserId, approvedAt: new Date(), approvedScopes: scopes },
   });
   return result.count ? { status: "approved" as const } : { status: "invalid" as const };
 }
@@ -115,7 +115,7 @@ export async function claimAgentConnection(id: string, deviceCode: string) {
     const prepared = prepareWorkspaceApiKey(connection.workspaceId, connection.agentName, {
       agentId: agent.id,
       createdByUserId: connection.approvedByUserId ?? undefined,
-      scopes: ACTION_WRITE_SCOPE,
+      scopes: connection.approvedScopes,
     });
     const key = await transaction.apiKey.create({ data: prepared.data });
     return {

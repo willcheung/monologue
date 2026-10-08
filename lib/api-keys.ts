@@ -3,9 +3,8 @@ import { db } from "./db";
 import { credentialMembershipValid, requireWorkspaceAccess } from "./workspace-access";
 import { isCloudMode, LOCAL_WORKSPACE_ID } from "./runtime";
 
-export const ACTION_READ_SCOPE = "actions:read";
-export const ACTION_WRITE_SCOPE = "actions:write";
-export const LEGACY_AGENT_SCOPES = `${ACTION_READ_SCOPE} ${ACTION_WRITE_SCOPE}`;
+import { DEFAULT_AGENT_SCOPES, LEGACY_AGENT_SCOPES } from "./agent-scopes";
+export { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, DEFAULT_AGENT_SCOPES, LEGACY_AGENT_SCOPES } from "./agent-scopes";
 
 function hashKey(key: string) {
   return createHash("sha256").update(key).digest("hex");
@@ -33,7 +32,7 @@ export function prepareWorkspaceApiKey(workspaceId: string, name: string, option
       name: normalizedName,
       prefix: key.slice(0, 16),
       keyHash: hashKey(key),
-      scopes: options.scopes ?? LEGACY_AGENT_SCOPES,
+      scopes: options.scopes ?? DEFAULT_AGENT_SCOPES,
       agentId: options.agentId,
       createdByUserId: options.createdByUserId,
     },

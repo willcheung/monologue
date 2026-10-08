@@ -1,6 +1,7 @@
 import type { ActionFilters } from "./actions";
 import { actionDateBounds } from "./action-dates";
 import { CATEGORIES, STATUSES } from "./constants";
+import { buildSetupPrompt } from "./setup-prompt";
 
 export type Briefing = { id: string; label: string; request: string; prompt: string };
 
@@ -27,7 +28,7 @@ export function buildFeedBriefings({ workspace, filters = {}, origin, now = new 
     : Object.entries(timelineFilters).some(([key, value]) => typeof value === "string" && !["from", "to"].includes(key) && value.length > (key === "search" ? 300 : 100))
       ? "Shorten the selected filter before copying a briefing prompt." : null;
   const reportsUrl = new URL("/feed", origin); reportsUrl.searchParams.set("workspaceId", workspace.id);
-  const mcpUrl = new URL("/mcp", origin).toString();
+  const setup = buildSetupPrompt({ origin, workspace, mcpEnabled: readingEnabled });
   const requests = [
     { id: "weekly", label: "Weekly briefing", request: `${defaultRange ? "Review the last 7 days." : "Review the selected period."} Summarize outcomes, reported blockers, and what needs my attention. Link to the supporting reports.` },
     { id: "project", label: "Project catch-up", request: filters.project ? "Catch me up on this project across my agents. What changed, and what is unresolved? Link to the supporting reports." : "Catch me up across my agents, grouped by project. What changed, and what is unresolved? Link to the supporting reports." },
@@ -36,8 +37,9 @@ export function buildFeedBriefings({ workspace, filters = {}, origin, now = new 
   return { scopeLabel, error, briefings: requests.map(item => ({ ...item, prompt: [
     item.request,
     `Scope: workspace ${JSON.stringify(workspace.name)} (ID ${JSON.stringify(workspace.id)}); ${rangeLabel}.`,
+    setup,
     readingEnabled
-      ? `Setup if needed: reuse the Monologue MCP connection at ${mcpUrl} for this workspace. If missing, connect through your client's supported secure MCP setup. If you cannot configure it yourself, give me one short setup step with that URL. Request actions:read and pause for my explicit approval of this workspace's entire timeline. Reporting-only access does not grant reading; request additional read approval if needed. Never display credentials or silently broaden access. If read access is already approved for this workspace, continue without reconnecting. If the connection's destination is unclear, ask me to confirm it. Do not read another workspace.`
+      ? "Reuse the approved read-and-write connection for this workspace and continue without reconnecting or asking for a second Monologue reading approval. If an older connection lacks reading, reconnect once for the combined permission; never silently broaden an existing grant. Do not read another workspace."
       : "Feed reading is disabled on this instance. Stop and ask me to have the instance owner enable Monologue MCP before continuing. Do not switch to another instance or try to bypass approval.",
     `Call read_timeline with these filters: ${JSON.stringify(timelineFilters)}. Continue with nextCursor and the same filters until no cursor remains; if you cannot finish, say the briefing is incomplete.`,
     `Link each supporting Monologue report by appending &action=<report ID> to ${reportsUrl.toString()}.`,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SETUP_PROMPT, workspaceSetupPrompt } from "@/lib/setup-prompt";
+import { buildSetupPrompt, SETUP_PROMPT, workspaceSetupPrompt } from "@/lib/setup-prompt";
 
 describe("workspace-specific setup", () => {
   it("keeps a preview setup on its own instance and requires explicit destination approval", () => {
@@ -10,9 +10,9 @@ describe("workspace-specific setup", () => {
     expect(prompt).not.toContain("monologue.events");
     expect(prompt).toContain("stop and ask rather than choosing another");
     expect(prompt).toContain("Preserve any existing URL/credential pairing");
-    expect(prompt).toContain("Request reporting access only");
-    expect(prompt).toContain("Reading needs separate approval");
-    expect(prompt).toContain("this prompt grants no access by itself");
+    expect(prompt).toContain("Request actions:read and actions:write together in one connection approval");
+    expect(prompt).toContain("access follows my current membership");
+    expect(prompt).toContain("This prompt grants no access by itself");
   });
 
   it("uses the local approval-link flow when MCP is disabled, without changing the public setup prompt", () => {
@@ -20,7 +20,7 @@ describe("workspace-specific setup", () => {
     expect(prompt).toContain("https://example.test/agent-setup");
     expect(prompt).toContain("MCP is not enabled here");
     expect(prompt).not.toContain("example.test/mcp");
-    expect(SETUP_PROMPT).toBe("Read and execute https://www.monologue.events/agent-setup");
+    expect(SETUP_PROMPT).toBe(buildSetupPrompt());
   });
 
   it("quotes a workspace name as data rather than inserting extra prompt lines", () => {

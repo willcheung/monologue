@@ -11,7 +11,7 @@ vi.mock("server-only", () => ({}));
 import { getAccessibleAgentWorkspaceId, listAgentSummaries, listMyAgentSummaries } from "@/lib/agents";
 import { acceptWorkspaceInvitation, createSharedWorkspace, ensurePersonalWorkspace, hashInvitation, inviteWorkspaceMember, listWorkspaces, removeWorkspaceMember } from "@/lib/workspace-service";
 import { credentialMembershipValid, workspaceAccess } from "@/lib/workspace-access";
-import { authenticateApiRequest, createWorkspaceAgentApiKey } from "@/lib/api-keys";
+import { authenticateApiRequest, createWorkspaceAgentApiKey, DEFAULT_AGENT_SCOPES } from "@/lib/api-keys";
 import { approveAgentConnection, claimAgentConnection, createAgentConnection } from "@/lib/agent-connections";
 import { createAction } from "@/lib/actions";
 import { dailyWorkspaceReport, saveReportSettings } from "@/lib/workspace-reports";
@@ -167,13 +167,27 @@ describe("shared workspaces", () => {
     expect(await fixture.db.action.findUnique({ where: { id: action.action.id } })).toMatchObject({ reportedByUserId: "member" });
     expect(await workspaceAccess(fixture.db, workspace.id, "member")).toBeNull();
   });
+  it("preserves reporting-only approval from an older browser form even if re-approved", async () => {
+    const workspace = await createSharedWorkspace("owner", "Older consent");
+    const pending = await createAgentConnection({ agentName: "Older client" });
+    await approveAgentConnection(pending.connection.id, pending.approvalCode, workspace.id, "owner");
+    await approveAgentConnection(pending.connection.id, pending.approvalCode, workspace.id, "owner", DEFAULT_AGENT_SCOPES);
+    const claim = await claimAgentConnection(pending.connection.id, pending.deviceCode);
+    if (claim.status !== "connected") throw new Error("Expected an approved connection");
+    expect(await authenticateApiRequest(bearer(claim.key))).toMatchObject({ workspaceId: workspace.id, scopes: "actions:write" });
+  });
   it("lets members connect their own agents but rejects outsiders", async () => {
     const workspace = await createSharedWorkspace("owner", "Member connection");
     await fixture.db.workspaceMember.create({ data: { workspaceId: workspace.id, userId: "member" } });
     const pending = await createAgentConnection({ agentName: "Codex", platform: "Codex", skillVersion: "1.2.12" });
     await expect(approveAgentConnection(pending.connection.id, pending.approvalCode, workspace.id, "outsider")).rejects.toThrow("don't have access");
-    await approveAgentConnection(pending.connection.id, pending.approvalCode, workspace.id, "member");
-    expect((await claimAgentConnection(pending.connection.id, pending.deviceCode)).status).toBe("connected");
+    await approveAgentConnection(pending.connection.id, pending.approvalCode, workspace.id, "member", DEFAULT_AGENT_SCOPES);
+    const claim = await claimAgentConnection(pending.connection.id, pending.deviceCode);
+    expect(claim.status).toBe("connected");
+    if (claim.status !== "connected") throw new Error("Expected an approved connection");
+    expect(await authenticateApiRequest(bearer(claim.key))).toMatchObject({ workspaceId: workspace.id, createdByUserId: "member", scopes: DEFAULT_AGENT_SCOPES });
+    await removeWorkspaceMember(workspace.id, "owner", "member");
+    expect(await authenticateApiRequest(bearer(claim.key))).toBeNull();
   });
   it("enforces paid reports and owner-only settings on the server", async () => {
     const workspace = await createSharedWorkspace("owner", "Paid report settings");

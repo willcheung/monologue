@@ -26,7 +26,8 @@ describe("hosted agent setup", () => {
     expect(canonical).toContain("`changedField`, `before`, and `after`");
     expect(canonical).toContain("before composing the final response to the user");
     expect(canonical).toContain("awaiting marketplace review, payment settlement");
-    expect(canonical).toContain("cannot read the shared feed");
+    expect(canonical).toContain("reading and reporting together");
+    expect(canonical).toContain("Existing limited connections keep their approved scopes");
     expect(canonical).toContain("https://www.monologue.events/mcp");
     expect(canonical).toContain("`report_action`");
     expect(canonical).toContain("`read_timeline`");

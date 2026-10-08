@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/db", () => ({ db: {} }));
 import { buildFeedBriefings } from "@/lib/feed-briefing";
 import { buildActionWhere } from "@/lib/actions";
+import { buildSetupPrompt } from "@/lib/setup-prompt";
 import { readTimelineSchema } from "@/lib/mcp-timeline";
 
 const base = { workspace: { id: "studio", name: "Studio team" }, origin: "http://localhost:3100", now: new Date("2026-10-04T12:00:00Z") };
@@ -45,13 +46,13 @@ describe("feed briefing scope", () => {
     expect(copied).not.toHaveProperty("category");
     expect(result.briefings[2].prompt).toContain("workspaceId=team+%26+private");
   });
-  it("includes this instance's setup and separate read approval in every copied prompt", () => {
+  it("reuses the canonical setup with one read/write approval in every copied prompt", () => {
     for (const briefing of buildFeedBriefings(base).briefings) {
       expect(briefing.prompt).toContain("http://localhost:3100/mcp");
-      expect(briefing.prompt).toContain("reuse the Monologue MCP connection");
-      expect(briefing.prompt).toContain("Request actions:read and pause for my explicit approval");
-      expect(briefing.prompt).toContain("Reporting-only access does not grant reading");
-      expect(briefing.prompt).toContain("continue without reconnecting");
+      expect(briefing.prompt).toContain(buildSetupPrompt({origin:base.origin,workspace:base.workspace}));
+      expect(briefing.prompt).toContain("Request actions:read and actions:write together");
+      expect(briefing.prompt).toContain("without reconnecting or asking for a second Monologue reading approval");
+      expect(briefing.prompt).toContain("never silently broaden an existing grant");
       expect(briefing.prompt).not.toContain("https://www.monologue.events/mcp");
     }
   });

@@ -14,7 +14,7 @@ export const INTEGRATIONS = [
     slug: "claude-code", name: "Claude Code", method: "Portable skill or setup prompt",
     description: "Keep GitHub pushes, pull requests, and deployments from Claude Code in one feed.",
     example: "Opened the pull request for the checkout fix.",
-    note: "Paste the setup prompt into Claude Code, or install the portable skill below. Confirm the Monologue skill is available in your session. Reading other agents’ reports needs separate read approval. Local edits and tests stay out of the feed.",
+    note: "Paste the setup prompt into Claude Code, or install the portable skill below. Confirm the Monologue skill is available in your session. One connection approval enables reading and reporting in your chosen workspace. Local edits and tests stay out of the feed.",
     commands: ["npx skills add willcheung/monologue --skill monologue --agent claude-code"],
   },
   {
@@ -46,17 +46,19 @@ export function getIntegration(slug: string) {
 
 const STARTER_BOUNDARY = "Keep your existing permissions and approval rules. Ask before any new access or commitment. Research and drafts stay in our chat. After an authorized external action or meaningful attempt, report its actual outcome to Monologue and include a result or receipt URL when available. Never invent an action, receipt, or successful outcome.";
 
-export const AGENT_STARTERS = [
+export function getAgentStarters(setupPrompt = SETUP_PROMPT) { return [
   {
     slug: "personal-assistant", name: "Personal assistant", description: "Help with emails and calendar changes, with a record you can revisit.",
-    prompt: `${SETUP_PROMPT}\n\nHelp me with emails and scheduling. First, tell me which apps you can already use, then ask what I want help with. Draft replies and proposed calendar changes for me to review. ${STARTER_BOUNDARY}`,
+    prompt: `${setupPrompt}\n\nHelp me with emails and scheduling. First, tell me which apps you can already use, then ask what I want help with. Draft replies and proposed calendar changes for me to review. ${STARTER_BOUNDARY}`,
   },
   {
     slug: "shopping-helper", name: "Shopping helper", description: "Compare options first. Keep order and booking receipts after you approve a purchase.",
-    prompt: `${SETUP_PROMPT}\n\nHelp me compare products, prices, and booking options. Ask what I need and my budget first. Do not buy, book, or start a subscription until I approve the specific item and total cost. ${STARTER_BOUNDARY}`,
+    prompt: `${setupPrompt}\n\nHelp me compare products, prices, and booking options. Ask what I need and my budget first. Do not buy, book, or start a subscription until I approve the specific item and total cost. ${STARTER_BOUNDARY}`,
   },
   {
     slug: "coding-agent", name: "Coding agent", description: "Keep pushes, pull requests, and shared deployments separate from local development.",
-    prompt: `${SETUP_PROMPT}\n\nHelp me work on my software project. Ask which repository and task to work on. Local edits, commits, tests, builds, and dev-server restarts do not belong in the feed. Report a remote push, pull request change, or shared deployment as its own action, with the commit, pull request, or deployment URL when available. ${STARTER_BOUNDARY}`,
+    prompt: `${setupPrompt}\n\nHelp me work on my software project. Ask which repository and task to work on. Local edits, commits, tests, builds, and dev-server restarts do not belong in the feed. Report a remote push, pull request change, or shared deployment as its own action, with the commit, pull request, or deployment URL when available. ${STARTER_BOUNDARY}`,
   },
-] as const;
+] as const; }
+
+export const AGENT_STARTERS = getAgentStarters();

@@ -169,17 +169,32 @@ async function rpc(token: string, method: string, params?: object) {
 }
 
 describe("MCP OAuth and reporting", () => {
-  it("advertises discovery and both supported scopes, but challenges for write-only by default", async () => {
+  it("advertises discovery and both supported scopes, and challenges for reading and writing together by default", async () => {
     expect(await (await resourceMetadata()).json()).toMatchObject({ resource: mcpResource(), scopes_supported: ["actions:write", "actions:read"] });
     expect(await (await oauthMetadata()).json()).toMatchObject({ code_challenge_methods_supported: ["S256"], client_id_metadata_document_supported: true, authorization_response_iss_parameter_supported: true });
     const response = await handleMcpRequest(new Request(mcpResource()));
     expect(response.status).toBe(401);
     expect(response.headers.get("www-authenticate")).toContain("oauth-protected-resource");
-    expect(response.headers.get("www-authenticate")).toContain('scope="actions:write"');
+    expect(response.headers.get("www-authenticate")).toContain('scope="actions:write actions:read"');
     vi.stubEnv("MONOLOGUE_MCP_ENABLED", "0");
     expect((await resourceMetadata()).status).toBe(503);
     expect((await handleMcpRequest(new Request(mcpResource()))).status).toBe(503);
     vi.stubEnv("MONOLOGUE_MCP_ENABLED", "1");
+  });
+
+  it("defaults a new approval to reading and writing in its chosen workspace", async () => {
+    const client = await registerOAuthClient({ client_name: "Standard connection", redirect_uris: ["http://127.0.0.1:9000/callback"], token_endpoint_auth_method: "none" });
+    const params = { response_type: "code", client_id: client.client_id, redirect_uri: client.redirect_uris[0], code_challenge: createHash("sha256").update(verifier).digest("base64url"), code_challenge_method: "S256", resource: mcpResource() };
+    expect((await validateAuthorization(params)).params.scope).toBe("actions:write actions:read");
+    const callback = new URL(await approveOAuthConnection(params, "w1", "u1"));
+    const tokens = await exchangeOAuthToken(new URLSearchParams({ grant_type: "authorization_code", client_id: client.client_id, code: callback.searchParams.get("code")!, code_verifier: verifier, redirect_uri: params.redirect_uri, resource: mcpResource() }));
+    expect(tokens.scope).toBe("actions:write actions:read");
+    const read = await (await rpc(tokens.access_token, "tools/call", { name: "read_timeline", arguments: {} })).json();
+    expect(read.result.isError).not.toBe(true);
+    expect(readTimelineOutputSchema.safeParse(read.result.structuredContent).success).toBe(true);
+    const write = await (await rpc(tokens.access_token, "tools/call", { name: "report_action", arguments: { verb: "Tested", summary: "Fixture: combined access", category: "other", status: "completed", system: "Fixture", externalId: "default-combined-scope" } })).json();
+    expect(write.result.structuredContent.success).toBe(true);
+    expect(await fixture.db.action.findUniqueOrThrow({ where: { id: write.result.structuredContent.id } })).toMatchObject({ workspaceId: "w1", reportedByUserId: "u1" });
   });
 
   it("rejects unsafe callbacks, unsupported scope, resource and plain PKCE", async () => {
