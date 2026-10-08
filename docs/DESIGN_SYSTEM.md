@@ -54,7 +54,7 @@ Handwriting is an accent, not the whole interface. Names, timestamps, values, UR
 - Reuse existing buttons, pills, avatars, action icons, timeline rows, dialogs, and empty states before making a variant.
 - Primary buttons use ink; coral is an accent, not a large background color.
 - Prefer one clear primary action per section.
-- Show starter template prompts directly, with a copy action; do not hide them behind a disclosure. Agent setup has one default action: **Copy setup prompt**. Keep technical connection instructions in the agent-facing guide and developer docs; show manual API-key setup as a collapsed fallback. Never promise that a prompt can silently add an MCP connection in every client.
+- Show starter template prompts directly, with a copy action; do not hide them behind a disclosure. Agent setup has one default action: **Copy setup prompt**. An empty action feed shows only **Connect an agent** and that button, copying the setup prompt for the displayed workspace and this instance. Keep technical connection instructions in the agent-facing guide and developer docs; show manual API-key setup as a collapsed fallback. Never promise that a prompt can silently add an MCP connection in every client.
 - Drawers are for complete action details. The timeline itself should already explain the action.
 - Share artifacts are static snapshots. They must not reveal future activity or create ongoing access.
 - Links to proof or receipts should be visible when present, but raw metadata stays in details.
