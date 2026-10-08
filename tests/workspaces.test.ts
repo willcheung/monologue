@@ -9,7 +9,7 @@ const fixture = vi.hoisted(() => ({ db: undefined as unknown as PrismaClient }))
 vi.mock("@/lib/db", () => ({ get db() { return fixture.db; } }));
 vi.mock("server-only", () => ({}));
 import { getAccessibleAgentWorkspaceId, listAgentSummaries, listMyAgentSummaries } from "@/lib/agents";
-import { acceptWorkspaceInvitation, createSharedWorkspace, ensurePersonalWorkspace, inviteWorkspaceMember, listWorkspaces, removeWorkspaceMember } from "@/lib/workspace-service";
+import { acceptWorkspaceInvitation, createSharedWorkspace, ensurePersonalWorkspace, hashInvitation, inviteWorkspaceMember, listWorkspaces, removeWorkspaceMember } from "@/lib/workspace-service";
 import { credentialMembershipValid, workspaceAccess } from "@/lib/workspace-access";
 import { authenticateApiRequest, createWorkspaceAgentApiKey } from "@/lib/api-keys";
 import { approveAgentConnection, claimAgentConnection, createAgentConnection } from "@/lib/agent-connections";
@@ -61,6 +61,43 @@ describe("shared workspaces", () => {
     await expect(inviteWorkspaceMember(workspace.id, "owner", "outsider@example.test")).rejects.toThrow("reserved all 3 seats");
     expect(await fixture.db.workspaceMember.count({ where: { workspaceId: workspace.id } })).toBe(1);
   });
+  it.each(["plus", "unexpected-plan"])("caps invite creation and joining at three even with stored plan %s", async plan => {
+    const workspace = await createSharedWorkspace("owner", `Plan cap ${plan}`);
+    await fixture.db.workspace.update({ where: { id: workspace.id }, data: { plan } });
+    const member = await inviteWorkspaceMember(workspace.id, "owner", "member@example.test");
+    const third = await inviteWorkspaceMember(workspace.id, "owner", "third@example.test");
+    await expect(inviteWorkspaceMember(workspace.id, "owner", "outsider@example.test")).rejects.toThrow("reserved all 3 seats");
+    await acceptWorkspaceInvitation("member", "member@example.test", member.token);
+    await acceptWorkspaceInvitation("third", "third@example.test", third.token);
+    const oldToken = `previously-issued:${workspace.id}`;
+    await fixture.db.workspaceInvitation.create({ data: { workspaceId: workspace.id, email: "outsider@example.test", invitedByUserId: "owner", tokenHash: hashInvitation(oldToken), expiresAt: new Date(Date.now() + 86400000) } });
+    await expect(acceptWorkspaceInvitation("outsider", "outsider@example.test", oldToken)).rejects.toThrow("3-person limit");
+    expect(await fixture.db.workspaceMember.count({ where: { workspaceId: workspace.id } })).toBe(3);
+  });
+  it("releases places after an invitation is cancelled or expired and a member is removed", async () => {
+    const workspace = await createSharedWorkspace("owner", "Released places");
+    const member = await inviteWorkspaceMember(workspace.id, "owner", "member@example.test");
+    const third = await inviteWorkspaceMember(workspace.id, "owner", "third@example.test");
+    await fixture.db.workspaceInvitation.update({ where: { id: third.invitation.id }, data: { cancelledAt: new Date() } });
+    const outsider = await inviteWorkspaceMember(workspace.id, "owner", "outsider@example.test");
+    await fixture.db.workspaceInvitation.update({ where: { id: outsider.invitation.id }, data: { expiresAt: new Date(0) } });
+    const replacement = await inviteWorkspaceMember(workspace.id, "owner", "third@example.test");
+    await acceptWorkspaceInvitation("member", "member@example.test", member.token);
+    await acceptWorkspaceInvitation("third", "third@example.test", replacement.token);
+    await expect(inviteWorkspaceMember(workspace.id, "owner", "outsider@example.test")).rejects.toThrow("reserved all 3 seats");
+    await removeWorkspaceMember(workspace.id, "owner", "third");
+    await inviteWorkspaceMember(workspace.id, "owner", "outsider@example.test");
+    expect(await fixture.db.workspaceMember.count({ where: { workspaceId: workspace.id } })).toBe(2);
+  });
+  it("does not let concurrent acceptance of older invitations exceed three people", async () => {
+    const workspace = await createSharedWorkspace("owner", "Concurrent joining");
+    await fixture.db.workspaceMember.create({ data: { workspaceId: workspace.id, userId: "member" } });
+    const tokens = ["third", "outsider"].map(userId => `${workspace.id}:${userId}`);
+    for (const [index, userId] of ["third", "outsider"].entries()) await fixture.db.workspaceInvitation.create({ data: { workspaceId: workspace.id, email: `${userId}@example.test`, invitedByUserId: "owner", tokenHash: hashInvitation(tokens[index]), expiresAt: new Date(Date.now() + 86400000) } });
+    const results = await Promise.allSettled([acceptWorkspaceInvitation("third", "third@example.test", tokens[0]), acceptWorkspaceInvitation("outsider", "outsider@example.test", tokens[1])]);
+    expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    expect(await fixture.db.workspaceMember.count({ where: { workspaceId: workspace.id } })).toBe(3);
+  }, 15000);
   it("does not oversubscribe seats during concurrent invitation requests", async () => {
     const workspace = await createSharedWorkspace("owner", "Concurrent seats");
     await inviteWorkspaceMember(workspace.id, "owner", "member@example.test");

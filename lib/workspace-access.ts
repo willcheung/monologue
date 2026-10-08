@@ -4,7 +4,6 @@ export type WorkspaceDatabase = Prisma.TransactionClient | PrismaClient;
 export class WorkspaceError extends Error {
   constructor(message: string, public status = 400) { super(message); }
 }
-export const memberLimit = (plan: string) => plan === "plus" ? 10 : 3;
 
 export async function workspaceAccess(database: WorkspaceDatabase, workspaceId: string, userId: string) {
   const workspace = await database.workspace.findUnique({ where: { id: workspaceId } });

@@ -49,7 +49,7 @@ export function WorkspaceList({ workspaces }: { workspaces: ListedWorkspace[] })
       </label>
       <button className="primary-button" disabled={busy}>Create workspace</button>
     </form>
-    <p className="workspace-feature-note">Create as many as you need. Each shared workspace starts free for up to three people.</p>
+    <p className="workspace-feature-note">Create as many as you need. Each shared workspace is free for up to three people, including the owner.</p>
     {error && <p className="form-error" role="alert">{error}</p>}
     <ul className="workspace-list" aria-label="Your workspaces">
       {workspaces.map(workspace => <li key={workspace.id} className="workspace-list-row">

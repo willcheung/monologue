@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { db } from "./db";
-import { memberLimit, requireWorkspaceAccess, WorkspaceError } from "./workspace-access";
+import { requireWorkspaceAccess, WorkspaceError } from "./workspace-access";
+import { WORKSPACE_MEMBER_LIMIT } from "./workspace-limits";
 
 export const hashInvitation = (token: string) => createHash("sha256").update(token).digest("hex");
 export async function ensurePersonalWorkspace(userId: string) {
@@ -29,7 +30,7 @@ export async function inviteWorkspaceMember(workspaceId: string, userId: string,
     if (await tx.workspaceInvitation.findFirst({ where: { ...pending, email: normalized } })) throw new WorkspaceError("An invitation is already waiting for this person.");
     const members = await tx.workspaceMember.count({ where: { workspaceId } });
     const invites = await tx.workspaceInvitation.count({ where: pending });
-    if (members + invites >= memberLimit(workspace.plan)) throw new WorkspaceError(`This workspace has reserved all ${memberLimit(workspace.plan)} seats. Cancel an invitation or remove a member to invite someone else.`, 409);
+    if (members + invites >= WORKSPACE_MEMBER_LIMIT) throw new WorkspaceError(`This workspace has reserved all ${WORKSPACE_MEMBER_LIMIT} seats. Cancel an invitation or remove a member to invite someone else.`, 409);
     const invitation = await tx.workspaceInvitation.create({ data: { workspaceId, email: normalized, invitedByUserId: userId, tokenHash: hashInvitation(token), expiresAt: new Date(Date.now()+7*86400000) } });
     return { invitation, token };
   });
@@ -48,7 +49,7 @@ export async function acceptWorkspaceInvitation(userId: string, email: string, t
       return invitation.workspace;
     }
     const count = await tx.workspaceMember.count({ where: { workspaceId: invitation.workspaceId } });
-    if (!existing && count >= memberLimit(invitation.workspace.plan)) throw new WorkspaceError("This workspace has reached its member limit.", 409);
+    if (!existing && count >= WORKSPACE_MEMBER_LIMIT) throw new WorkspaceError(`This workspace has reached its ${WORKSPACE_MEMBER_LIMIT}-person limit.`, 409);
     if (!existing) await tx.workspaceMember.create({ data: { workspaceId: invitation.workspaceId, userId } });
     await tx.workspaceInvitation.update({ where: { id: invitation.id }, data: { acceptedAt: new Date() } });
     return invitation.workspace;
