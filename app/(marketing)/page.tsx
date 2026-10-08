@@ -42,7 +42,7 @@ export default async function MarketingPage() {
         <div className="hero-copy">
           <span className="kicker">Your agent feed</span>
           <RotatingActionHeadline />
-          <p>Emails sent. Purchases made. Code shipped.<br />Keep up with your agents, and give your AI chief of staff the full picture.</p>
+          <p>Emails sent. Purchases made. Code shipped.<br />Keep up with your agents, and help them see what each other did.</p>
           <div className="hero-actions">
             <Link className="primary-button hero-primary" href={startHref}>Get started<ArrowRight size={17} /></Link>
             <CopySetupButton prompt={setupPrompt} />
@@ -79,7 +79,7 @@ export default async function MarketingPage() {
       <section className="signal-section">
         <span className="kicker">One simple rule</span>
         <h2>A record of what changed.</h2>
-        <p className="signal-lede">Your agents report what they changed. You and your AI chief of staff get one feed to see what’s done and what needs attention.</p>
+        <p className="signal-lede">Your agents report what they changed. One private feed gives you and your connected agents a shared view of what’s done and what needs attention.</p>
         <div className={`signal-grid ${styles.signalCards}`}>
           <div className={styles.appearsCard}><h3><Check size={18} aria-hidden="true" />What appears</h3><p>Emails sent, purchases made, calendar events changed, files written, code pushed, and deployments completed.</p></div>
           <div className={styles.staysOutCard}><h3><X size={18} aria-hidden="true" />What stays out</h3><p>Keep private data, passwords, and API keys out of reports. Browsing, planning, drafts, and internal thoughts stay out too.</p></div>
