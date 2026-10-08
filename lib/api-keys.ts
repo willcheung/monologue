@@ -1,10 +1,10 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { db } from "./db";
+import { credentialMembershipValid, requireWorkspaceAccess } from "./workspace-access";
 import { isCloudMode, LOCAL_WORKSPACE_ID } from "./runtime";
 
-export const ACTION_READ_SCOPE = "actions:read";
-export const ACTION_WRITE_SCOPE = "actions:write";
-export const LEGACY_AGENT_SCOPES = `${ACTION_READ_SCOPE} ${ACTION_WRITE_SCOPE}`;
+import { DEFAULT_AGENT_SCOPES, LEGACY_AGENT_SCOPES } from "./agent-scopes";
+export { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, DEFAULT_AGENT_SCOPES, LEGACY_AGENT_SCOPES } from "./agent-scopes";
 
 function hashKey(key: string) {
   return createHash("sha256").update(key).digest("hex");
@@ -32,7 +32,7 @@ export function prepareWorkspaceApiKey(workspaceId: string, name: string, option
       name: normalizedName,
       prefix: key.slice(0, 16),
       keyHash: hashKey(key),
-      scopes: options.scopes ?? LEGACY_AGENT_SCOPES,
+      scopes: options.scopes ?? DEFAULT_AGENT_SCOPES,
       agentId: options.agentId,
       createdByUserId: options.createdByUserId,
     },
@@ -41,9 +41,10 @@ export function prepareWorkspaceApiKey(workspaceId: string, name: string, option
 
 export async function createWorkspaceAgentApiKey(workspaceId: string, name: string, createdByUserId: string) {
   return db.$transaction(async (transaction) => {
+    await requireWorkspaceAccess(transaction, workspaceId, createdByUserId);
     const normalizedName = name.trim() || "My agent";
     const existing = await transaction.agent.findFirst({
-      where: { workspaceId, name: normalizedName },
+      where: { workspaceId, name: normalizedName, connectedByUserId: createdByUserId },
       orderBy: { createdAt: "asc" },
     });
     const agent = existing ?? await transaction.agent.create({
@@ -70,7 +71,7 @@ export async function authenticateApiRequest(request: Request) {
   if (!isCloudMode()) {
     const configured = process.env.MONOLOGUE_API_KEY;
     return configured && safeEqual(token, configured)
-      ? { workspaceId: LOCAL_WORKSPACE_ID, keyId: null, agentId: null, agentName: null, scopes: LEGACY_AGENT_SCOPES }
+      ? { workspaceId: LOCAL_WORKSPACE_ID, keyId: null, agentId: null, agentName: null, scopes: LEGACY_AGENT_SCOPES, createdByUserId: null }
       : null;
   }
 
@@ -78,7 +79,7 @@ export async function authenticateApiRequest(request: Request) {
     where: { keyHash: hashKey(token) },
     include: { agent: { select: { id: true, name: true } } },
   });
-  if (!key || key.revokedAt) return null;
+  if (!key || key.revokedAt || !await credentialMembershipValid(db, key)) return null;
   await db.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } });
   return {
     workspaceId: key.workspaceId,
@@ -86,5 +87,6 @@ export async function authenticateApiRequest(request: Request) {
     agentId: key.agent?.id ?? null,
     agentName: key.agent?.name ?? key.name,
     scopes: key.scopes,
+    createdByUserId: key.createdByUserId,
   };
 }

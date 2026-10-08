@@ -14,7 +14,7 @@ beforeEach(() => {
   vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3001"); vi.stubEnv("MONOLOGUE_MODE", "cloud"); vi.stubEnv("MONOLOGUE_MCP_ENABLED", "1");
   vi.clearAllMocks();
   fixtures.validate.mockResolvedValue({ params, client: { name: "Test agent" } });
-  fixtures.context.mockResolvedValue({ workspace: { id: "owner-workspace", name: "My feed" }, user: { id: "owner-user" } });
+  fixtures.context.mockResolvedValue({ workspace: { id: "owner-workspace", name: "My feed", kind: "personal" }, workspaces: [{ id: "owner-workspace", name: "My feed", kind: "personal" }], user: { id: "owner-user" } });
   fixtures.approve.mockResolvedValue("https://example.test/callback?code=test-only-code");
 });
 afterAll(() => vi.unstubAllEnvs());
@@ -34,12 +34,12 @@ describe("MCP consent", () => {
   it("makes cross-agent read permission explicit for read-only and read/write approvals", async () => {
     fixtures.validate.mockResolvedValue({ params: { ...params, scope: "actions:read" }, client: { name: "Test agent" } });
     const readOnly = renderToStaticMarkup(await page());
-    expect(readOnly).toContain("read your entire private timeline"); expect(readOnly).toContain("your other agents");
+    expect(readOnly).toContain("read the selected workspace’s entire timeline"); expect(readOnly).toContain("its members’ agents");
     expect(readOnly).toContain("cannot add actions");
     fixtures.validate.mockResolvedValue({ params: { ...params, scope: "actions:write actions:read" }, client: { name: "Test agent" } });
     const both = renderToStaticMarkup(await page());
-    expect(both).toContain("read your entire private timeline"); expect(both).toContain("also add actions");
-    const action = findForm(await page())!.props.action, approved = new FormData(); approved.set("decision", "approve");
+    expect(both).toContain("read the selected workspace’s entire timeline"); expect(both).toContain("also add reports");
+    const action = findForm(await page())!.props.action, approved = new FormData(); approved.set("decision", "approve"); approved.set("workspaceId", "owner-workspace");
     await expect(action(approved)).rejects.toThrow("redirect:");
     expect(fixtures.approve).toHaveBeenCalledWith({ ...params, scope: "actions:write actions:read" }, "owner-workspace", "owner-user");
   });
@@ -55,6 +55,9 @@ describe("MCP consent", () => {
     const denied = new FormData(); denied.set("decision", "deny");
     await expect(action(denied)).rejects.toThrow("error=access_denied"); expect(fixtures.approve).not.toHaveBeenCalled();
     const approved = new FormData(); approved.set("decision", "approve"); approved.set("workspaceId", "attacker-workspace");
+    await expect(action(approved)).rejects.toThrow("Workspace unavailable");
+    expect(fixtures.approve).not.toHaveBeenCalled();
+    approved.set("workspaceId", "owner-workspace");
     await expect(action(approved)).rejects.toThrow("redirect:https://example.test/callback?code=test-only-code");
     expect(fixtures.approve).toHaveBeenCalledWith(params, "owner-workspace", "owner-user");
     fixtures.context.mockResolvedValue(null);

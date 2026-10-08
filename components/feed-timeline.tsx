@@ -1,8 +1,6 @@
 "use client";
 
 import type { Action } from "@prisma/client";
-import Link from "next/link";
-import { Inbox } from "lucide-react";
 import { useBrowserTime } from "@/lib/use-browser-time";
 import { ActionCard } from "./action-card";
 
@@ -30,9 +28,11 @@ function calendarLabel(dateValue: Date, localTime: boolean) {
   return { month, day, relative, accessible };
 }
 
-export function FeedTimeline({ actions, queryString, basePath = "/feed" }: { actions: Action[]; queryString: string; basePath?: string }) {
+type AttributedAction = Action & { reportedByUser?: { name: string } | null };
+
+export function FeedTimeline({ actions, queryString, basePath = "/feed" }: { actions: AttributedAction[]; queryString: string; basePath?: string }) {
   const localTime = useBrowserTime();
-  const groups = new Map<string, { date: Date; actions: Action[] }>();
+  const groups = new Map<string, { date: Date; actions: AttributedAction[] }>();
 
   for (const action of actions) {
     const key = dateParts(action.occurredAt, localTime).key;
@@ -42,7 +42,6 @@ export function FeedTimeline({ actions, queryString, basePath = "/feed" }: { act
   }
 
   return <section className="feed" aria-label="Agent actions">
-    {actions.length === 0 && <div className="empty"><Inbox size={30} /><h2>No actions yet</h2><p>Connect an agent and its real-world changes will show up here.</p><Link href="/settings/keys">Connect an agent</Link></div>}
     {Array.from(groups.entries()).map(([key, group]) => {
       const label = calendarLabel(group.date, localTime);
       return <div className="day-group" key={key}>

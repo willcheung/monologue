@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildWeeklyLedger, type LedgerAction } from "@/lib/ledger";
+import { buildWeeklyLedger, weeklyLedgerBounds, type LedgerAction } from "@/lib/ledger";
 
 const action = (occurredAt: string, overrides: Partial<LedgerAction> = {}): LedgerAction => ({
   occurredAt:new Date(occurredAt),
@@ -49,5 +49,25 @@ describe("weekly agent ledger", () => {
     expect(ledger.periodLabel).toBe("Sep 17–Sep 23");
     expect(ledger.snapshotLabel).toBe("Sep 23");
     expect(ledger.days[6]).toMatchObject({ key:"2026-09-23", count:1 });
+  });
+  it("gives briefing timestamps for the same seven calendar days as Recap near UTC midnight", () => {
+    const now = new Date("2026-09-24T01:00:00Z");
+    const range = weeklyLedgerBounds(now, "America/Los_Angeles");
+    expect(range.from.toISOString()).toBe("2026-09-17T07:00:00.000Z");
+    expect(range.to.toISOString()).toBe("2026-09-24T06:59:59.999Z");
+    const ledger = buildWeeklyLedger([
+      action(new Date(range.from.getTime() - 1).toISOString()),
+      action(range.from.toISOString()), action(range.to.toISOString()),
+      action(new Date(range.to.getTime() + 1).toISOString()),
+    ], now, "America/Los_Angeles");
+    expect(ledger.totalChanges).toBe(2);
+  });
+  it("keeps calendar-day boundaries correct through daylight-saving changes", () => {
+    const spring = weeklyLedgerBounds(new Date("2026-03-09T12:00:00Z"), "America/Los_Angeles");
+    expect(spring.from.toISOString()).toBe("2026-03-03T08:00:00.000Z");
+    expect(spring.to.toISOString()).toBe("2026-03-10T06:59:59.999Z");
+    const fall = weeklyLedgerBounds(new Date("2026-11-02T12:00:00Z"), "America/Los_Angeles");
+    expect(fall.from.toISOString()).toBe("2026-10-27T07:00:00.000Z");
+    expect(fall.to.toISOString()).toBe("2026-11-03T07:59:59.999Z");
   });
 });

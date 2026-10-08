@@ -5,16 +5,20 @@ import { ApiKeyManager } from "@/components/api-key-manager";
 import { MCP_URL, SETUP_PROMPT } from "@/lib/setup-prompt";
 
 vi.mock("@/components/header", () => ({ Header: () => null }));
+vi.mock("@/lib/setup-context", async () => {
+  const { SETUP_PROMPT, MCP_URL, PUBLIC_MONOLOGUE_ORIGIN } = await import("@/lib/setup-prompt");
+  return { getSetupContext: async () => ({ prompt: SETUP_PROMPT, mcpUrl: MCP_URL, origin: PUBLIC_MONOLOGUE_ORIGIN }) };
+});
 import DevelopersPage from "@/app/(marketing)/developers/page";
 
 describe("MCP setup guidance", () => {
   it("keeps the shared prompt and clearly labels connection permissions without exposing credentials", () => {
-    const html = renderToStaticMarkup(<ApiKeyManager mcpUrl={MCP_URL} initialKeys={[
+    const html = renderToStaticMarkup(<ApiKeyManager initialKeys={[
       { id: "test-write", name: "Writer", prefix: "OAuth connection", scopes: "actions:write", createdAt: "2026-10-01", lastUsedAt: null, revokedAt: null },
       { id: "test-read", name: "Reader", prefix: "OAuth connection", scopes: "actions:read", createdAt: "2026-10-01", lastUsedAt: null, revokedAt: null },
       { id: "test-both", name: "Both", prefix: "OAuth connection", scopes: "actions:write actions:read", createdAt: "2026-10-01", lastUsedAt: null, revokedAt: null },
     ]} />);
-    expect(html).toContain("Connect an agent with MCP");
+    expect(html).toContain("<h2>Connect an agent</h2>");
     expect(html.match(/Copy setup prompt/g)).toHaveLength(1);
     expect(html).not.toContain("Copy MCP URL");
     expect(html).not.toContain(MCP_URL);
@@ -28,10 +32,11 @@ describe("MCP setup guidance", () => {
     expect(renderToStaticMarkup(<ApiKeyManager />)).toContain("<h2>Connect an agent</h2>");
   });
 
-  it("documents both tools, explicit read approval and the existing REST fallback", () => {
-    const html = renderToStaticMarkup(<DevelopersPage />);
-    for (const value of [MCP_URL, SETUP_PROMPT, "report_action", "read_timeline", "actions:write", "actions:read", "nextCursor", "/api/actions"]) expect(html).toContain(value);
+  it("documents both tools, one combined connection approval and the existing REST fallback", async () => {
+    const html = renderToStaticMarkup(await DevelopersPage());
+    for (const value of [MCP_URL, SETUP_PROMPT.split("\n")[0], "report_action", "read_timeline", "actions:write", "actions:read", "nextCursor", "/api/actions"]) expect(html).toContain(value);
     expect(html).toContain("including other agents");
-    expect(html).toContain("separately approved");
+    expect(html).toContain("standard connection approval");
+    expect(html).toContain("Older limited connections keep their approved scopes");
   });
 });

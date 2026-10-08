@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import rough from "roughjs";
 import { agentColor } from "@/lib/agent-colors";
 
-type AgentCount = { name: string; count: number };
+type AgentCount = { id?: string | null; name: string; count: number };
 type Day = { key: string; weekday: string; dateLabel: string; count: number; agents: AgentCount[] };
 
 export function SketchLedgerChart({ days, agents, periodLabel }: { days: Day[]; agents: AgentCount[]; periodLabel: string }) {
@@ -32,7 +32,7 @@ export function SketchLedgerChart({ days, agents, periodLabel }: { days: Day[]; 
       } else {
         day.agents.forEach((agent, segmentIndex) => {
           const height = agent.count / max * plotHeight;
-          const colorIndex = agents.findIndex((item) => item.name === agent.name);
+          const colorIndex = agents.findIndex((item) => (item.id ?? item.name) === (agent.id ?? agent.name));
           const color = agentColor(colorIndex);
           svg.appendChild(chart.rectangle(x, bottom - height, barWidth, height + .5, {
             fill:color,
@@ -75,6 +75,6 @@ export function SketchLedgerChart({ days, agents, periodLabel }: { days: Day[]; 
 
   return <div className="sketch-ledger-chart">
     <svg ref={svgRef} viewBox="0 0 700 240" role="img" aria-label={`Hand-drawn completed actions by agent and day from ${periodLabel}`} />
-    <div className="sketch-chart-legend">{agents.map((agent, index) => <span key={agent.name}><i style={{ background:agentColor(index) }} />{agent.name}</span>)}</div>
+    <div className="sketch-chart-legend">{agents.map((agent, index) => <span key={agent.id ?? agent.name}><i style={{ background:agentColor(index) }} />{agent.name}</span>)}</div>
   </div>;
 }

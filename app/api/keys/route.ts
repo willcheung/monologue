@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createWorkspaceAgentApiKey } from "@/lib/api-keys";
 import { db } from "@/lib/db";
 import { isCloudMode } from "@/lib/runtime";
+import { requireSameOrigin } from "@/lib/workspace-http";
 import { getWorkspaceContext } from "@/lib/workspace";
 
 export const runtime = "nodejs";
@@ -19,12 +20,12 @@ function unavailable() {
   return json({ success: false, error: "Hosted API keys are available in cloud mode" }, 404);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!isCloudMode()) return unavailable();
-  const context = await getWorkspaceContext();
+  const context = await getWorkspaceContext(request.headers.get("x-monologue-workspace") ?? undefined);
   if (!context) return json({ success: false, error: "Unauthorized" }, 401);
   const keys = await db.apiKey.findMany({
-    where: { workspaceId: context.workspace.id },
+    where: { workspaceId: context.workspace.id, ...(context.role !== "owner" && { createdByUserId: context.user?.id }) },
     select: { id: true, name: true, prefix: true, scopes: true, lastUsedAt: true, revokedAt: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   });
@@ -32,8 +33,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  try { requireSameOrigin(request); } catch { return json({ error: "Origin not allowed" }, 403); }
   if (!isCloudMode()) return unavailable();
-  const context = await getWorkspaceContext();
+  const context = await getWorkspaceContext(request.headers.get("x-monologue-workspace") ?? undefined);
   if (!context) return json({ success: false, error: "Unauthorized" }, 401);
   const parsed = createKeySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return json({ success: false, error: "Enter a name for this agent" }, 400);
@@ -43,13 +45,14 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  try { requireSameOrigin(request); } catch { return json({ error: "Origin not allowed" }, 403); }
   if (!isCloudMode()) return unavailable();
-  const context = await getWorkspaceContext();
+  const context = await getWorkspaceContext(request.headers.get("x-monologue-workspace") ?? undefined);
   if (!context) return json({ success: false, error: "Unauthorized" }, 401);
   const parsed = revokeKeySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return json({ success: false, error: "Invalid key" }, 400);
   const result = await db.apiKey.updateMany({
-    where: { id: parsed.data.id, workspaceId: context.workspace.id, revokedAt: null },
+    where: { id: parsed.data.id, workspaceId: context.workspace.id, revokedAt: null, ...(context.role !== "owner" && { createdByUserId: context.user?.id }) },
     data: { revokedAt: new Date() },
   });
   if (!result.count) return json({ success: false, error: "Key not found" }, 404);

@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AGENT_STARTERS, getIntegration, INTEGRATIONS, PUBLIC_SITE_URL } from "@/lib/distribution-content";
 import { SETUP_PROMPT } from "@/lib/setup-prompt";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
+vi.mock("@/lib/setup-context", async () => {
+  const { SETUP_PROMPT, MCP_URL, PUBLIC_MONOLOGUE_ORIGIN } = await import("@/lib/setup-prompt");
+  return { getSetupContext: async () => ({ prompt: SETUP_PROMPT, mcpUrl: MCP_URL, origin: PUBLIC_MONOLOGUE_ORIGIN }) };
+});
 import { generateMetadata, generateStaticParams } from "@/app/(marketing)/integrations/[slug]/page";
 
 describe("distribution pages", () => {

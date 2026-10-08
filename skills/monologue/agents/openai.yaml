@@ -1,4 +1,4 @@
 interface:
   display_name: "Monologue"
   short_description: "See what your AI agents did in one private feed"
-  default_prompt: "Use $monologue to report completed external actions. With my read approval, brief me on my agents’ reported activity and flag failed or pending outcomes."
+  default_prompt: "Use $monologue to report completed external actions. Use my approved workspace connection to brief me on my agents’ reported activity and flag failed or pending outcomes."

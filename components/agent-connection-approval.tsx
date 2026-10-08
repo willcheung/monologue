@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_AGENT_SCOPES } from "@/lib/agent-scopes";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -8,12 +9,17 @@ export function AgentConnectionApproval({
   approvalCode,
   agentName,
   platform,
+  workspaces,
+  workspaceId,
 }: {
   requestId: string;
   approvalCode: string;
   agentName: string;
   platform?: string | null;
+  workspaces: { id: string; name: string; kind: string }[];
+  workspaceId: string;
 }) {
+  const [destination, setDestination] = useState(workspaceId);
   const [state, setState] = useState<"ready" | "working" | "connected">("ready");
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +29,7 @@ export function AgentConnectionApproval({
     const response = await fetch("/api/connect/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ requestId, approvalCode }),
+      body: JSON.stringify({ requestId, approvalCode, workspaceId: destination, scopes: DEFAULT_AGENT_SCOPES }),
     });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -48,7 +54,9 @@ export function AgentConnectionApproval({
     <span className="kicker">Connect an agent</span>
     <h1>Connect {agentName} to your feed?</h1>
     <p>Monologue will create a private connection key and send it directly to this agent. You won&apos;t need to copy or paste anything.</p>
-    <div className="connection-note"><strong>{agentName}{platform ? ` · ${platform}` : ""} will be able to:</strong><span>Add actions to your private Monologue feed. It cannot read the feed.</span></div>
+    <div className="connection-note"><strong>{agentName}{platform ? ` · ${platform}` : ""} will be able to:</strong><span>Read and add reports in the workspace you choose, including reports from its other agents. Access follows your membership in that workspace.</span></div>
+    <label className="workspace-field">Workspace<select value={destination} onChange={event => setDestination(event.target.value)} disabled={state !== "ready"}>{workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.kind === "personal" ? "Personal" : workspace.name}</option>)}</select></label>
+    <p>This connection stays in the workspace you choose. It does not grant access to your other apps.</p>
     {error && <p className="form-error">{error}</p>}
     <button className="primary-button connection-approve" type="button" onClick={approve} disabled={state === "working"}>
       {state === "working" ? "Connecting…" : `Connect ${agentName}`}

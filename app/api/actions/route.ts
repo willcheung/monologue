@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     agentId: credential.agentId,
     agentName: credential.agentName ?? parsed.data.agentName,
     keyId: credential.keyId,
+    createdByUserId: credential.createdByUserId,
   });
   const attributed = attributeSelfReportedAction(parsed.data, agent);
   const { action, duplicate } = await createAction(attributed, credential.workspaceId, credential.keyId);

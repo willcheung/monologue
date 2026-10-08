@@ -142,7 +142,7 @@ See [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md) for application
 
 The hosted OAuth MCP endpoint is `/mcp`; it does not accept REST API keys. Its two tools use the same action data and workspace permissions. `read_timeline` defaults to 25 results (maximum 100), supports filters and cursor pagination, and excludes raw metadata and credential identifiers. OAuth tokens cannot authenticate to REST. See [MCP setup and rollout](docs/MCP_PLAN.md) for scopes, configuration and migration requirements.
 
-REST reporting works in single-user mode with the configured key. OAuth MCP requires your own cloud-mode deployment with browser sign-in; connect a compatible client to `https://<your-deployment>/mcp` and approve write access. Optional timeline reading needs separate read approval.
+REST reporting works in single-user mode with the configured key. OAuth MCP requires your own cloud-mode deployment with browser sign-in; connect a compatible client to `https://<your-deployment>/mcp` and approve reading and reporting together for the workspace you choose. Both follow your current membership; older limited grants remain limited until you reconnect.
 
 Both routes require `Authorization: Bearer <MONOLOGUE_API_KEY>`.
 
@@ -218,3 +218,10 @@ The Action API and `source` field can later accept webhooks, connectors, MCP, br
 ## License
 
 MIT
+
+
+### Shared-workspace development preview
+
+Run `npm run dev:workspace`, then open `http://localhost:3100/feed`. This starts the same application with an isolated SQLite database and synthetic sample accounts. Use the sample-account selector to try personal/shared feeds, invitations, member removal, assistant destinations, and daily report settings. Team settings include a development-only Free/Plus switch.
+
+The launcher suppresses hosted database/provider credentials and binds to loopback. No production data is loaded, no email or Slack messages are sent, and no daily delivery job or checkout is connected. Stop with Ctrl+C. Development account switching is unavailable in production. See [workspace architecture](docs/HOSTED_ARCHITECTURE.md#shared-workspaces) for authorization and migration details.

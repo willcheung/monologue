@@ -5,8 +5,9 @@ import { ActionDetail } from "@/components/action-detail";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { FeedTimeline } from "@/components/feed-timeline";
 import { Header } from "@/components/header";
+import { WorkspaceActivityButton } from "@/components/workspace-activity-button";
 import { StaticShareCard, type ShareCardData } from "@/components/static-share-card";
-import { getAgentProfile } from "@/lib/agents";
+import { getAccessibleAgentWorkspaceId, getAgentProfile } from "@/lib/agents";
 import { categoryPresentation } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { getWorkspaceContext } from "@/lib/workspace";
@@ -22,9 +23,15 @@ function dateLabel(value: Date | null) {
 }
 
 export default async function AgentProfilePage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
-  const context = await getWorkspaceContext();
+  let context = await getWorkspaceContext();
   if (!context) redirect("/sign-in");
   const { agentId } = await params;
+  if (context.user) {
+    const workspaceId = await getAccessibleAgentWorkspaceId(context.user.id, agentId);
+    if (!workspaceId) notFound();
+    context = await getWorkspaceContext(workspaceId);
+    if (!context) notFound();
+  }
   const profile = await getAgentProfile(context.workspace.id, agentId);
   if (!profile) notFound();
   const rawSearch = await searchParams;
@@ -44,12 +51,13 @@ export default async function AgentProfilePage({ params, searchParams }: { param
   };
 
   return <>
-    <Header product signedIn={Boolean(context.user)} />
+    <Header product signedIn={Boolean(context.user)} workspaceContext={context} />
     <main className="agent-profile-shell">
-      <Link className="profile-back" href="/agents"><ArrowLeft size={15} />Your AI Crew</Link>
+      <Link className="profile-back" href={context.user ? `/agents?workspaceId=${encodeURIComponent(context.workspace.id)}` : "/agents"}><ArrowLeft size={15} />My agents</Link>
+      {context.user && <p className="workspace-feature-note">{context.workspace.kind === "personal" ? "Personal" : context.workspace.name} · {context.workspace.kind === "personal" ? "Private" : "Shared"}</p>}
       <section className="agent-profile-hero">
         <AgentAvatar name={profile.name} large />
-        <div><span className="kicker">{profile.platform ?? "AI agent"}</span><h1>{profile.name}</h1><p>{description}</p><small><CheckCircle2 size={14} />{profile.connectedToMonologue ? "Connected to Monologue" : "Seen in your action history"}</small></div>
+        <div><span className="kicker">{profile.platform ?? "AI agent"}</span><h1>{profile.name}</h1>{profile.connectedByName && <p className="action-person">{profile.connectedByName}&apos;s assistant</p>}<p>{description}</p><small><CheckCircle2 size={14} />{profile.connectedToMonologue ? "Connected to Monologue" : "Seen in your action history"}</small></div>
         <StaticShareCard data={profileShareData} label="Share profile" />
       </section>
 
@@ -67,7 +75,7 @@ export default async function AgentProfilePage({ params, searchParams }: { param
 
       <section className="category-breakdown"><div><span className="kicker">Activity mix</span><h2>What it changes</h2></div><div className="activity-pills">{profile.categories.map((category) => { const presentation = categoryPresentation(category.name); return <span key={category.name}><i>{presentation.emoji}</i><b>{presentation.label}</b><small>{category.count}</small></span>; })}</div></section>
 
-      <section className="agent-recent"><div className="agent-recent-heading"><div><span className="kicker">Recent activity</span><h2>Latest changes</h2><p>The 12 most recent actions from this agent.</p></div><Link href={`/feed?agent=${encodeURIComponent(profile.canonicalName)}`}>View all activity</Link></div><FeedTimeline actions={profile.recentActions} queryString="" basePath={basePath} /></section>
+      <section className="agent-recent"><div className="agent-recent-heading"><div><span className="kicker">Recent activity</span><h2>Latest changes</h2><p>The 12 most recent actions from this agent.</p></div>{context.user ? <WorkspaceActivityButton workspaceId={context.workspace.id} agentId={profile.id} /> : <Link href={`/feed?agentId=${encodeURIComponent(profile.id)}`}>View all activity</Link>}</div>{profile.recentActions.length > 0 ? <FeedTimeline actions={profile.recentActions} queryString="" basePath={basePath} /> : <div className="empty"><h2>No actions yet</h2><p>This agent’s reported changes will appear here.</p></div>}</section>
     </main>
     {detail && <ActionDetail action={detail} closeHref={basePath} />}
   </>;

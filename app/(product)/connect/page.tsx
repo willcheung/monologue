@@ -33,13 +33,13 @@ export default async function ConnectPage({ searchParams }: { searchParams: Sear
     redirect(`/sign-in?next=${encodeURIComponent(next)}`);
   }
 
-  if (connection.workspaceId && connection.workspaceId !== context.workspace.id) {
-    return <><Header product signedIn /><main className="connection-shell"><div className="connection-card"><span className="kicker">Connection link</span><h1>This link is no longer valid.</h1><p>Ask your agent to start the Monologue connection again.</p><Link className="primary-button" href="/feed">Open your feed</Link></div></main></>;
+  if (connection.workspaceId && !context.workspaces.some(workspace => workspace.id === connection.workspaceId)) {
+    return <><Header product signedIn workspaceContext={context} /><main className="connection-shell"><div className="connection-card"><span className="kicker">Connection link</span><h1>This link is no longer valid.</h1><p>Ask your agent to start the Monologue connection again.</p><Link className="primary-button" href="/feed">Open your feed</Link></div></main></>;
   }
 
   if (connection.status === "claimed") {
-    return <><Header product signedIn /><main className="connection-shell"><div className="connection-card connection-success"><span className="connection-icon" aria-hidden="true">✓</span><h1>{connection.agentName} is already connected.</h1><p>The agent has securely received its connection key.</p><Link className="primary-button" href="/feed">Open your feed</Link></div></main></>;
+    return <><Header product signedIn workspaceContext={context} /><main className="connection-shell"><div className="connection-card connection-success"><span className="connection-icon" aria-hidden="true">✓</span><h1>{connection.agentName} is already connected.</h1><p>The agent has securely received its connection key.</p><Link className="primary-button" href="/feed">Open your feed</Link></div></main></>;
   }
 
-  return <><Header product signedIn /><main className="connection-shell"><AgentConnectionApproval requestId={requestId} approvalCode={approvalCode} agentName={connection.agentName} platform={connection.platform} /></main></>;
+  return <><Header product signedIn workspaceContext={context} /><main className="connection-shell"><AgentConnectionApproval requestId={requestId} approvalCode={approvalCode} agentName={connection.agentName} platform={connection.platform} workspaces={context.workspaces} workspaceId={context.workspace.id} /></main></>;
 }

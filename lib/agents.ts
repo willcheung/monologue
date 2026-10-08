@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "./db";
+import { listWorkspaces } from "./workspace-service";
 
 export function agentDisplayName(agent: { name: string; displayName: string | null }) {
   return agent.displayName?.trim() || agent.name;
@@ -10,11 +11,13 @@ export async function ensureReportingAgent({
   agentId,
   agentName,
   keyId,
+  createdByUserId,
 }: {
   workspaceId: string;
   agentId?: string | null;
   agentName: string;
   keyId?: string | null;
+  createdByUserId?: string | null;
 }) {
   if (agentId) {
     const existing = await db.agent.findFirst({ where: { id: agentId, workspaceId } });
@@ -23,10 +26,10 @@ export async function ensureReportingAgent({
 
   const normalizedName = agentName.trim() || "My agent";
   const existing = await db.agent.findFirst({
-    where: { workspaceId, name: normalizedName },
+    where: { workspaceId, name: normalizedName, connectedByUserId: createdByUserId ?? null },
     orderBy: { createdAt: "asc" },
   });
-  const agent = existing ?? await db.agent.create({ data: { workspaceId, name: normalizedName } });
+  const agent = existing ?? await db.agent.create({ data: { workspaceId, name: normalizedName, connectedByUserId: createdByUserId } });
 
   if (keyId) {
     await db.apiKey.updateMany({
@@ -38,15 +41,42 @@ export async function ensureReportingAgent({
 }
 
 export async function listAgentSummaries(workspaceId: string) {
+  return agentSummariesForWorkspaces([workspaceId]);
+}
+
+export async function listMyAgentSummaries(userId: string) {
+  const workspaces = await listWorkspaces(userId);
+  return agentSummariesForWorkspaces(workspaces.map(workspace => workspace.id), userId);
+}
+
+export async function getAccessibleAgentWorkspaceId(userId: string, agentId: string) {
+  const workspaces = await listWorkspaces(userId);
+  const agent = await db.agent.findFirst({
+    where: { id: agentId, workspaceId: { in: workspaces.map(workspace => workspace.id) } },
+    select: { workspaceId: true },
+  });
+  return agent?.workspaceId ?? null;
+}
+
+async function agentSummariesForWorkspaces(workspaceIds: string[], userId?: string) {
+  const where = {
+    workspaceId: { in: workspaceIds },
+    ...(userId && { OR: [
+      { connectedByUserId: userId },
+      { connectedByUserId: null, workspace: { kind: "personal", personalOwnerId: userId } },
+    ] }),
+  };
   const [agents, systems] = await Promise.all([
     db.agent.findMany({
-      where: { workspaceId },
+      where,
       select: {
         id: true,
+        workspaceId: true,
         name: true,
         displayName: true,
         description: true,
         platform: true,
+        connectedByUser: { select: { name: true } },
         createdAt: true,
         _count: { select: { actions: true } },
         actions: { select: { occurredAt: true }, orderBy: { occurredAt: "desc" }, take: 1 },
@@ -55,7 +85,7 @@ export async function listAgentSummaries(workspaceId: string) {
       orderBy: [{ createdAt: "asc" }],
     }),
     db.action.groupBy({
-      where: { workspaceId, agentId: { not: null } },
+      where: { workspaceId: { in: workspaceIds }, agentId: { not: null }, ...(userId && { agent: where }) },
       by: ["agentId", "system"],
       _count: { _all:true },
     }),
@@ -72,8 +102,10 @@ export async function listAgentSummaries(workspaceId: string) {
 
   return agents.map((agent) => ({
     id: agent.id,
+    workspaceId: agent.workspaceId,
     name: agentDisplayName(agent),
     platform: agent.platform,
+    connectedByName: agent.connectedByUser?.name ?? null,
     description: agent.description,
     actionCount: agent._count.actions,
     lastActive: agent.actions[0]?.occurredAt ?? null,
@@ -98,6 +130,7 @@ export async function getAgentProfile(workspaceId: string, agentId: string) {
       displayName: true,
       description: true,
       platform: true,
+      connectedByUser: { select: { name: true } },
       createdAt: true,
       apiKeys: { where: { revokedAt: null }, select: { id: true }, take: 1 },
     },
@@ -114,7 +147,7 @@ export async function getAgentProfile(workspaceId: string, agentId: string) {
     db.action.groupBy({ by: ["system"], where, _count: { _all: true } }),
     db.action.groupBy({ by: ["category"], where, _count: { _all: true } }),
     db.action.groupBy({ by: ["verb"], where, _count: { _all: true } }),
-    db.action.findMany({ where, orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }], take: 12 }),
+    db.action.findMany({ where, include: { reportedByUser: { select: { name: true } } }, orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }], take: 12 }),
   ]);
 
   const byCount = <T extends { count: number }>(left: T, right: T) => right.count - left.count;
@@ -123,6 +156,7 @@ export async function getAgentProfile(workspaceId: string, agentId: string) {
     name: agentDisplayName(agent),
     canonicalName: agent.name,
     platform: agent.platform,
+    connectedByName: agent.connectedByUser?.name ?? null,
     description: agent.description,
     connectedToMonologue: agent.apiKeys.length > 0,
     totalActions,

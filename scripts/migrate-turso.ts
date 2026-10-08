@@ -46,11 +46,24 @@ for (const name of entries) {
     continue;
   }
 
-  await client.executeMultiple(sql);
-  await client.execute({
-    sql: 'INSERT INTO "_monologue_migrations" ("name", "checksum") VALUES (?, ?)',
-    args: [name, checksum],
-  });
+  // Historical table-rebuild migrations toggle foreign_keys outside a transaction.
+  // Keep their original execution behavior; current additive migrations and their
+  // receipts commit together so a failed rollout does not leave a partial schema.
+  const receipt = { sql: 'INSERT INTO "_monologue_migrations" ("name", "checksum") VALUES (?, ?)', args: [name, checksum] };
+  if (/PRAGMA\s+foreign_keys\s*=/i.test(sql)) {
+    await client.executeMultiple(sql);
+    await client.execute(receipt);
+  } else {
+    const transaction = await client.transaction("write");
+    try {
+      await transaction.executeMultiple(sql);
+      await transaction.execute(receipt);
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    } finally { transaction.close(); }
+  }
   console.log(`Applied ${name}`);
 }
 

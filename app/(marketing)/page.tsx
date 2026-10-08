@@ -7,6 +7,7 @@ import { Header } from "@/components/header";
 import { RotatingActionHeadline } from "@/components/rotating-action-headline";
 import { isCloudMode } from "@/lib/runtime";
 import styles from "./homepage.module.css";
+import { getSetupContext } from "@/lib/setup-context";
 
 const examples = [
   { time: "2:43 PM", agent: "Hermes · Henry", category: "code", label: "Code", verb: "Pushed", detail: "the Monologue feed update.", system: "GitHub", context: "Monologue" },
@@ -30,7 +31,8 @@ const recapDays = [
   { day: "Wed", segments: [9] },
 ];
 
-export default function MarketingPage() {
+export default async function MarketingPage() {
+  const { prompt: setupPrompt } = await getSetupContext();
   const cloud = isCloudMode();
   const startHref = cloud ? "/sign-in" : "/feed";
   return <>
@@ -43,7 +45,7 @@ export default function MarketingPage() {
           <p>Emails sent. Purchases made. Code shipped.<br />See what your AI agents did in one private feed.</p>
           <div className="hero-actions">
             <Link className="primary-button hero-primary" href={startHref}>Get started<ArrowRight size={17} /></Link>
-            <CopySetupButton />
+            <CopySetupButton prompt={setupPrompt} />
           </div>
         </div>
         <div className={styles.feedDiagram}>
@@ -119,7 +121,7 @@ export default function MarketingPage() {
         <span className="kicker">Up and running quickly</span>
         <h2>Connect your AI agent in three steps.</h2>
         <ol><li><span>1</span><div><strong>Give your agent the setup prompt</strong><p>Your agent follows the instructions to connect.</p></div></li><li><span>2</span><div><strong>Approve the connection</strong><p>Use a secure link or your agent&apos;s connection settings.</p></div></li><li><span>3</span><div><strong>See what it reports</strong><p>Actions appear in your private feed.</p></div></li></ol>
-        <div className={styles.connectActions}><Link className="primary-button hero-primary" href={startHref}>Get started<ArrowRight size={17} /></Link><CopySetupButton /></div>
+        <div className={styles.connectActions}><Link className="primary-button hero-primary" href={startHref}>Get started<ArrowRight size={17} /></Link><CopySetupButton prompt={setupPrompt} /></div>
       </section>
       <section className="why-section">
         <span className="kicker">Why we made it</span>

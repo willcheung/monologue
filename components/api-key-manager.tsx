@@ -13,7 +13,7 @@ export type KeyRecord = {
   revokedAt: string | null;
 };
 
-export function ApiKeyManager({ initialKeys = [], mcpUrl }: { initialKeys?: KeyRecord[]; mcpUrl?: string }) {
+export function ApiKeyManager({ initialKeys = [], workspaceId, setupPrompt }: { initialKeys?: KeyRecord[]; workspaceId?: string; setupPrompt?: string }) {
   const [keys, setKeys] = useState<KeyRecord[]>(initialKeys);
   const [name, setName] = useState("My first agent");
   const [newKey, setNewKey] = useState<string | null>(null);
@@ -22,9 +22,11 @@ export function ApiKeyManager({ initialKeys = [], mcpUrl }: { initialKeys?: KeyR
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const requestHeaders = { "Content-Type": "application/json", ...(workspaceId && { "x-monologue-workspace": workspaceId }) };
+
   async function loadKeys() {
-    const response = await fetch("/api/keys");
-    if (!response.ok) return;
+    const response = await fetch("/api/keys", { headers: requestHeaders });
+    if (!response.ok) throw new Error("Could not refresh connections. Reload this page to check their status.");
     const body = await response.json();
     setKeys(body.keys);
   }
@@ -32,39 +34,45 @@ export function ApiKeyManager({ initialKeys = [], mcpUrl }: { initialKeys?: KeyR
   async function createKey(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true); setError(null); setNewKey(null); setKeyRevealed(false); setCopied(false);
-    const response = await fetch("/api/keys", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    const body = await response.json();
-    if (!response.ok) setError(body.error ?? "Could not create the key");
-    else { setNewKey(body.key.key); await loadKeys(); }
-    setBusy(false);
+    try {
+      const response = await fetch("/api/keys", {
+        method: "POST", headers: requestHeaders, body: JSON.stringify({ name }),
+      });
+      const body = await response.json();
+      if (!response.ok) { setError(body.error ?? "Could not create the key"); return; }
+      setNewKey(body.key.key);
+      await loadKeys();
+    } catch {
+      setError("Could not confirm the connection. Reload this page to check before trying again.");
+    } finally { setBusy(false); }
   }
 
   async function copy(value: string) {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch { setError("Could not copy the key. Use Reveal and copy it into your agent's secure credentials screen."); }
   }
 
   async function revokeKey(id: string) {
     setBusy(true); setError(null);
-    const response = await fetch("/api/keys", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    if (!response.ok) setError("Could not revoke the key");
-    await loadKeys(); setBusy(false);
+    try {
+      const response = await fetch("/api/keys", {
+        method: "DELETE", headers: requestHeaders, body: JSON.stringify({ id }),
+      });
+      if (!response.ok) { setError("Could not revoke the connection."); return; }
+      await loadKeys();
+    } catch {
+      setError("Could not confirm revocation. Reload this page to check its status.");
+    } finally { setBusy(false); }
   }
 
   return <div className="key-manager">
     <div className="install-config">
-      <h2>{mcpUrl ? "Connect an agent with MCP" : "Connect an agent"}</h2>
+      <h2>Connect an agent</h2>
       <p>Copy the prompt into your agent, then follow its instructions to sign in and approve. No key to copy or paste.</p>
-      <CopySetupButton />
+      <CopySetupButton prompt={setupPrompt} />
     </div>
     <details className="api-key-fallback">
     <summary>Connect an agent with an API key</summary>
@@ -85,9 +93,9 @@ export function ApiKeyManager({ initialKeys = [], mcpUrl }: { initialKeys?: KeyR
     </div>}
     </details>
     {error && <p className="form-error" role="alert">{error}</p>}
-    {keys.length > 0 && <div className="key-list">{keys.map((key) => <div className="key-row" key={key.id}>
+    {keys.length > 0 && <section aria-label="Agent connections"><h2>Agent connections</h2><div className="key-list">{keys.map((key) => <div className="key-row" key={key.id}>
       <div><strong>{key.name}</strong><span>{key.prefix === "OAuth connection" ? "MCP connection" : `${key.prefix}••••`} · {key.scopes.includes("actions:read") ? key.scopes.includes("actions:write") ? "Read and add actions" : "Read timeline only" : "Add actions only"} · {key.revokedAt ? "Revoked" : key.lastUsedAt ? "Used recently" : "Never used"}</span></div>
       {!key.revokedAt && <button type="button" disabled={busy} onClick={() => revokeKey(key.id)}>Revoke</button>}
-    </div>)}</div>}
+    </div>)}</div></section>}
   </div>;
 }

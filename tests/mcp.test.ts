@@ -21,6 +21,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { auth, type OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js";
 import type { OAuthClientInformationMixed, OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
+import { removeWorkspaceMember } from "@/lib/workspace-service";
 import { newUserLandingPath } from "@/lib/redirects";
 import { authenticateApiRequest } from "@/lib/api-keys";
 
@@ -168,17 +169,32 @@ async function rpc(token: string, method: string, params?: object) {
 }
 
 describe("MCP OAuth and reporting", () => {
-  it("advertises discovery and both supported scopes, but challenges for write-only by default", async () => {
+  it("advertises discovery and both supported scopes, and challenges for reading and writing together by default", async () => {
     expect(await (await resourceMetadata()).json()).toMatchObject({ resource: mcpResource(), scopes_supported: ["actions:write", "actions:read"] });
     expect(await (await oauthMetadata()).json()).toMatchObject({ code_challenge_methods_supported: ["S256"], client_id_metadata_document_supported: true, authorization_response_iss_parameter_supported: true });
     const response = await handleMcpRequest(new Request(mcpResource()));
     expect(response.status).toBe(401);
     expect(response.headers.get("www-authenticate")).toContain("oauth-protected-resource");
-    expect(response.headers.get("www-authenticate")).toContain('scope="actions:write"');
+    expect(response.headers.get("www-authenticate")).toContain('scope="actions:write actions:read"');
     vi.stubEnv("MONOLOGUE_MCP_ENABLED", "0");
     expect((await resourceMetadata()).status).toBe(503);
     expect((await handleMcpRequest(new Request(mcpResource()))).status).toBe(503);
     vi.stubEnv("MONOLOGUE_MCP_ENABLED", "1");
+  });
+
+  it("defaults a new approval to reading and writing in its chosen workspace", async () => {
+    const client = await registerOAuthClient({ client_name: "Standard connection", redirect_uris: ["http://127.0.0.1:9000/callback"], token_endpoint_auth_method: "none" });
+    const params = { response_type: "code", client_id: client.client_id, redirect_uri: client.redirect_uris[0], code_challenge: createHash("sha256").update(verifier).digest("base64url"), code_challenge_method: "S256", resource: mcpResource() };
+    expect((await validateAuthorization(params)).params.scope).toBe("actions:write actions:read");
+    const callback = new URL(await approveOAuthConnection(params, "w1", "u1"));
+    const tokens = await exchangeOAuthToken(new URLSearchParams({ grant_type: "authorization_code", client_id: client.client_id, code: callback.searchParams.get("code")!, code_verifier: verifier, redirect_uri: params.redirect_uri, resource: mcpResource() }));
+    expect(tokens.scope).toBe("actions:write actions:read");
+    const read = await (await rpc(tokens.access_token, "tools/call", { name: "read_timeline", arguments: {} })).json();
+    expect(read.result.isError).not.toBe(true);
+    expect(readTimelineOutputSchema.safeParse(read.result.structuredContent).success).toBe(true);
+    const write = await (await rpc(tokens.access_token, "tools/call", { name: "report_action", arguments: { verb: "Tested", summary: "Fixture: combined access", category: "other", status: "completed", system: "Fixture", externalId: "default-combined-scope" } })).json();
+    expect(write.result.structuredContent.success).toBe(true);
+    expect(await fixture.db.action.findUniqueOrThrow({ where: { id: write.result.structuredContent.id } })).toMatchObject({ workspaceId: "w1", reportedByUserId: "u1" });
   });
 
   it("rejects unsafe callbacks, unsupported scope, resource and plain PKCE", async () => {
@@ -398,6 +414,29 @@ describe("MCP OAuth and reporting", () => {
     const context = await authenticateMcpRequest(bearer(renewed.access_token));
     await fixture.db.apiKey.update({ where: { id: context!.keyId }, data: { revokedAt: new Date() } });
     expect((await rpc(renewed.access_token, "tools/call", { name: "read_timeline", arguments: {} })).status).toBe(401);
+  });
+
+  it("keeps team members' same-named MCP agents distinct and revokes removed members", async () => {
+    const workspace = await fixture.db.workspace.create({ data: { name: "MCP shared fixture", kind: "shared", ownerId: "u1", members: { create: [{ userId: "u1", role: "owner" }, { userId: "u2", role: "member" }] } } });
+    const a = await grant(workspace.id, "u1", "none", "actions:write", "Team Codex");
+    const b = await grant(workspace.id, "u2", "none", "actions:write actions:read", "Team Codex");
+    const owner = await exchangeOAuthToken(a.form), member = await exchangeOAuthToken(b.form);
+    const ownerContext = (await authenticateMcpRequest(bearer(owner.access_token)))!;
+    const memberContext = (await authenticateMcpRequest(bearer(member.access_token)))!;
+    expect(memberContext.agent.id).not.toBe(ownerContext.agent.id);
+    const arguments_ = { verb: "sent", summary: "Fixture: customer message", category: "communication", status: "completed", system: "Mail", externalId: "team-shared-object" };
+    for (const access of [owner.access_token, member.access_token]) {
+      const result = await (await rpc(access, "tools/call", { name: "report_action", arguments: arguments_ })).json();
+      expect(result.result.structuredContent).toMatchObject({ success: true, duplicate: false });
+    }
+    const rows = await fixture.db.action.findMany({ where: { workspaceId: workspace.id } });
+    expect(rows).toHaveLength(2); expect(new Set(rows.map(row => row.reportedByUserId)).size).toBe(2);
+    await removeWorkspaceMember(workspace.id, "u1", "u2");
+    expect(await authenticateMcpRequest(bearer(member.access_token))).toBeNull();
+    expect((await rpc(member.access_token, "tools/call", { name: "read_timeline", arguments: {} })).status).toBe(401);
+    await expect(exchangeOAuthToken(new URLSearchParams({ grant_type: "refresh_token", client_id: b.client.client_id, resource: mcpResource(), refresh_token: member.refresh_token }))).rejects.toMatchObject({ code: "invalid_grant" });
+    expect(await authenticateMcpRequest(bearer(owner.access_token))).not.toBeNull();
+    expect(await fixture.db.action.count({ where: { workspaceId: workspace.id } })).toBe(2);
   });
 
   it("allows a separately approved read-only connection without allowing writes", async () => {

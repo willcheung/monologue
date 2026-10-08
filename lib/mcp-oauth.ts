@@ -3,9 +3,11 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { loadClientMetadata } from "./mcp-client-metadata";
-import { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, prepareWorkspaceApiKey } from "./api-keys";
+import { credentialMembershipValid, workspaceAccess } from "./workspace-access";
+import { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, DEFAULT_AGENT_SCOPES, prepareWorkspaceApiKey } from "./api-keys";
 
 export const MCP_SCOPE = ACTION_WRITE_SCOPE;
+export const MCP_DEFAULT_SCOPES = DEFAULT_AGENT_SCOPES;
 export const MCP_SCOPES = [ACTION_WRITE_SCOPE, ACTION_READ_SCOPE];
 const scopeSchema = z.string().max(100).refine(value => {
   const scopes = value.trim().split(/\s+/);
@@ -75,7 +77,7 @@ const authorizationSchema = z.object({
   redirect_uri: z.string().max(2048),
   code_challenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
   code_challenge_method: z.literal("S256"),
-  resource: z.string().max(2048), scope: scopeSchema.default(MCP_SCOPE),
+  resource: z.string().max(2048), scope: scopeSchema.default(MCP_DEFAULT_SCOPES),
   state: z.string().max(2048).optional(),
 });
 export type AuthorizationInput = z.infer<typeof authorizationSchema>;
@@ -123,12 +125,11 @@ export async function approveOAuthConnection(input: unknown, workspaceId: string
   const { params, client } = await validateAuthorization(input);
   const code = secret();
   await db.$transaction(async (tx) => {
-    const workspace = await tx.workspace.findFirst({ where: { id: workspaceId, ownerId: userId } });
-    if (!workspace) throw new OAuthError("access_denied", "Sign in to your own feed", 403);
+    if (!await workspaceAccess(tx, workspaceId, userId)) throw new OAuthError("access_denied", "Sign in to a workspace you belong to", 403);
     const recent = await tx.apiKey.count({ where: { workspaceId, prefix: "OAuth connection", createdAt: { gt: new Date(Date.now() - HOUR) } } });
     if (recent >= 20) throw new OAuthError("temporarily_unavailable", "Please try connecting later", 429);
-    // Follow the existing workspace/name identity convention. Names are not verified brands.
-    const agent = await tx.agent.findFirst({ where: { workspaceId, name: client.name }, orderBy: { createdAt: "asc" } }) ??
+    // Names are not verified brands. A member owns their agent identity.
+    const agent = await tx.agent.findFirst({ where: { workspaceId, name: client.name, connectedByUserId: userId }, orderBy: { createdAt: "asc" } }) ??
       await tx.agent.create({ data: { workspaceId, name: client.name, connectedByUserId: userId } });
     const prepared = prepareWorkspaceApiKey(workspaceId, client.name, { agentId: agent.id, createdByUserId: userId, scopes: params.scope });
     // No REST key leaves the service. This existing row provides shared revocation/attribution.
@@ -185,7 +186,7 @@ export async function exchangeOAuthToken(form: URLSearchParams, authorization: s
       const record = await tx.mcpOAuthCode.findUnique({ where: { codeHash: hashOAuthSecret(code) }, include: { key: true } });
       const challenge = createHash("sha256").update(verifier).digest("base64url");
       if (!record || record.clientId !== client.id || record.redirectUri !== form.get("redirect_uri") || record.resource !== mcpResource() ||
-        record.key.revokedAt || !equal(challenge, record.challenge)) {
+        record.key.revokedAt || !await credentialMembershipValid(tx, record.key) || !equal(challenge, record.challenge)) {
         throw new OAuthError("invalid_grant", "Invalid or expired authorization code");
       }
       if (record.consumedAt) {
@@ -209,7 +210,7 @@ export async function exchangeOAuthToken(form: URLSearchParams, authorization: s
     if (!refresh || refresh.length > 200) throw new OAuthError("invalid_grant", "Invalid refresh token");
     const result = await db.$transaction(async (tx) => {
       const record = await tx.mcpOAuthToken.findUnique({ where: { refreshHash: hashOAuthSecret(refresh) }, include: { key: true } });
-      if (!record || record.clientId !== client.id || record.resource !== mcpResource() || record.key.revokedAt || record.refreshExpiresAt <= new Date()) return null;
+      if (!record || record.clientId !== client.id || record.resource !== mcpResource() || record.key.revokedAt || !await credentialMembershipValid(tx, record.key) || record.refreshExpiresAt <= new Date()) return null;
       checkTokenScope(form, record.key.scopes);
       if (record.rotatedAt) {
         await tx.apiKey.update({ where: { id: record.keyId }, data: { revokedAt: new Date() } });
@@ -234,7 +235,7 @@ export async function authenticateMcpRequest(request: Request) {
   if (!token || !token.startsWith("mlg_mcp_") || token.length > 200) return null;
   const record = await db.mcpOAuthToken.findUnique({ where: { accessHash: hashOAuthSecret(token) }, include: { key: { include: { agent: true } } } });
   if (!record || record.resource !== mcpResource() || record.expiresAt <= new Date() || record.key.revokedAt ||
-    record.rotatedAt || !scopeSchema.safeParse(record.key.scopes).success || !record.key.agent || record.key.agent.workspaceId !== record.key.workspaceId) return null;
+    record.rotatedAt || !scopeSchema.safeParse(record.key.scopes).success || !record.key.agent || record.key.agent.workspaceId !== record.key.workspaceId || !await credentialMembershipValid(db, record.key)) return null;
   await db.apiKey.update({ where: { id: record.keyId }, data: { lastUsedAt: new Date() } });
   return { workspaceId: record.key.workspaceId, keyId: record.keyId, agent: record.key.agent, scopes: record.key.scopes };
 }

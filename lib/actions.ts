@@ -3,6 +3,7 @@ import { db } from "./db";
 import type { ActionInput } from "./action-schema";
 import { CATEGORIES, STATUSES } from "./constants";
 import { LOCAL_WORKSPACE_ID } from "./runtime";
+import { actionDateBounds } from "./action-dates";
 
 export type ActionFilters = {
   agent?: string;
@@ -16,17 +17,9 @@ export type ActionFilters = {
   search?: string;
 };
 
-function validDate(value?: string) {
-  if (!value) return undefined;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date;
-}
-
 export function buildActionWhere(filters: ActionFilters, workspaceId = LOCAL_WORKSPACE_ID): Prisma.ActionWhereInput {
   const search = filters.search?.trim();
-  const from = validDate(filters.from);
-  const to = validDate(filters.to);
-  if (to && /^\d{4}-\d{2}-\d{2}$/.test(filters.to ?? "")) to.setHours(23, 59, 59, 999);
+  const { from, to } = actionDateBounds(filters.from, filters.to);
 
   return {
     workspaceId,
@@ -46,7 +39,7 @@ export function buildActionWhere(filters: ActionFilters, workspaceId = LOCAL_WOR
 }
 
 export async function listActions(filters: ActionFilters = {}, workspaceId = LOCAL_WORKSPACE_ID) {
-  return db.action.findMany({ where: buildActionWhere(filters, workspaceId), orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }] });
+  return db.action.findMany({ where: buildActionWhere(filters, workspaceId), include: { reportedByUser: { select: { name: true } } }, orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }] });
 }
 
 function actionIdentity(input: ActionInput, workspaceId: string): Prisma.ActionWhereInput {
@@ -55,8 +48,8 @@ function actionIdentity(input: ActionInput, workspaceId: string): Prisma.ActionW
     system: input.system,
     externalId: input.externalId!,
     ...(input.agentId
-      ? { OR: [{ agentId: input.agentId }, { agentName: input.agentName }] }
-      : { agentName: input.agentName }),
+      ? { agentId: input.agentId }
+      : { agentName: input.agentName, agentId: null }),
   };
 }
 
@@ -66,12 +59,14 @@ export async function createAction(input: ActionInput, workspaceId = LOCAL_WORKS
     if (existing) return { action: existing, duplicate: true };
   }
 
+  const reporter = reportedByKeyId ? await db.apiKey.findFirst({ where: { id: reportedByKeyId, workspaceId }, select: { createdByUserId: true } }) : null;
   try {
     const action = await db.action.create({
       data: {
         ...input,
         workspaceId,
         reportedByKeyId,
+        reportedByUserId: reporter?.createdByUserId ?? null,
         occurredAt: input.occurredAt ? new Date(input.occurredAt) : new Date(),
         metadata: input.metadata as Prisma.InputJsonValue | undefined,
       },
