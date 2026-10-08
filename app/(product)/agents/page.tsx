@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AgentCard } from "@/components/agent-card";
+import { CopySetupButton } from "@/components/copy-setup-button";
 import { Header } from "@/components/header";
 import { listAgentSummaries } from "@/lib/agents";
 import { isCloudMode } from "@/lib/runtime";
 import { getWorkspaceContext } from "@/lib/workspace";
+
+import { mcpEnabled, mcpIssuer } from "@/lib/mcp-oauth";
+import { workspaceSetupPrompt } from "@/lib/setup-prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +25,12 @@ export default async function AgentsPage({ searchParams }: { searchParams: Promi
   const systems = new Set(agents.flatMap((agent) => agent.systems)).size;
   const addAgentHref = isCloudMode() ? `/settings/keys?workspaceId=${encodeURIComponent(context.workspace.id)}` : "/welcome";
 
+  const setupPrompt = agents.length === 0 ? workspaceSetupPrompt({
+    origin: mcpIssuer(),
+    workspace: { id: context.workspace.id, name: context.workspace.kind === "personal" ? "Personal" : context.workspace.name },
+    mcpEnabled: mcpEnabled(),
+  }) : undefined;
+
   return <>
     <Header product signedIn={Boolean(context.user)} workspaceContext={context} />
     <main className="crew-shell workspace-agents-shell">
@@ -31,7 +41,7 @@ export default async function AgentsPage({ searchParams }: { searchParams: Promi
       </section>
       {agents.length > 0
         ? <section aria-label="Workspace agents"><div className="agent-grid">{agents.map(agent => <AgentCard key={agent.id} agent={agent} />)}</div></section>
-        : <section className="crew-empty"><h2>Your crew is waiting.</h2><p>No agents in this workspace yet. Connect one to start its track record.</p><Link className="secondary-button" href={addAgentHref}>Add an agent to this workspace</Link></section>}
+        : <section className="crew-empty"><h2>Your crew is waiting.</h2><p>No agents in this workspace yet. Connect one to start its track record.</p><CopySetupButton prompt={setupPrompt} /></section>}
     </main>
   </>;
 }
