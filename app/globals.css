@@ -354,3 +354,5 @@ footer { border-top:1px solid var(--line); width:min(1060px,calc(100% - 40px)); 
 
 .auth-card > .auth-invitation-note { font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
 .auth-card h1 { overflow-wrap: anywhere; }
+
+.crew-empty .setup-copy-button { margin-inline: auto; }
