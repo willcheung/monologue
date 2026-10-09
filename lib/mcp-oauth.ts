@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
+import { registeredRedirectMatches } from "./mcp-redirect-uri";
 import { loadClientMetadata } from "./mcp-client-metadata";
 import { credentialMembershipValid, workspaceAccess } from "./workspace-access";
 import { ACTION_READ_SCOPE, ACTION_WRITE_SCOPE, DEFAULT_AGENT_SCOPES, prepareWorkspaceApiKey } from "./api-keys";
@@ -91,7 +92,7 @@ export async function validateAuthorization(input: unknown) {
     let metadata;
     try { metadata = await loadClientMetadata(params.client_id); }
     catch { throw new OAuthError("invalid_client", "Could not validate this client's metadata"); }
-    if (!metadata.redirect_uris.includes(params.redirect_uri))
+    if (!metadata.redirect_uris.some(uri => registeredRedirectMatches(params.redirect_uri, uri, true)))
       throw new OAuthError("invalid_request", "Unregistered client or callback");
     // Fetch afresh at authorization; stored records bind subsequent codes/tokens.
     // Do not let unavailable remote metadata prevent refresh or revocation.
@@ -108,7 +109,7 @@ export async function validateAuthorization(input: unknown) {
     return { params, client };
   }
   const client = await db.mcpOAuthClient.findUnique({ where: { id: params.client_id } });
-  if (!client || !(client.redirectUris as string[]).includes(params.redirect_uri))
+  if (!client || !(client.redirectUris as string[]).some(uri => registeredRedirectMatches(params.redirect_uri, uri, client.authMethod === "none")))
     throw new OAuthError("invalid_request", "Unregistered client or callback");
   return { params, client };
 }
