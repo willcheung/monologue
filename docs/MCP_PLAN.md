@@ -8,7 +8,7 @@ The stateless `/mcp` endpoint uses the existing action schema and persistence fo
 
 ## Scope and choices
 
-One app, one database, one action schema. OAuth-capable MCP clients can use dynamic registration or public-client CIMD. CIMD metadata is fetched afresh during authorization, validated and stored in the existing client table. Token exchange, refresh and revocation do not depend on remote metadata availability. See [metadata fetching limits and security boundaries](HOSTED_ARCHITECTURE.md#url-based-oauth-client-metadata). Anonymous registrations do not grant access: every grant needs a signed-in user's explicit approval. Consent shows the registered client's name as unverified and its exact callback host. Local loopback callbacks are supported for desktop clients; remote callbacks require HTTPS.
+One app, one database, one action schema. OAuth-capable MCP clients can use dynamic registration or public-client CIMD. CIMD metadata is fetched afresh during authorization, validated and stored in the existing client table. Token exchange, refresh and revocation do not depend on remote metadata availability. See [metadata fetching limits and security boundaries](HOSTED_ARCHITECTURE.md#url-based-oauth-client-metadata). Anonymous registrations do not grant access: every grant needs a signed-in user's explicit approval. Consent names the client and briefly states its requested access to the selected workspace. Local loopback callbacks are supported for desktop clients; remote callbacks require HTTPS.
 
 `actions:write actions:read` is the default when no scope is requested and in the initial authorization challenge. Standard setup requests both in one connection approval. Clients can request `actions:read`, `actions:write`, or both. Approval explicitly explains that read access covers the entire private timeline, including other agents' reports. Existing write-only grants never gain read permission automatically. Changing permissions requires a new approval; code exchange and refresh must preserve the approved scopes. No additional schema change is needed for read access.
 
@@ -34,7 +34,7 @@ Results include agent identity, summaries, statuses, source, timestamps, relevan
 
 Missing tool permission returns a tool error with an OAuth scope challenge, not timeline data. Read-only connections cannot call `report_action`; write-only connections cannot call `read_timeline`. Clients that do not handle tool-level scope challenges should reconnect explicitly with the needed scopes and have the user approve them.
 
-The consent screen shows the app-supplied name as unverified and displays its callback host. OAuth-capable clients are required; the current setup-prompt/key flow remains available for other agents. Connecting does not guarantee that a model will log every action.
+The consent screen shows the app-supplied name, requested read/report permissions, workspace selector and a short revocation note. Client names remain self-declared; callback validation happens on the server without displaying technical redirect details. OAuth-capable clients are required; the current setup-prompt/key flow remains available for other agents. Connecting does not guarantee that a model will log every action.
 
 ## Configuration
 
