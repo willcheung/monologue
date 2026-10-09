@@ -25,20 +25,21 @@ function findForm(element: ReactElement): ReactElement<{ action: (data: FormData
 }
 const page = () => AuthorizePage({ searchParams: Promise.resolve(params) });
 describe("MCP consent", () => {
-  it("shows the write-only scope and callback trust boundary, not a secret", async () => {
+  it("shows the requested write scope without technical connection details or secrets", async () => {
     const html = renderToStaticMarkup(await page());
-    expect(html).toContain("Connect Test agent?"); expect(html).toContain("cannot read your feed");
-    expect(html).toContain("not verified by Monologue"); expect(html).toContain("example.test");
+    expect(html).toContain("Connect Test agent?"); expect(html).toContain("add reports to this workspace");
+    expect(html).not.toContain("read this workspace’s full feed");
+    expect(html).not.toContain("not verified by Monologue"); expect(html).not.toContain("example.test");
     expect(html).toContain("revoke access anytime"); expect(html).not.toContain("mlg_mcp_");
   });
   it("makes cross-agent read permission explicit for read-only and read/write approvals", async () => {
     fixtures.validate.mockResolvedValue({ params: { ...params, scope: "actions:read" }, client: { name: "Test agent" } });
     const readOnly = renderToStaticMarkup(await page());
-    expect(readOnly).toContain("read the selected workspace’s entire timeline"); expect(readOnly).toContain("its members’ agents");
-    expect(readOnly).toContain("cannot add actions");
+    expect(readOnly).toContain("read this workspace’s full feed");
+    expect(readOnly).not.toContain("add reports");
     fixtures.validate.mockResolvedValue({ params: { ...params, scope: "actions:write actions:read" }, client: { name: "Test agent" } });
     const both = renderToStaticMarkup(await page());
-    expect(both).toContain("read the selected workspace’s entire timeline"); expect(both).toContain("also add reports");
+    expect(both).toContain("read this workspace’s full feed"); expect(both).toContain("and add reports");
     const action = findForm(await page())!.props.action, approved = new FormData(); approved.set("decision", "approve"); approved.set("workspaceId", "owner-workspace");
     await expect(action(approved)).rejects.toThrow("redirect:");
     expect(fixtures.approve).toHaveBeenCalledWith({ ...params, scope: "actions:write actions:read" }, "owner-workspace", "owner-user");

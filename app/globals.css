@@ -171,6 +171,11 @@ footer { border-top:1px solid var(--line); width:min(1060px,calc(100% - 40px)); 
 .brand strong { font-size:23px; }.kicker { font-family:var(--font-display); font-size:15px; letter-spacing:.08em; }.header-nav,.sign-out-button { font-family:var(--font-display); font-size:16px; }.share-trigger,.primary-button,.secondary-button,.setup-copy-button,.crew-add,.filter-menu summary,.share-actions button { font-family:var(--font-display); font-size:16px; }
 .setup-copy-button,.install-config>.setup-copy-button { font-size:20px; }
 .connection-card .secret-actions button { min-height:48px; padding:12px 20px; font-size:20px; line-height:1.2; }
+.oauth-consent { display:grid; gap:20px; }
+.oauth-consent>label { display:grid; gap:8px; text-align:left; font-size:14px; }
+.oauth-consent select { width:100%; min-width:0; min-height:44px; padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:var(--paper); font:inherit; }
+.oauth-consent .secret-actions { justify-content:center; }
+.oauth-consent .quiet-button { font-family:var(--font-display); font-weight:500; border-color:var(--line); }
 .timeline-main>p { font-family:var(--font-sans); }.timeline-main>p strong { font-family:var(--font-display); font-size:1.12em; }
 @media (max-width:700px) { .sketch-chart-legend { gap:6px 9px; }.sketch-chart-legend span { font-size:10px; }.sketch-chart-legend i { width:9px; height:7px; } }
 @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; animation:none!important; transition:none!important; } }
