@@ -207,6 +207,8 @@ The optional `/mcp` endpoint exposes `report_action` (`actions:write`) and `read
 
 It adds OAuth discovery, dynamic client registration, URL-based Client ID Metadata Documents (CIMD), PKCE code exchange and rotating resource-bound tokens in this app; browser sign-in remains separate from agent tokens. Token/code/client secrets are stored as hashes. Each grant uses an existing `ApiKey` row for workspace/Agent attribution, approved scopes and shared revocation, without exposing a REST key. New `McpOAuthClient`, `McpOAuthCode` and `McpOAuthToken` tables are additive; read access needs no further migration. The endpoint defaults off behind `MONOLOGUE_MCP_ENABLED`; see [MCP plan and rollout checks](MCP_PLAN.md) before enabling it.
 
+Public native OAuth clients can vary the port of a registered HTTP localhost, 127.0.0.1 or [::1] callback, as required by RFC 8252/9700. Host, path and query stay byte-for-byte equal; HTTPS, remote and confidential-client callbacks retain exact matching. Metadata URL fetching never follows this callback exception: only public HTTPS metadata addresses remain eligible. Authorization codes store the exact requested callback including port, and token exchange must use that same string.
+
 ### URL-based OAuth client metadata
 
 CIMD clients use their public HTTPS metadata URL as the client ID. The authorization flow fetches and validates that document before presenting consent and again before issuing a code. The document must identify the exact requested client ID, a client name and valid callbacks. Only public-client authentication (`none`) is supported for CIMD; existing DCR confidential-client methods remain available. Client names are self-declared, not verified brands.

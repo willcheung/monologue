@@ -225,6 +225,13 @@ describe("MCP OAuth and reporting", () => {
     expect(JSON.stringify(row)).not.toContain(tokens.refresh_token);
   });
 
+  it("allows variable HTTP loopback ports only for public dynamically registered clients", async () => {
+    const g = await grant();
+    expect((await validateAuthorization({ ...g.params, redirect_uri: "http://127.0.0.1:50644/callback" })).params.redirect_uri).toBe("http://127.0.0.1:50644/callback");
+    const confidential = await grant("w1", "u1", "client_secret_post");
+    await expect(validateAuthorization({ ...confidential.params, redirect_uri: "http://127.0.0.1:50644/callback" })).rejects.toMatchObject({ code: "invalid_request" });
+  });
+
   it("supports confidential client secrets and does not downgrade to public auth", async () => {
     const post = await grant("w1", "u1", "client_secret_post");
     await expect(exchangeOAuthToken(post.form)).rejects.toMatchObject({ code: "invalid_client" });
@@ -517,6 +524,25 @@ describe("CIMD OAuth grants", () => {
     await transport.finishAuth(callback.searchParams.get("code")!);
     expect(tokens!.scope).toBe("actions:write");
     expect(await authenticateMcpRequest(bearer(tokens!.access_token))).toMatchObject({ workspaceId: "cimd-feed" });
+  });
+
+  it("accepts Claude-style ephemeral loopback callbacks but binds code exchange to the exact approved port", async () => {
+    const clientId = "https://claude.example/oauth/claude-code-client-metadata";
+    fixture.metadata.mockResolvedValue({ client_id: clientId, client_name: "Claude Code fixture", redirect_uris: ["http://localhost/callback", "http://127.0.0.1/callback"], token_endpoint_auth_method: "none" });
+    const native = { ...params, client_id: clientId, redirect_uri: "http://localhost:50644/callback", scope: "actions:write actions:read", state: "native-client-state" };
+    const callback = new URL(await approveOAuthConnection(native, "cimd-feed", "cimd-user"));
+    expect(callback.origin).toBe("http://localhost:50644"); expect(callback.pathname).toBe("/callback");
+    expect(callback.searchParams.get("state")).toBe("native-client-state");
+    const form = new URLSearchParams({ grant_type: "authorization_code", client_id: clientId, redirect_uri: native.redirect_uri, code: callback.searchParams.get("code")!, code_verifier: verifier, resource: mcpResource() });
+    const changedPort = new URLSearchParams(form); changedPort.set("redirect_uri", "http://localhost:50645/callback");
+    await expect(exchangeOAuthToken(changedPort)).rejects.toMatchObject({ code: "invalid_grant" });
+    const tokens = await exchangeOAuthToken(form);
+    expect(tokens.scope).toBe("actions:write actions:read");
+    expect(await authenticateMcpRequest(bearer(tokens.access_token))).toMatchObject({ workspaceId: "cimd-feed" });
+    expect((await (await rpc(tokens.access_token, "tools/call", { name: "read_timeline", arguments: {} })).json()).result.isError).not.toBe(true);
+    await expect(validateAuthorization({ ...native, redirect_uri: "http://localhost:50644/other" })).rejects.toMatchObject({ code: "invalid_request" });
+    await expect(validateAuthorization({ ...native, redirect_uri: "http://localhost:50644/callback?next=evil" })).rejects.toMatchObject({ code: "invalid_request" });
+    fixture.metadata.mockReset();
   });
 
   it("refreshes callback metadata for new authorizations without accepting stale callbacks", async () => {

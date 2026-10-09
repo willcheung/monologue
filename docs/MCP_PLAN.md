@@ -55,3 +55,5 @@ Rollback by disabling the flag; leave the additive tables in place. Public regis
 Run an installed client against a dedicated test workspace to verify model behavior; protocol tests alone cannot establish tool selection or instruction following. CIMD loader tests cover DNS pinning, non-public addresses, response limits, invalid metadata, remote failures and timeouts. Public protocol tests are independent of private marketplace packages.
 
 To repeat protocol and persistence checks using the hosted libSQL adapter against a temporary local database: `MCP_TEST_LIBSQL=1 npm test -- --run tests/mcp.test.ts`.
+
+Public native OAuth clients can vary the port of a registered HTTP localhost, 127.0.0.1 or [::1] callback, as required by RFC 8252/9700. Host, path and query stay byte-for-byte equal; HTTPS, remote and confidential-client callbacks retain exact matching. Metadata URL fetching never follows this callback exception: only public HTTPS metadata addresses remain eligible. Authorization codes store the exact requested callback including port, and token exchange must use that same string.
