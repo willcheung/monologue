@@ -202,8 +202,16 @@ Deployment architecture and the Google sign-in boundary are documented in [`docs
 npm run lint
 npm run typecheck
 npm test
+npm run test:libsql
+npm run test:reporter
 npm run build
 ```
+
+Pull requests and pushes to `main` run these checks in GitHub Actions, alongside the existing public-repository privacy check. CI uses Node.js 22, Python 3.12, and disposable local databases; it needs no hosted credentials and does not deploy. `typecheck` generates Next.js route types before checking TypeScript so it works in a fresh checkout (generate the Prisma client first with `npx prisma generate`).
+
+`test:libsql` reruns the MCP, workspace, and REST/connection route integration tests using the libSQL adapter. `test:reporter` uses Python's standard library to test the portable reporter without network calls or Keychain access. The route tests exercise real validation, credentials, and persistence; only browser session resolution is mocked. Browser navigation and real Google sign-in are outside these tests.
+
+To enforce the checks before merging, make `Quality checks` and the existing `privacy` job required in your GitHub branch rules for `main`.
 
 To recreate the database from scratch and reseed it:
 

@@ -8,7 +8,7 @@
     "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:privacy": "vitest run tests/public-repo.test.ts",
     "db:migrate": "prisma migrate deploy",
@@ -16,6 +16,8 @@
     "db:seed": "node --env-file=.env --import tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "test:mcp": "vitest run tests/mcp.test.ts",
+    "test:libsql": "MCP_TEST_LIBSQL=1 vitest run tests/mcp.test.ts tests/workspaces.test.ts tests/api-routes.test.ts",
+    "test:reporter": "python3 -m unittest discover -s tests -p '*_test.py'",
     "dev:workspace": "node scripts/workspace-dev.mjs"
   },
   "dependencies": {
