@@ -18,7 +18,7 @@ A message sent belongs in the feed. Reading fifty messages does not. Code pushed
 
 ## Quick start
 
-Requirements: Node.js 20+ and npm.
+Requirements: Node.js 22.12+ and npm (CI uses Node.js 22).
 
 ```bash
 git clone <your-monologue-repository-url>
@@ -137,6 +137,8 @@ npm run db:migrate:turso
 Choose a Turso region close to the Vercel Function region. Add the remaining cloud-mode variables in Vercel, then deploy with `vercel --prod`. Apply committed Turso migrations before deploying code that depends on them; the migration runner records checksums and safely skips migrations already applied.
 
 See [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md) for application structure, tenant isolation rules, and deployment checks.
+
+Optional browser and server error monitoring uses Sentry. See [`docs/SENTRY.md`](docs/SENTRY.md) for isolated project setup, deployment variables, collection boundaries and verification. Monitoring stays off without a DSN and during local development.
 
 ## API
 
