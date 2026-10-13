@@ -187,7 +187,7 @@ Security invariants:
 1. A visitor clicks **Start your agent feed**.
 2. They continue with Google.
 3. Monologue creates their personal workspace.
-4. `/settings/keys` presents the no-key setup prompt before manual API-key options.
+4. `/settings/keys` presents the shared client chooser before manual API-key options.
 5. The agent creates a short-lived connection request and gives the user an approval link.
 6. The signed-in user approves the named agent. The browser never receives or displays its API key.
 7. Monologue creates a stable Agent identity and a read-and-write key. The agent claims that key once and stores it in its own secure secret store.
@@ -195,7 +195,7 @@ Security invariants:
 
 Manual key creation remains in `/settings/keys` for connectors that cannot complete the automatic flow. Connection requests store only hashed device and approval codes, expire after ten minutes, and create the long-lived key only when the approved agent claims it.
 
-OAuth-capable MCP clients can instead connect `/mcp` through their secure connection settings. The user signs in and approves the permissions shown; no key is displayed. The setup prompt remains shared across the homepage, Add agent, integrations and starter prompts, loading the same portable reporting instructions regardless of connection method.
+OAuth-capable MCP clients can instead connect `/mcp` through their secure connection settings. The user signs in and approves the permissions shown; no key is displayed. The shared client chooser is the human-facing setup entry across the site. It generates client-specific connection instructions while reusing the same canonical portable skill, existing OAuth MCP and secure API fallback. The homepage and empty states use the same compact copy/menu control as the setup pages, preserving the configured instance and validated workspace. The chooser adds no new grant scopes or readiness storage.
 
 API evolution must remain additive. Older skills may omit platform and version data, and the action endpoint must continue accepting the existing V1 payload. Workspace, connected agent, reporting key, and user attribution should be inferred on the server whenever possible so multiplayer changes never require reinstalling an agent skill.
 
@@ -209,13 +209,51 @@ It adds OAuth discovery, dynamic client registration, URL-based Client ID Metada
 
 Public native OAuth clients can vary the port of a registered HTTP localhost, 127.0.0.1 or [::1] callback, as required by RFC 8252/9700. Host, path and query stay byte-for-byte equal; HTTPS, remote and confidential-client callbacks retain exact matching. Metadata URL fetching never follows this callback exception: only public HTTPS metadata addresses remain eligible. Authorization codes store the exact requested callback including port, and token exchange must use that same string.
 
+### Native OAuth completion
+
+For validated loopback HTTP callbacks, consent keeps the Monologue page open and
+hands the unchanged OAuth response to a separate client callback window. A
+same-origin, no-store status check confirms the existing authorization-code
+exchange before showing success. The callback window is closed when possible.
+Popup-blocked or interrupted handoffs offer a direct user-initiated continuation;
+no hidden fetch/iframe relay, new credentials, scopes, tables or services are added.
+Remote HTTPS clients retain their normal full-page OAuth redirect.
+
+`/oauth/complete` is a reloadable connection receipt. Its non-secret connection ID
+never authorizes anything. Both the page and `/api/connect/oauth-status` require
+the granting user's browser session and current workspace membership. Responses
+contain only display information and state, never codes, tokens or hashes.
+Approved-but-unexchanged, expired and revoked grants must not display success.
+Connected confirms token exchange, not skill installation or a completed report.
+The agent separately verifies skill/tool discovery and reports only real actions.
+Consent failures return a recoverable message instead of a generic application
+exception. Polling is bounded and does not reissue or replay authorization codes.
+
 ### URL-based OAuth client metadata
 
 CIMD clients use their public HTTPS metadata URL as the client ID. The authorization flow fetches and validates that document before presenting consent and again before issuing a code. The document must identify the exact requested client ID, a client name and valid callbacks. Only public-client authentication (`none`) is supported for CIMD; existing DCR confidential-client methods remain available. Client names are self-declared, not verified brands.
 
 Metadata fetching is bounded to five seconds including DNS, 32 KiB and eight concurrent loads per process. It permits HTTPS on port 443, requires a non-root path, rejects credentials, query strings, fragments and dot segments, and never follows redirects. All DNS answers must be public; a validated address is pinned to a fresh TLS socket with normal hostname/certificate verification. Private, loopback, link-local, mapped IPv6, transition, multicast and reserved ranges are rejected. Response bodies must be uncompressed JSON. Additional metadata (including logo and key URLs) is not fetched.
 
+Authorization metadata and consent transactions retry explicit SQLite write-lock failures at most three times with bounded backoff. Each failed transaction rolls back before retry, so a successful approval still creates one grant and one code. Token exchange and refresh retain their existing replay protections and are not automatically retried by this wrapper.
+
 Documents are fetched afresh on each authorization validation rather than cached. Invalid or unavailable metadata fails closed; previously stored callback data is not a fallback for new authorizations. The existing client table stores validated snapshots only after callback/resource validation, with the same hourly new-client bound as DCR. Existing code/token bindings, grant scopes, refresh rotation and revocation remain unchanged. Token exchange, refresh and revocation use stored records without remote metadata retrieval, so outages do not prevent revocation. No schema migration, new permission or second service is required.
+
+## Onboarding verification
+
+The shared onboarding checks use the existing Vitest suite and a disposable local
+SQLite database. A loopback HTTP harness exercises the production OAuth/MCP route
+handlers with an independent SDK client; an opt-in native lane runs the generated
+Claude Code and Codex configuration commands in temporary profiles. A separate
+opt-in real-agent lane checks installed skill discovery after process restart,
+creates a disposable task and independently matches its receipt to a persisted
+report. That lane uses preconfigured test credentials. An interactive install
+lane separately consumes the actual website clipboard, lets the real client
+install the skill, completes native OAuth through the local consent screen, and
+checks reporting after restart in another project. Google sign-in remains a
+separate dedicated-account check. These tests add no production route or
+authentication behavior. See [onboarding verification](ONBOARDING_TESTS.md)
+for commands, isolation and coverage boundaries.
 
 ## Change and release workflow
 

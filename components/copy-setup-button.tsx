@@ -4,7 +4,7 @@ import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { SETUP_PROMPT } from "@/lib/setup-prompt";
 
-export function CopySetupButton({ prompt = SETUP_PROMPT, label = "Copy setup prompt" }: { prompt?: string; label?: string }) {
+export function CopySetupButton({ prompt = SETUP_PROMPT, label = "Copy instructions" }: { prompt?: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(false);
 

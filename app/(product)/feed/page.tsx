@@ -3,12 +3,11 @@ import { ActionDetail } from "@/components/action-detail";
 import { FeedTimeline } from "@/components/feed-timeline";
 import { Filters } from "@/components/filters";
 import { Header } from "@/components/header";
-import { CopySetupButton } from "@/components/copy-setup-button";
+import { AgentConnectControl } from "@/components/agent-connect-control";
+import { getSetupContext } from "@/lib/setup-context";
 import { listActions } from "@/lib/actions";
 import { db } from "@/lib/db";
 import { getWorkspaceContext } from "@/lib/workspace";
-import { mcpEnabled, mcpIssuer } from "@/lib/mcp-oauth";
-import { workspaceSetupPrompt } from "@/lib/setup-prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -39,11 +38,7 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
   const cleanParams = new URLSearchParams();
   ["workspaceId", "agentId", "agent", "category", "status", "system", "project", "from", "to", "search"].forEach((key) => { if (params[key]) cleanParams.set(key, params[key]); });
   const queryString = cleanParams.toString();
-  const setupPrompt = actions.length === 0 ? workspaceSetupPrompt({
-    origin: mcpIssuer(),
-    workspace: { id: workspaceId, name: context.workspace.kind === "personal" ? "Personal" : context.workspace.name },
-    mcpEnabled: mcpEnabled(),
-  }) : undefined;
+  const setup = actions.length === 0 ? await getSetupContext(context) : null;
 
   return <>
     <Header product signedIn={Boolean(context.user)} workspaceContext={context} />
@@ -51,7 +46,7 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
       <section className="intro"><span className="kicker">What changed?</span><h1>The things your <span className="intro-ending">agents <em>did.</em></span></h1><p>A running record of what they changed on your behalf.</p></section>
       <Filters params={params} options={{ agents: agents.map((x) => x.agentName), systems: systems.map((x) => x.system), projects: projects.flatMap(x => x.project ? [x.project] : []) }} />
       <div className="feed-summary"><span>{actions.length} {actions.length === 1 ? "action" : "actions"}</span><span className="live-dot">Live feed</span></div>
-      {actions.length > 0 ? <FeedTimeline actions={actions} queryString={queryString} /> : <section className="feed" aria-label="Agent actions"><div className="empty"><h2>Connect an agent</h2><CopySetupButton prompt={setupPrompt} /></div></section>}
+      {actions.length > 0 ? <FeedTimeline actions={actions} queryString={queryString} /> : <section className="feed" aria-label="Agent actions"><div className="empty"><h2>Connect an agent</h2>{setup && <AgentConnectControl instanceUrl={setup.origin} mcpUrl={setup.mcpAvailable ? setup.mcpUrl : undefined} basePrompt={setup.prompt} />}</div></section>}
     </main>
     {detail && <ActionDetail action={detail} closeHref={queryString ? `/feed?${queryString}` : "/feed"} />}
   </>;

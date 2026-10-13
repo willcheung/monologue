@@ -361,3 +361,57 @@ footer { border-top:1px solid var(--line); width:min(1060px,calc(100% - 40px)); 
 .auth-card h1 { overflow-wrap: anywhere; }
 
 .crew-empty .setup-copy-button { margin-inline: auto; }
+
+/* Shared onboarding: one compact agent selector and one set of connection steps. */
+.distribution-setup { scroll-margin-top:100px; }
+.agent-setup-chooser { margin:12px 0 30px; text-align:left; }
+.agent-choice-empty { color:var(--muted); margin:14px 0 0; font-size:14px; line-height:1.6; }
+.agent-selected-setup { margin-top:28px; padding-top:28px; border-top:1px solid var(--line); }
+.agent-setup-steps { margin:0; padding:0; list-style:none; display:grid; gap:24px; }
+.agent-setup-steps li { display:grid; grid-template-columns:24px minmax(0,1fr); gap:14px; }
+.agent-setup-steps li>b { padding-top:1px; color:var(--muted); font-family:var(--font-sans); font-size:14px; font-weight:500; line-height:1.6; }
+.agent-setup-steps li>div { min-width:0; }
+.agent-setup-steps strong { font-size:16px; font-weight:600; }
+.agent-setup-steps p { margin:6px 0 0; color:var(--muted); font-size:15px; line-height:1.6; }
+.agent-selected-setup .setup-copy-button { margin-top:16px; font-size:20px; min-height:48px; height:auto; max-width:100%; padding:11px 16px; border-radius:10px; box-shadow:none; white-space:normal; text-align:left; background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.agent-setup-note { color:var(--muted); font-size:14px; line-height:1.6; margin:24px 0 0; }
+.agent-setup-help { margin-top:20px; padding-top:12px; border-top:1px solid var(--line); }
+.agent-setup-details { margin:0!important; }
+.agent-setup-details summary { display:flex; align-items:center; gap:8px; color:var(--muted); cursor:pointer; font-size:13px; min-height:44px; }
+.agent-setup-details pre { margin:8px 0 12px; padding:15px; white-space:pre-wrap; overflow-wrap:anywhere; border:1px solid var(--line); border-radius:10px; background:var(--paper); font-size:12px; line-height:1.65; }
+.agent-setup-details p { font-size:14px; color:var(--muted); line-height:1.6; }
+.dev-docs-setup .agent-setup-chooser { max-width:780px; }
+@media(max-width:600px) { .agent-setup-steps li { grid-template-columns:18px minmax(0,1fr); gap:10px; } .agent-selected-setup .setup-copy-button { justify-content:center; } }
+
+/* Compact setup control shared by every setup entry point. */
+.agent-connect-control { position:relative; display:inline-block; max-width:100%; text-align:left; vertical-align:top; }
+.agent-connect-pill { position:relative; display:flex; align-items:center; max-width:100%; min-height:58px; border:1px solid #cfcdc6; border-radius:999px; background:var(--paper); box-shadow:0 2px 4px #20201d0c; }
+.agent-connect-copy { min-width:0; }
+.agent-connect-control .agent-connect-copy .setup-copy-button { width:auto; margin:0; padding:12px 16px; height:auto; min-height:56px; border:0; border-radius:999px 0 0 999px; background:transparent; color:var(--ink); box-shadow:none; font-family:var(--font-sans); font-size:16px; font-weight:500; text-align:left; white-space:nowrap; }
+.agent-connect-copy .setup-copy-button:hover { background:#20201d05; }
+.agent-connect-menu { position:static; margin:0!important; border-left:1px solid var(--line); flex-shrink:0; }
+.agent-connect-menu>summary { display:flex; align-items:center; gap:12px; min-height:40px; padding:0 14px; list-style:none; cursor:pointer; border-radius:0 999px 999px 0; }
+.agent-connect-menu>summary::-webkit-details-marker { display:none; }
+.agent-connect-menu>summary:focus-visible,.agent-connect-popover button:focus-visible,.agent-connect-popover a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.agent-connect-stack { display:flex; align-items:center; padding-left:5px; }
+.agent-connect-logo { display:grid; place-items:center; width:32px; height:32px; flex-shrink:0; border-radius:50%; color:var(--muted); }
+.agent-connect-logo img { width:28px; height:28px; object-fit:contain; }
+.agent-connect-stack .agent-connect-logo { width:32px; height:32px; margin-left:-5px; border:1px solid var(--line); background:var(--paper); }
+.agent-connect-menu[open] .agent-connect-chevron { transform:rotate(180deg); }
+.agent-connect-popover { position:absolute; z-index:60; top:calc(100% + 8px); right:0; width:300px; max-width:calc(100vw - 28px); padding:12px; border:1px solid var(--line); border-radius:18px; background:var(--paper); box-shadow:0 12px 32px #20201d1a; }
+.agent-connect-menu-title { margin:4px 12px 8px!important; color:var(--muted); font-size:12px!important; font-weight:600; text-transform:uppercase; letter-spacing:.06em; line-height:1.5!important; }
+.agent-connect-popover button,.agent-connect-popover a { display:flex; align-items:center; gap:12px; width:100%; min-height:46px; padding:7px 10px; border:0; background:transparent; border-radius:8px; color:var(--ink); font:inherit; font-size:16px; text-align:left; text-decoration:none!important; cursor:pointer; }
+.agent-connect-popover button>span:nth-child(2) { flex:1; }
+.agent-connect-popover button:hover,.agent-connect-popover a:hover { background:#20201d06; }
+.agent-connect-popover .agent-connect-more { margin-top:6px; border-top:1px solid var(--line); border-radius:0; padding-top:12px; }
+.agent-connect-popover>a { margin-top:8px; padding-top:14px; border-top:1px solid var(--line); border-radius:0; }
+.agent-connect-hint { margin:8px 0 0!important; font-family:var(--font-sans); font-size:12px!important; line-height:1.5!important; color:var(--muted); }
+.hero-actions { align-items:flex-start; }
+.hero-copy:has(.agent-connect-menu[open]) { overflow:visible; }
+.crew-empty .agent-connect-control { text-align:left; }
+@media(max-width:600px) { .agent-connect-control .agent-connect-copy .setup-copy-button { padding:12px 11px; font-size:14px; gap:7px; } .agent-connect-menu>summary { padding:0 10px; gap:7px; } .agent-connect-stack .agent-connect-logo { width:28px; height:28px; } .agent-connect-logo img { width:24px; height:24px; } }
+
+/* Native OAuth keeps a readable receipt while the client finishes sign-in. */
+.oauth-completion>p { margin:0 auto 22px; color:var(--muted); line-height:1.65; }
+.oauth-completion .connection-next { font-size:14px; margin:24px 0 0; }
+.oauth-consent button:disabled { opacity:.65; cursor:wait; }

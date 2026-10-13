@@ -14,6 +14,8 @@ describe("distribution pages", () => {
     expect(new Set(INTEGRATIONS.map(({ slug }) => slug)).size).toBe(INTEGRATIONS.length);
     expect(generateStaticParams()).toEqual(INTEGRATIONS.map(({ slug }) => ({ slug })));
     expect(getIntegration("not-a-real-platform")).toBeUndefined();
+    expect(getIntegration("claude")).toBeUndefined();
+    expect(getIntegration("chatgpt")).toBeUndefined();
     for (const integration of INTEGRATIONS) {
       const metadata = await generateMetadata({ params: Promise.resolve({ slug: integration.slug }) });
       expect(metadata.alternates?.canonical).toBe(`/integrations/${integration.slug}`);
@@ -25,7 +27,7 @@ describe("distribution pages", () => {
     const urls = sitemap().map(({ url }) => url);
     expect(urls).toContain(`${PUBLIC_SITE_URL}/templates`);
     for (const { slug } of INTEGRATIONS) expect(urls).toContain(`${PUBLIC_SITE_URL}/integrations/${slug}`);
-    for (const route of ["/agents", "/recap", "/feed", "/connect", "/settings/keys", "/keys"]) expect(urls).not.toContain(`${PUBLIC_SITE_URL}${route}`);
+    for (const route of ["/integrations/claude", "/integrations/chatgpt", "/agents", "/recap", "/feed", "/connect", "/settings/keys", "/keys"]) expect(urls).not.toContain(`${PUBLIC_SITE_URL}${route}`);
     expect(robots().sitemap).toBe(`${PUBLIC_SITE_URL}/sitemap.xml`);
   });
 
