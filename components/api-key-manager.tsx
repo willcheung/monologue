@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CopySetupButton } from "@/components/copy-setup-button";
+import { AgentSetupChooser } from "@/components/agent-setup-chooser";
 
 export type KeyRecord = {
   id: string;
@@ -13,7 +13,7 @@ export type KeyRecord = {
   revokedAt: string | null;
 };
 
-export function ApiKeyManager({ initialKeys = [], workspaceId, setupPrompt }: { initialKeys?: KeyRecord[]; workspaceId?: string; setupPrompt?: string }) {
+export function ApiKeyManager({ initialKeys = [], workspaceId, setupPrompt, instanceUrl = "https://www.monologue.events", mcpUrl }: { initialKeys?: KeyRecord[]; workspaceId?: string; setupPrompt?: string; instanceUrl?: string; mcpUrl?: string }) {
   const [keys, setKeys] = useState<KeyRecord[]>(initialKeys);
   const [name, setName] = useState("My first agent");
   const [newKey, setNewKey] = useState<string | null>(null);
@@ -69,14 +69,10 @@ export function ApiKeyManager({ initialKeys = [], workspaceId, setupPrompt }: { 
   }
 
   return <div className="key-manager">
-    <div className="install-config">
-      <h2>Connect an agent</h2>
-      <p>Copy the prompt into your agent, then follow its instructions to sign in and approve. No key to copy or paste.</p>
-      <CopySetupButton prompt={setupPrompt} />
-    </div>
+    <AgentSetupChooser instanceUrl={instanceUrl} mcpUrl={mcpUrl} basePrompt={setupPrompt} />
     <details className="api-key-fallback">
     <summary>Connect an agent with an API key</summary>
-    <p>Use this if your agent can&apos;t connect with the setup prompt. Save the key in its secure credentials screen, never in chat.</p>
+    <p>Use this if your agent needs an API connection. Save the key in its secure credentials screen, never in chat.</p>
     <form className="key-form" onSubmit={createKey}>
       <label>Agent name<input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} required /></label>
       <button type="submit" disabled={busy}>{busy ? "Working…" : "Create API key"}</button>

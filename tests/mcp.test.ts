@@ -3,13 +3,14 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
+import { createClient as createLibsqlClient } from "@libsql/client";
 
 const fixture = vi.hoisted(() => ({ metadata: vi.fn(), db: undefined as unknown as import("@prisma/client").PrismaClient }));
 vi.mock("@/lib/db", () => ({ get db() { return fixture.db; } }));
 vi.mock("@/lib/mcp-client-metadata", () => ({ loadClientMetadata: fixture.metadata }));
-import { approveOAuthConnection, authenticateMcpRequest, exchangeOAuthToken, hashOAuthSecret, mcpResource, registerOAuthClient, revokeOAuthToken, validateAuthorization, validRedirectUri } from "@/lib/mcp-oauth";
+import { approveOAuthConnection, getOAuthConnectionStatus, authenticateMcpRequest, exchangeOAuthToken, hashOAuthSecret, mcpResource, registerOAuthClient, revokeOAuthToken, validateAuthorization, validRedirectUri } from "@/lib/mcp-oauth";
 import { handleMcpRequest, mcpOptions, reportActionOutputSchema, reportActionSchema, reportActionAnnotations } from "@/lib/mcp-server";
 import { z } from "zod";
 import { readTimelineOutputSchema, readTimelineSchema } from "@/lib/mcp-timeline";
@@ -45,6 +46,32 @@ beforeAll(async () => {
   await fixture.db.user.create({ data: { id: "u2", name: "Test Two", email: "two@example.test" } });
   await fixture.db.workspace.create({ data: { id: "w1", name: "Feed One", ownerId: "u1" } });
   await fixture.db.workspace.create({ data: { id: "w2", name: "Feed Two", ownerId: "u2" } });
+});
+
+describe("OAuth browser completion receipt", () => {
+  it("stays pending until exchange, separates verified use, and rejects other users", async () => {
+    const g = await grant("w1", "u1");
+    const code = await fixture.db.mcpOAuthCode.findUniqueOrThrow({ where: { codeHash: hashOAuthSecret(g.form.get("code")!) } });
+    expect(await getOAuthConnectionStatus(code.keyId, "u2")).toBeNull();
+    expect(await getOAuthConnectionStatus(code.keyId, "u1")).toMatchObject({ state: "pending", verified: false });
+    const tokens = await exchangeOAuthToken(g.form);
+    const receipt = await getOAuthConnectionStatus(code.keyId, "u1");
+    expect(receipt).toMatchObject({ state: "connected", verified: false, workspaceId: "w1", canWrite: true, canRead: false });
+    expect(JSON.stringify(receipt)).not.toMatch(/mlg_|Hash|clientId|code|token/i);
+    await authenticateMcpRequest(bearer(tokens.access_token));
+    expect(await getOAuthConnectionStatus(code.keyId, "u1")).toMatchObject({ state: "connected", verified: true });
+    await fixture.db.apiKey.update({ where: { id: code.keyId }, data: { revokedAt: new Date() } });
+    expect(await getOAuthConnectionStatus(code.keyId, "u1")).toMatchObject({ state: "revoked" });
+  });
+  it("never treats expired approval or removed membership as a successful connection", async () => {
+    const g = await grant("w2", "u2");
+    const code = await fixture.db.mcpOAuthCode.findUniqueOrThrow({ where: { codeHash: hashOAuthSecret(g.form.get("code")!) } });
+    await fixture.db.mcpOAuthCode.update({ where: { id: code.id }, data: { expiresAt: new Date(0) } });
+    expect(await getOAuthConnectionStatus(code.keyId, "u2")).toMatchObject({ state: "expired" });
+    await fixture.db.workspace.update({ where: { id: "w2" }, data: { ownerId: null } });
+    try { expect(await getOAuthConnectionStatus(code.keyId, "u2")).toBeNull(); }
+    finally { await fixture.db.workspace.update({ where: { id: "w2" }, data: { ownerId: "u2" } }); }
+  });
 });
 
 // Protocol regressions use a disposable database and require no release files.
@@ -543,6 +570,86 @@ describe("CIMD OAuth grants", () => {
     await expect(validateAuthorization({ ...native, redirect_uri: "http://localhost:50644/other" })).rejects.toMatchObject({ code: "invalid_request" });
     await expect(validateAuthorization({ ...native, redirect_uri: "http://localhost:50644/callback?next=evil" })).rejects.toMatchObject({ code: "invalid_request" });
     fixture.metadata.mockReset();
+  });
+
+  it("recovers a locked metadata write and stores one validated client", async () => {
+    const clientId = "https://metadata.example/oauth/retry.json";
+    fixture.metadata.mockResolvedValue({ ...metadata, client_id: clientId });
+    const transaction = fixture.db.$transaction.bind(fixture.db);
+    let attempts = 0;
+    const spy = vi.spyOn(fixture.db, "$transaction").mockImplementation(async work => transaction(async tx => {
+      const result = await (work as (tx: Prisma.TransactionClient) => Promise<unknown>)(tx);
+      if (attempts++ === 0) throw new Prisma.PrismaClientUnknownRequestError("SQLITE_BUSY: database is locked", { clientVersion: "6.12.0" });
+      return result;
+    }));
+    try {
+      expect((await validateAuthorization({ ...params, client_id: clientId })).client.id).toBe(clientId);
+      expect(attempts).toBe(2);
+      expect(await fixture.db.mcpOAuthClient.count({ where: { id: clientId } })).toBe(1);
+    } finally { spy.mockRestore(); }
+  });
+
+  it("retries a rolled-back consent transaction without duplicating grants or codes", async () => {
+    fixture.metadata.mockResolvedValue(metadata);
+    const beforeKeys = await fixture.db.apiKey.count({ where: { workspaceId: "cimd-feed" } });
+    const beforeCodes = await fixture.db.mcpOAuthCode.count();
+    const transaction = fixture.db.$transaction.bind(fixture.db);
+    let attempts = 0;
+    const spy = vi.spyOn(fixture.db, "$transaction").mockImplementation(async work => transaction(async tx => {
+      const result = await (work as (tx: Prisma.TransactionClient) => Promise<unknown>)(tx);
+      // Validation commits first. Fail after the consent writes so the real
+      // database must roll them back before the retry can issue a usable code.
+      if (attempts++ === 1) throw new Prisma.PrismaClientUnknownRequestError("SQLITE_BUSY: database is locked", { clientVersion: "6.12.0" });
+      return result;
+    }));
+    let callback: URL;
+    try {
+      callback = new URL(await approveOAuthConnection(params, "cimd-feed", "cimd-user"));
+      expect(attempts).toBe(3);
+    } finally { spy.mockRestore(); }
+    expect(await fixture.db.apiKey.count({ where: { workspaceId: "cimd-feed" } })).toBe(beforeKeys + 1);
+    expect(await fixture.db.mcpOAuthCode.count()).toBe(beforeCodes + 1);
+    const token = await exchangeOAuthToken(new URLSearchParams({ grant_type: "authorization_code", client_id: id,
+      redirect_uri: params.redirect_uri, code: callback!.searchParams.get("code")!, code_verifier: verifier, resource: mcpResource() }));
+    expect(await authenticateMcpRequest(bearer(token.access_token))).toMatchObject({ workspaceId: "cimd-feed" });
+  });
+
+  it.skipIf(process.env.MCP_TEST_LIBSQL !== "1")("recovers from another libSQL connection holding the write lock", async () => {
+    fixture.metadata.mockResolvedValue(metadata);
+    const writer = createLibsqlClient({ url: `file:${path.join(directory, "test.db")}` });
+    await writer.execute("PRAGMA journal_mode = WAL");
+    const lock = await writer.transaction("write");
+    let pending: ReturnType<typeof validateAuthorization> | undefined;
+    const spy = vi.spyOn(fixture.db, "$transaction");
+    try {
+      await lock.execute({ sql: 'UPDATE "McpOAuthClient" SET name = name WHERE id = ?', args: [id] });
+      pending = validateAuthorization(params);
+      // Keep the rejection observed while we release the competing writer.
+      pending.catch(() => {});
+      await new Promise(resolve => setTimeout(resolve, 150));
+      await lock.commit();
+      expect((await pending).client.id).toBe(id);
+      expect(spy.mock.calls.length).toBeGreaterThan(1);
+    } finally {
+      if (!lock.closed) await lock.rollback();
+      await pending?.catch(() => {});
+      spy.mockRestore(); lock.close(); writer.close();
+    }
+  });
+
+  it("bounds lock retries and never retries unrelated database failures", async () => {
+    fixture.metadata.mockResolvedValue(metadata);
+    const busy = new Prisma.PrismaClientUnknownRequestError("SQLITE_BUSY: database is locked", { clientVersion: "6.12.0" });
+    const spy = vi.spyOn(fixture.db, "$transaction").mockRejectedValue(busy);
+    try {
+      await expect(validateAuthorization(params)).rejects.toBe(busy);
+      expect(spy).toHaveBeenCalledTimes(4);
+      spy.mockClear();
+      const other = new Error("Database unavailable");
+      spy.mockRejectedValue(other);
+      await expect(validateAuthorization(params)).rejects.toBe(other);
+      expect(spy).toHaveBeenCalledTimes(1);
+    } finally { spy.mockRestore(); }
   });
 
   it("refreshes callback metadata for new authorizations without accepting stale callbacks", async () => {

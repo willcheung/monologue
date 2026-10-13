@@ -21,7 +21,7 @@ Use this guide for every user-facing addition. Monologue is a warm, consumer-fri
 - Body and data: `--font-sans`
 - Headlines, brand moments, primary verbs, and playful labels: `--font-display` (Gaegu)
 
-Do not add a new font or one-off brand color for a single feature. Use generous whitespace, thin warm-gray rules, soft shadows, and rounded corners. Avoid glassy enterprise panels, neon gradients, and dense metric grids.
+Do not add a new font or one-off brand color for a single feature. Use generous whitespace, thin warm-gray rules, soft shadows, and rounded corners. Homepage action rows align button tops and use matching 58px button heights; setup hints sit below the copy control and must not center the neighboring button against the combined button-plus-hint height. Avoid glassy enterprise panels, neon gradients, and dense metric grids.
 
 ## The timeline pattern
 
@@ -44,7 +44,7 @@ Use the same category emoji and color mapping everywhere by going through `categ
 - Primary action verb: bold Gaegu inside a sans-serif sentence.
 - Body copy: sans serif, comfortable line-height.
 - Metadata: sans serif, muted, never so small that it becomes decorative texture.
-- Setup-prompt button labels: 20px display font across the site.
+- Compact setup control labels: 16px sans serif, 14px on narrow screens. Task and manual-configuration copy buttons retain the 20px display style.
 - Uppercase labels: short only, with modest tracking.
 
 Handwriting is an accent, not the whole interface. Names, timestamps, values, URLs, filters, and detail content stay easy to scan.
@@ -54,7 +54,7 @@ Handwriting is an accent, not the whole interface. Names, timestamps, values, UR
 - Reuse existing buttons, pills, avatars, action icons, timeline rows, dialogs, and empty states before making a variant.
 - Primary buttons use ink; coral is an accent, not a large background color.
 - Prefer one clear primary action per section.
-- Show starter template prompts directly, with a copy action; do not hide them behind a disclosure. Agent setup has one default action: **Copy setup prompt**. An empty action feed shows only **Connect an agent** and that button, copying the setup prompt for the displayed workspace and this instance. Keep technical connection instructions in the agent-facing guide and developer docs; show manual API-key setup as a collapsed fallback. Never promise that a prompt can silently add an MCP connection in every client.
+- Show starter task prompts directly with their copy action. Human onboarding starts with **Connect your agent** and one compact split copy control with agent logos and a native disclosure menu, defaulting to Claude Code unless the guide specifies another agent. Reuse the same control on the homepage, setup pages and empty states; preserve their instance and validated workspace. Selection changes the copied instructions. Full setup pages show one inline set of steps below the control. Do not repeat the same choices in a second guide gallery or add a nested connection card. Selected flows copy targeted instructions. Empty feeds show the same copy control for the displayed workspace. Keep configuration references and manual API keys collapsed. Copying instructions does not establish a connection, and approval cannot be skipped.
 - Drawers are for complete action details. The timeline itself should already explain the action.
 - Share artifacts are static snapshots. They must not reveal future activity or create ongoing access.
 - Links to proof or receipts should be visible when present, but raw metadata stays in details.
@@ -92,10 +92,17 @@ Recap combines the seven-day ledger with a last-24-hours report on one page. Dai
 
 Recap offers a compact **Get my weekly briefing** action. Opening it shows weekly briefing, project catch-up and coordination check prompts for the same workspace and seven calendar days as the recap. Keep the request visible and include connection setup inside every copied prompt. Use one short note: setup is included and one connection enables reading and reporting. Do not show a separate connection section or a technical setup checklist. The approved connection covers the workspace, while the prompt asks for a narrower review period. Never imply that copying runs a briefing, grants access or creates a schedule. Keep the action feed focused on reported changes.
 
-Add agent stays a setup page even when connections already exist: show the destination workspace, one Copy setup prompt button, collapsed manual-key fallback and a separate Agent connections section. Use plain connection copy in the primary flow. My agents keeps its secondary Add agent link; its empty state offers Copy setup prompt directly for the displayed workspace and this instance. Profile navigation uses the profile’s workspace.
+Add agent stays a setup page even when connections exist: show the destination workspace, the shared client chooser, collapsed manual-key fallback and a separate Agent connections section. My agents and feed empty states show the shared compact setup control for the displayed workspace. Profile navigation uses the profile’s workspace.
 
-Add agent is a secondary outlined button in product navigation and the My agents heading. Reuse the existing secondary button style and keep it sized to its label on mobile. Connecting is not the primary action in a configured workspace; Copy setup prompt remains the primary setup action.
+Add agent is a secondary outlined button in product navigation and the My agents heading. Reuse the existing secondary button style and keep it sized to its label on mobile. Connecting is not the primary action in a configured workspace; The shared setup control copies selected client instructions; its logo menu changes the client without navigating away.
 
 Sign-in displays a compact, readable legal notice immediately below Continue with Google. Use 12px text, underline Terms and Privacy links and explicitly tie the button click to agreement. Keep the identity-scope note separate. Legal pages must describe implemented behavior and remain readable, rather than promise legal immunity or unimplemented safeguards.
 
 Invitation emails identify the inviter and workspace and offer one clear Join workspace action. The sign-in welcome repeats that context from a validated invitation, explains the shared feed and personal privacy, and preserves the invitation through Google sign-in. Do not show an agent setup task before joining. Expired or used invitations get a clear explanation; a wrong account gets a direct account-switch action, not a join button that will fail. Email receipts must distinguish confirmed sending from copy-link fallback.
+
+Native agent sign-in keeps a Monologue completion screen available. Show a quiet
+waiting message while the client finishes, then a checkmark, the agent name,
+selected workspace, granted capabilities and one **Open your feed** action.
+Do not mark approval alone as connected or imply the skill/reporting behavior
+has been verified by token exchange. Stalled, unavailable, expired and revoked
+connections must give a short recovery step without exposing protocol errors.

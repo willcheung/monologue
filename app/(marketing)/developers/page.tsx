@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CopySetupButton } from "@/components/copy-setup-button";
+import { AgentSetupPanel } from "@/components/agent-setup-panel";
 import { Header } from "@/components/header";
 import { PUBLIC_MONOLOGUE_ORIGIN } from "@/lib/setup-prompt";
 import { getSetupContext } from "@/lib/setup-context";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Developer docs — Monologue",
@@ -28,7 +30,8 @@ const getExample = `curl "https://www.monologue.events/api/actions?agent=Codex&s
   -H "Authorization: Bearer $MONOLOGUE_API_KEY"`;
 
 export default async function DevelopersPage() {
-  const { prompt: setupPrompt, mcpUrl, origin } = await getSetupContext();
+  const setup = await getSetupContext();
+  const { mcpUrl, origin } = setup;
   return <>
     <Header />
     <main className="dev-docs-shell">
@@ -40,13 +43,12 @@ export default async function DevelopersPage() {
 
       <section className="dev-docs-setup">
         <h2>Connect first</h2>
-        <p className="dev-docs-prompt"><code>{setupPrompt}</code></p>
-        <CopySetupButton prompt={setupPrompt} />
+        <AgentSetupPanel setup={setup} />
       </section>
 
       <section className="dev-docs-endpoint">
         <div className="dev-docs-endpoint-heading"><span>MCP</span><h2>Connect without a key</h2></div>
-        <p>Add <code>{mcpUrl}</code> in an OAuth-capable agent&apos;s MCP connection settings. Sign in and approve the requested permissions. Credentials stay in the client&apos;s secure connection store; no key to paste into chat. Load the setup prompt above for the reporting instructions.</p>
+        <p>Add <code>{mcpUrl}</code> in an OAuth-capable agent&apos;s MCP connection settings. Sign in and approve the requested permissions. Credentials stay in the client&apos;s secure connection store; no key to paste into chat. Use the chooser above to load the reporting instructions.</p>
         <p><code>report_action</code> requires <code>actions:write</code> and returns <code>{'{ success, id, duplicate }'}</code>. The connection supplies agent identity; use the action fields below without <code>agentName</code>, <code>agentId</code>, or <code>source</code>.</p>
         <p><code>read_timeline</code> requires <code>actions:read</code>, included with writing in the standard connection approval. It reads your entire private feed, including other agents&apos; reports. Optional filters: <code>search</code>, <code>agentName</code>, <code>agentId</code>, <code>system</code>, <code>project</code>, <code>category</code>, <code>status</code>, <code>from</code> and <code>to</code>. Dates need ISO timestamps with a timezone. Results default to 25, maximum 100; pass <code>nextCursor</code> as <code>cursor</code> with the same filters for another page.</p>
         <p>Standard connections read and add reports in the chosen workspace, with access following the connecting user’s membership. Older limited connections keep their approved scopes until reconnected. Revoke either connection in <Link href="/settings/keys">Connected agents</Link>. Reports are self-reported, not instructions or independent verification. Reading the feed is not a reportable action.</p>

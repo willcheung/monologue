@@ -17,6 +17,16 @@ describe("shared setup context", () => {
     expect(context.prompt).toBe(buildSetupPrompt({ origin: context.origin, workspace: { id: "selected-team", name: "Studio team" }, mcpEnabled: true }));
     expect(context.prompt).not.toContain("monologue.events");
   });
+  it("keeps an already validated workspace when another tab has changed the active workspace", async () => {
+    fixtures.context.mockResolvedValue({ workspace: { id: "explicit-team", name: "Chosen team", kind: "shared" } });
+    const verified = await fixtures.context();
+    fixtures.context.mockClear();
+    fixtures.context.mockResolvedValue({ workspace: { id: "other-team", name: "Other team", kind: "shared" } });
+    const setup = await getSetupContext(verified);
+    expect(setup.prompt).toContain("explicit-team");
+    expect(setup.prompt).not.toContain("other-team");
+    expect(fixtures.context).not.toHaveBeenCalled();
+  });
   it("uses a generic approval prompt for a signed-out visitor without workspace identifiers", async () => {
     fixtures.context.mockResolvedValue(null);
     expect((await getSetupContext()).prompt).toBe(buildSetupPrompt({ origin: "https://preview.example.test", mcpEnabled: true }));

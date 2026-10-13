@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import type { Prisma } from "@prisma/client";
+import type { OAuthConnectionStatus } from "./oauth-completion";
+import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { registeredRedirectMatches } from "./mcp-redirect-uri";
 import { loadClientMetadata } from "./mcp-client-metadata";
@@ -22,6 +23,30 @@ const equal = (a: string, b: string) => a.length === b.length && timingSafeEqual
 
 export class OAuthError extends Error {
   constructor(public code: string, message: string, public status = 400) { super(message); }
+}
+
+function isSqliteBusy(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  if (/\bSQLITE_BUSY\b/.test(error.message)) return true;
+  // The pinned libSQL adapter maps SQLite BUSY to SocketTimeout, but the
+  // pinned Prisma engine rejects that variant. Match only this exact adapter
+  // mismatch, not ordinary socket/network timeouts or ambiguous commit errors.
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2010" &&
+    error.meta?.code === "InvalidArg" && typeof error.meta.message === "string" &&
+    error.meta.message.includes("unknown variant `SocketTimeout`");
+}
+
+// A failed SQLite write transaction is rolled back before this retries it.
+// Retry only the explicit lock error, never token exchange or refresh: those
+// operations have replay-sensitive semantics and use their own transactions.
+async function authorizationTransaction<T>(work: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try { return await db.$transaction(work); }
+    catch (error) {
+      if (!isSqliteBusy(error) || attempt >= 3) throw error;
+      await new Promise(resolve => setTimeout(resolve, 250 * 2 ** attempt));
+    }
+  }
 }
 
 export function mcpEnabled() { return process.env.MONOLOGUE_MCP_ENABLED === "1"; }
@@ -97,7 +122,7 @@ export async function validateAuthorization(input: unknown) {
     // Fetch afresh at authorization; stored records bind subsequent codes/tokens.
     // Do not let unavailable remote metadata prevent refresh or revocation.
     const data = { name: metadata.client_name, redirectUris: metadata.redirect_uris, authMethod: "none", secretHash: null };
-    const client = await db.$transaction(async tx => {
+    const client = await authorizationTransaction(async tx => {
       const existing = await tx.mcpOAuthClient.findUnique({ where: { id: params.client_id } });
       if (!existing) {
         const recent = await tx.mcpOAuthClient.count({ where: { createdAt: { gt: new Date(Date.now() - HOUR) } } });
@@ -122,10 +147,10 @@ export function authorizationRedirect(params: AuthorizationInput, result: { code
   return url.toString();
 }
 
-export async function approveOAuthConnection(input: unknown, workspaceId: string, userId: string) {
+export async function createOAuthConnectionApproval(input: unknown, workspaceId: string, userId: string) {
   const { params, client } = await validateAuthorization(input);
   const code = secret();
-  await db.$transaction(async (tx) => {
+  const connectionId = await authorizationTransaction(async (tx) => {
     if (!await workspaceAccess(tx, workspaceId, userId)) throw new OAuthError("access_denied", "Sign in to a workspace you belong to", 403);
     const recent = await tx.apiKey.count({ where: { workspaceId, prefix: "OAuth connection", createdAt: { gt: new Date(Date.now() - HOUR) } } });
     if (recent >= 20) throw new OAuthError("temporarily_unavailable", "Please try connecting later", 429);
@@ -138,8 +163,31 @@ export async function approveOAuthConnection(input: unknown, workspaceId: string
     await tx.mcpOAuthCode.create({ data: { clientId: client.id, keyId: key.id, codeHash: hashOAuthSecret(code),
       redirectUri: params.redirect_uri, challenge: params.code_challenge, resource: params.resource,
       expiresAt: new Date(Date.now() + 5 * 60 * 1000) } });
+    return key.id;
   });
-  return authorizationRedirect(params, { code });
+  return { connectionId, redirectUrl: authorizationRedirect(params, { code }) };
+}
+
+export async function approveOAuthConnection(input: unknown, workspaceId: string, userId: string) {
+  return (await createOAuthConnectionApproval(input, workspaceId, userId)).redirectUrl;
+}
+
+// This is a browser-session receipt, never an agent credential or an auth bypass.
+export async function getOAuthConnectionStatus(connectionId: string, userId: string): Promise<OAuthConnectionStatus | null> {
+  if (!connectionId || connectionId.length > 100) return null;
+  const key = await db.apiKey.findFirst({ where: { id: connectionId, createdByUserId: userId, prefix: "OAuth connection" },
+    select: { name: true, workspaceId: true, scopes: true, revokedAt: true, lastUsedAt: true,
+      workspace: { select: { name: true, kind: true } },
+      oauthCodes: { select: { consumedAt: true, expiresAt: true }, take: 1 },
+      oauthTokens: { where: { rotatedAt: null, refreshExpiresAt: { gt: new Date() } }, select: { id: true }, take: 1 } } });
+  if (!key || !await workspaceAccess(db, key.workspaceId, userId)) return null;
+  const code = key.oauthCodes[0];
+  const state = key.revokedAt ? "revoked" : code?.consumedAt && key.oauthTokens.length ? "connected" :
+    !code || code.consumedAt || code.expiresAt <= new Date() ? "expired" : "pending";
+  return { state, agentName: key.name, workspaceId: key.workspaceId,
+    workspaceName: key.workspace.kind === "personal" ? "Personal" : key.workspace.name,
+    canRead: key.scopes.split(" ").includes(ACTION_READ_SCOPE), canWrite: key.scopes.split(" ").includes(ACTION_WRITE_SCOPE),
+    verified: Boolean(key.lastUsedAt) };
 }
 
 async function authenticateClient(form: URLSearchParams, authorization: string | null) {

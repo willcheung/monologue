@@ -18,7 +18,12 @@
     "test:mcp": "vitest run tests/mcp.test.ts",
     "test:libsql": "MCP_TEST_LIBSQL=1 vitest run tests/mcp.test.ts tests/workspaces.test.ts tests/api-routes.test.ts",
     "test:reporter": "python3 -m unittest discover -s tests -p '*_test.py'",
-    "dev:workspace": "node scripts/workspace-dev.mjs"
+    "dev:workspace": "node scripts/workspace-dev.mjs",
+    "test:onboarding": "vitest run tests/agent-onboarding.test.tsx tests/setup-context.test.ts tests/setup-prompt.test.ts tests/agent-setup.test.ts tests/mcp-setup.test.tsx tests/mcp-consent.test.tsx tests/oauth-completion.test.tsx tests/onboarding-protocol.test.ts tests/mcp.test.ts tests/api-routes.test.ts",
+    "test:onboarding:clients": "MONOLOGUE_NATIVE_TESTS=1 vitest run tests/onboarding-clients.test.ts",
+    "test:onboarding:sessions": "MONOLOGUE_SESSION_TESTS=1 vitest run tests/onboarding-sessions.test.ts",
+    "test:onboarding:install": "MONOLOGUE_INSTALL_TESTS=1 vitest run tests/onboarding-install.test.ts",
+    "test:onboarding:app-server": "MONOLOGUE_APP_SERVER_TESTS=1 vitest run tests/onboarding-protocol.test.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.5",

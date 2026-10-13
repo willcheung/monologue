@@ -4,35 +4,42 @@ export const PUBLIC_SITE_URL = "https://www.monologue.events";
 
 export const INTEGRATIONS = [
   {
-    slug: "muse", name: "Muse", method: "Setup prompt",
+    slug: "cursor", name: "Cursor", method: "MCP and reporting skill",
+    description: "Keep the code your Cursor agent pushes and deploys in one private feed.",
+    example: "Pushed the checkout fix to GitHub.",
+    note: "Use Cursor's supported MCP connection and install the portable reporting skill. Confirm both are available in your agent session.",
+    commands: ["npx skills add willcheung/monologue --skill monologue --agent cursor"],
+  },
+  {
+    slug: "muse", name: "Muse", method: "Guided connection",
     description: "Keep a record of emails sent, meetings changed, and purchases made by Muse.",
     example: "Sent the counteroffer to the dealer.",
     note: "Paste the prompt into Muse. If it offers a secure connector instead of an approval link, use the API key fallback below. Monologue does not give Muse access to your email or shopping accounts.",
     commands: [],
   },
   {
-    slug: "claude-code", name: "Claude Code", method: "Portable skill or setup prompt",
+    slug: "claude-code", name: "Claude Code", method: "MCP and reporting skill",
     description: "Keep GitHub pushes, pull requests, and deployments from Claude Code in one feed.",
     example: "Opened the pull request for the checkout fix.",
     note: "Paste the setup prompt into Claude Code, or install the portable skill below. Confirm the Monologue skill is available in your session. One connection approval enables reading and reporting in your chosen workspace. Local edits and tests stay out of the feed.",
     commands: ["npx skills add willcheung/monologue --skill monologue --agent claude-code"],
   },
   {
-    slug: "openclaw", name: "OpenClaw", method: "Portable skill",
+    slug: "openclaw", name: "OpenClaw", method: "Reporting skill and supported connection",
     description: "Keep a record of the messages, bookings, and other changes your OpenClaw agent reports.",
     example: "Booked the appointment and received a confirmation.",
     note: "Paste the prompt into your agent, or use the Skills CLI below. Confirm the skill is discoverable in any worker or scheduled agent run that needs it. A ClawHub listing is a separate publication step, not required for this setup.",
     commands: ["npx skills add willcheung/monologue --skill monologue --agent openclaw"],
   },
   {
-    slug: "codex", name: "Codex", method: "Portable skill",
+    slug: "codex", name: "Codex", method: "MCP and reporting skill",
     description: "Find the code your Codex agent pushed and the releases it deployed, without digging through chats.",
     example: "Pushed the fix to GitHub and deployed the release to Vercel.",
     note: "Paste the setup prompt into Codex, or install the skill with the command below. Confirm Monologue appears in the available skills; reload skills or start a new session if needed. A push and a deployment are separate actions. Local builds and dev-server restarts are not logged.",
     commands: ["npx skills add willcheung/monologue --skill monologue --agent codex"],
   },
   {
-    slug: "hermes", name: "Hermes", method: "Portable skill",
+    slug: "hermes", name: "Hermes", method: "MCP and reporting skill",
     description: "Give your Hermes agent a private place to report the things it changes for you.",
     example: "Published the listing and saved its URL.",
     note: "Paste the prompt into Hermes. Check that Monologue appears in the agent's available-skills list, including any delegated workers. Installing a file alone is not enough if the session cannot discover it.",

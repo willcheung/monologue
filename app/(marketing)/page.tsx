@@ -2,12 +2,14 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check, Share2, X } from "lucide-react";
 import { ActionIcon } from "@/components/action-icon";
 import { AgentAvatar } from "@/components/agent-avatar";
-import { CopySetupButton } from "@/components/copy-setup-button";
 import { Header } from "@/components/header";
 import { RotatingActionHeadline } from "@/components/rotating-action-headline";
+import { AgentConnectControl } from "@/components/agent-connect-control";
+import { getSetupContext } from "@/lib/setup-context";
 import { isCloudMode } from "@/lib/runtime";
 import styles from "./homepage.module.css";
-import { getSetupContext } from "@/lib/setup-context";
+
+export const dynamic = "force-dynamic";
 
 const examples = [
   { time: "2:43 PM", agent: "Hermes · Henry", category: "code", label: "Code", verb: "Pushed", detail: "the Monologue feed update.", system: "GitHub", context: "Monologue" },
@@ -32,8 +34,8 @@ const recapDays = [
 ];
 
 export default async function MarketingPage() {
-  const { prompt: setupPrompt } = await getSetupContext();
   const cloud = isCloudMode();
+  const setup = await getSetupContext();
   const startHref = cloud ? "/sign-in" : "/feed";
   return <>
     <Header />
@@ -45,7 +47,7 @@ export default async function MarketingPage() {
           <p>Emails sent. Purchases made. Code shipped.<br />Keep up with your agents, and help them see what each other did.</p>
           <div className="hero-actions">
             <Link className="primary-button hero-primary" href={startHref}>Get started<ArrowRight size={17} /></Link>
-            <CopySetupButton prompt={setupPrompt} />
+            <AgentConnectControl instanceUrl={setup.origin} mcpUrl={setup.mcpAvailable ? setup.mcpUrl : undefined} basePrompt={setup.prompt} />
           </div>
         </div>
         <div className={styles.feedDiagram}>
@@ -120,8 +122,8 @@ export default async function MarketingPage() {
       <section className="steps-section" id="how-it-works">
         <span className="kicker">Up and running quickly</span>
         <h2>Connect your AI agent in three steps.</h2>
-        <ol><li><span>1</span><div><strong>Give your agent the setup prompt</strong><p>Your agent follows the instructions to connect.</p></div></li><li><span>2</span><div><strong>Approve the connection</strong><p>Use a secure link or your agent&apos;s connection settings.</p></div></li><li><span>3</span><div><strong>See what it reports</strong><p>Actions appear in your private feed.</p></div></li></ol>
-        <div className={styles.connectActions}><Link className="primary-button hero-primary" href={startHref}>Get started<ArrowRight size={17} /></Link><CopySetupButton prompt={setupPrompt} /></div>
+        <ol><li><span>1</span><div><strong>Choose your agent</strong><p>Follow the steps for the agent you already use.</p></div></li><li><span>2</span><div><strong>Approve the connection</strong><p>Use a secure link or your agent&apos;s connection settings.</p></div></li><li><span>3</span><div><strong>See what it reports</strong><p>Actions appear in your private feed.</p></div></li></ol>
+        <div className={styles.connectActions}><Link className="primary-button hero-primary" href={startHref}>Get started<ArrowRight size={17} /></Link><AgentConnectControl instanceUrl={setup.origin} mcpUrl={setup.mcpAvailable ? setup.mcpUrl : undefined} basePrompt={setup.prompt} /></div>
       </section>
       <section className="why-section">
         <span className="kicker">Why we made it</span>
