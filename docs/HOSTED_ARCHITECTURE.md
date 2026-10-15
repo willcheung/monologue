@@ -21,6 +21,7 @@ Implemented in the application:
 - stable Action-to-Agent relationships with historical backfill
 - private AI Crew list and agent track-record pages
 - private weekly agent ledger, active-agent roster, and browser-generated static share cards
+- workspace-scoped 28-day recorded activity matrix and privacy-controlled static PNG sharing ([aggregate contract](ACTIVITY_MATRIX.md))
 - optional OAuth MCP reporting and timeline reading under one workspace-scoped connection approval
 - personal and shared workspaces, member invitations, workspace selection, and person attribution
 - private daily workspace summaries and contextual prompts for agent-generated briefings
@@ -54,6 +55,7 @@ Do not create separate marketing, cloud-app, or skill repositories. A separate p
 | Agent API-key creation and verification | `lib/api-keys.ts` |
 | Action validation and queries | `lib/action-schema.ts`, `lib/actions.ts` |
 | Weekly ledger aggregation | `lib/ledger.ts`, `lib/weekly-ledger.ts` |
+| 28-day activity aggregation | `lib/activity.ts`, `lib/workspace-activity.ts` |
 | Database connection selection | `lib/db.ts` |
 | Models and committed migrations | `prisma/` |
 | Agent-facing installation package | `skills/monologue/` |
@@ -77,7 +79,7 @@ Route groups organize code without appearing in public URLs. The application rou
 /feed                authenticated action feed
 /agents              authenticated selected-workspace agent roster
 /agents/[agentId]    authenticated private agent profile and track record
-/recap               authenticated private weekly recap and daily summary
+/recap               authenticated private 28-day activity, weekly recap and daily summary
 /settings/keys       add agents and manage agent keys
 /workspaces          list, select and create personal/shared workspaces
 /settings/workspaces redirect to /workspaces
@@ -289,7 +291,7 @@ Owners manage invitations, members, and report settings. Members see the shared 
 
 Removing a member revokes their workspace credentials and approved connection claims while preserving action history and original person attribution. REST/MCP credentials and OAuth code/refresh exchange check current membership. Same-named assistants are resolved by workspace and connecting person. Retry deduplication uses stable agent identity when present; legacy name-based uniqueness applies only to actions without an agent ID.
 
-Recap shows the selected workspace's seven-day ledger and last 24 hours on the same page, with original person attribution in shared workspaces and completed/attention counts. Paid controls and delivery settings are absent from the product UI. The existing report-settings persistence and entitlement helpers remain dormant for compatibility; they do not connect providers, start a scheduler or send messages. Report aggregation does not add activity events or change agent reporting behavior.
+Recap shows the selected workspace's 28-day activity matrix and current streak, seven-day ledger and last 24 hours on the same page, with original person attribution in shared workspaces and completed/attention counts. Paid controls and delivery settings are absent from the product UI. The existing report-settings persistence and entitlement helpers remain dormant for compatibility; they do not connect providers, start a scheduler or send messages. Report aggregation does not add activity events or change agent reporting behavior.
 
 Recap generates copyable weekly briefing, project catch-up and coordination-check prompts for the displayed workspace and the same seven calendar days, including timezone and daylight-saving boundaries. Every prompt includes this instance's MCP setup, reuses an existing connection when available, and uses the same combined read-and-write setup prompt if missing. The agent handles connection setup through its supported secure flow; the UI has no separate connection checklist and does not preflight a browser account's connection inventory. Disabled MCP instructs the agent to stop and ask for instance setup. Each prompt requests paginated read_timeline results, scoped report links and a distinction between reported facts and inferences. Supporting links carry an explicit workspace ID resolved against current membership. Older `/reports` links forward their workspace to Recap’s daily section, where membership is checked before any report query. Recap also checks explicit workspace links against current membership. Old weekly-briefing feed links redirect to Recap. Prompt copying does not authorize reading or execute work.
 

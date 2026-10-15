@@ -8,6 +8,8 @@ dist/
 packaging/
 chatgpt-app-submission.json
 tests/
+playwright-report/
+test-results/
 docs/
 *.db-wal
 *.db-shm

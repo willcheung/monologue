@@ -12,10 +12,14 @@ import { getWeeklyLedger } from "@/lib/weekly-ledger";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { AgentBriefing } from "@/components/agent-briefing";
 import { buildFeedBriefings } from "@/lib/feed-briefing";
-import { weeklyLedgerBounds } from "@/lib/ledger";
+import { weeklyLedgerBounds, validatedTimeZone } from "@/lib/ledger";
 import { mcpEnabled, mcpIssuer } from "@/lib/mcp-oauth";
 import { dailyWorkspaceReport } from "@/lib/workspace-reports";
 import { DailyReport } from "@/components/daily-report";
+import { ActivityMatrix } from "@/components/activity-matrix";
+import { AgentConnectControl } from "@/components/agent-connect-control";
+import { getWorkspaceActivity } from "@/lib/workspace-activity";
+import { getSetupContext } from "@/lib/setup-context";
 
 export const dynamic = "force-dynamic";
 
@@ -29,18 +33,16 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
   }
   const requestHeaders = await headers();
   const requestedTimeZone = requestHeaders.get("x-vercel-ip-timezone") || "UTC";
-  let timeZone = "UTC";
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone:requestedTimeZone }).format();
-    timeZone = requestedTimeZone;
-  } catch {}
+  const timeZone = validatedTimeZone(requestedTimeZone);
   const now = new Date();
-  const [ledger, agents, dailyReport] = await Promise.all([
+  const [ledger, agents, dailyReport, activity] = await Promise.all([
     getWeeklyLedger(context.workspace.id, now, timeZone),
     listAgentSummaries(context.workspace.id),
     dailyWorkspaceReport(context.workspace.id, now),
+    getWorkspaceActivity(context.workspace.id, now, timeZone),
   ]);
   const range = weeklyLedgerBounds(now, timeZone);
+  const setup = activity.totalActions === 0 ? await getSetupContext(context) : null;
   const briefing = buildFeedBriefings({ workspace: { id: context.workspace.id, name: context.workspace.kind === "personal" ? "Personal" : context.workspace.name }, origin: mcpIssuer(), now, timeZone, readingEnabled: Boolean(context.user) && mcpEnabled(), filters: { from: range.from.toISOString(), to: range.to.toISOString() } });
   const weeklyActionsByAgent = new Map(ledger.agents.filter((agent) => agent.id).map((agent) => [agent.id, agent.count]));
   const shareData: ShareCardData = {
@@ -51,24 +53,30 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
     activeAgents:ledger.activeAgents,
     topAgent:ledger.topAgent?.name ?? "No activity yet",
     topSystem:ledger.topSystem?.name ?? "No activity yet",
-    agents:ledger.agents.map(({ name, count }) => ({ name, count })),
-    days:ledger.days.map(({ weekday, count, agents }) => ({ weekday, count, agents:agents.map(({ name, count:agentCount }) => ({ name, count:agentCount })) })),
+    // Snapshot-local ordinals distinguish same-named agents without sharing IDs.
+    agents:ledger.agents.map(({ name, count }, key) => ({ key, name, count })),
+    days:ledger.days.map(({ weekday, count, agents }) => ({ weekday, count, agents:agents.map(({ id, name, count:agentCount }) => ({
+      key:ledger.agents.findIndex(agent => (agent.id ?? agent.name) === (id ?? name)), name, count:agentCount,
+    })) })),
   };
 
   return <>
     <Header product signedIn={Boolean(context.user)} workspaceContext={context} />
     <main className="recap-shell">
       <section className="recap-intro">
-        <div><span className="kicker">{context.workspace.kind === "personal" ? "Personal" : context.workspace.name}</span><h1>Your recap.</h1><p>Your agents&apos; reported activity, from the last day to the last week.</p></div>
-        <StaticShareCard data={shareData} label="Share weekly recap" />
+        <div><span className="kicker">{context.workspace.kind === "personal" ? "Personal" : context.workspace.name}</span><h1>Your recap.</h1><p>Your agents&apos; reported activity, from the last day to the last month.</p></div>
       </section>
+
+      <ActivityMatrix key={`activity:${context.workspace.id}`} snapshot={activity} setup={setup ? <AgentConnectControl instanceUrl={setup.origin} mcpUrl={setup.mcpAvailable ? setup.mcpUrl : undefined} basePrompt={setup.prompt} /> : undefined}>
+        <section className="activity-weekly" aria-labelledby="weekly-chart-heading">
+          <div className="activity-chart-heading"><h3 id="weekly-chart-heading">Last 7 days</h3><p>{ledger.periodLabel}</p></div>
+          <div className="activity-weekly-plot"><SketchLedgerChart days={ledger.days} agents={ledger.agents} periodLabel={ledger.periodLabel} /></div>
+          <p className="activity-help">Reported completed actions by agent, each day.</p>
+          <div className="activity-chart-share"><StaticShareCard data={shareData} label="Share weekly recap" /></div>
+        </section>
+      </ActivityMatrix>
 
       <AgentBriefing key={context.workspace.id} {...briefing} defaultOpen={params.briefing === "weekly"} />
-
-      <section className="ledger-card">
-        <div className="ledger-total"><strong>{ledger.totalChanges}</strong><div><h2>actions completed this week</h2><p>{ledger.periodLabel} · Completed changes reported by your agents.</p></div></div>
-        <SketchLedgerChart days={ledger.days} agents={ledger.agents} periodLabel={ledger.periodLabel} />
-      </section>
 
       <section className="ledger-highlights" aria-label="Weekly highlights">
         <div><Bot size={18} /><span>Most active agent</span><strong>{ledger.topAgent?.name ?? "—"}</strong><small>{ledger.topAgent ? `${ledger.topAgent.count} changes` : "No completed changes"}</small></div>

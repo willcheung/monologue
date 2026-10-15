@@ -194,7 +194,7 @@ AI agent → Monologue skill → POST /api/actions → validation + dedupe → S
                                                                   └─ Browser-generated static share cards
 ```
 
-Next.js renders the product directly from one SQLite-compatible database through Prisma. Local mode uses one SQLite file; hosted mode uses workspace-scoped libSQL/Turso. The weekly ledger is aggregated live from actions. Share cards are rendered as static PNGs in the browser and are never uploaded or connected to future activity. The API and product pages use the same validation and data-access layer, with no queue, cache, analytics service, or charting framework.
+Next.js renders the product directly from one SQLite-compatible database through Prisma. Local mode uses one SQLite file; hosted mode uses workspace-scoped libSQL/Turso. Recap combines a [28-day activity matrix and current streak](docs/ACTIVITY_MATRIX.md), the seven-day ledger and a last-24-hours report. The activity matrix and weekly ledger aggregate recorded completed actions at the same capture time. Share cards are rendered as static PNGs in the browser and are never uploaded or connected to future activity. The API and product pages use the same validation and data-access layer, with no queue, cache, analytics service, or charting framework.
 
 Deployment architecture and the Google sign-in boundary are documented in [`docs/HOSTED_ARCHITECTURE.md`](docs/HOSTED_ARCHITECTURE.md). Both runtime modes share the same application, API, persistence layer, and portable skill.
 
@@ -206,12 +206,15 @@ npm run typecheck
 npm test
 npm run test:libsql
 npm run test:reporter
+npm run test:browser
 npm run build
 ```
 
 Pull requests and pushes to `main` run these checks in GitHub Actions, alongside the existing public-repository privacy check. CI uses Node.js 22, Python 3.12, and disposable local databases; it needs no hosted credentials and does not deploy. `typecheck` generates Next.js route types before checking TypeScript so it works in a fresh checkout (generate the Prisma client first with `npx prisma generate`).
 
-`test:libsql` reruns the MCP, workspace, and REST/connection route integration tests using the libSQL adapter. `test:reporter` uses Python's standard library to test the portable reporter without network calls or Keychain access. The route tests exercise real validation, credentials, and persistence; only browser session resolution is mocked. Browser navigation and real Google sign-in are outside these tests.
+`test:libsql` reruns the MCP, workspace, and REST/connection route integration tests using the libSQL adapter. `test:reporter` uses Python's standard library to test the portable reporter without network calls or Keychain access. The route tests exercise real validation, credentials, and persistence; only browser session resolution is mocked. Real Google sign-in is outside these tests.
+
+For the browser suite, install Chromium once with `npx playwright install chromium` (`npx playwright install --with-deps chromium` on Linux). `test:browser` starts its own loopback server and disposable database with synthetic accounts. It checks Recap navigation, focus, responsive charts, static sharing and real PNG exports. It never uses production credentials or data. Native share sheets are simulated; physical-device behavior needs separate verification.
 
 To enforce the checks before merging, make `Quality checks` and the existing `privacy` job required in your GitHub branch rules for `main`.
 

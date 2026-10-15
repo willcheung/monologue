@@ -26,7 +26,14 @@ export type WeeklyLedger = {
 
 const DAY = 24 * 60 * 60 * 1000;
 
-function dayKey(date: Date, timeZone: string) {
+export function validatedTimeZone(timeZone: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone }).format();
+    return timeZone;
+  } catch { return "UTC"; }
+}
+
+export function dayKey(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-US", {
     year:"numeric",
     month:"2-digit",
@@ -37,12 +44,12 @@ function dayKey(date: Date, timeZone: string) {
   return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
-function shiftDayKey(value: string, days: number) {
+export function shiftDayKey(value: string, days: number) {
   const date = new Date(`${value}T12:00:00Z`);
   return new Date(date.getTime() + days * DAY).toISOString().slice(0, 10);
 }
 
-function keyDate(value: string) {
+export function keyDate(value: string) {
   return new Date(`${value}T12:00:00Z`);
 }
 
@@ -68,6 +75,7 @@ export function buildWeeklyLedger(actions: LedgerAction[], now = new Date(), tim
   const endKey = dayKey(now, timeZone);
   const startKey = shiftDayKey(endKey, -6);
   const inRange = actions.filter((action) => {
+    if (!Number.isFinite(action.occurredAt.getTime()) || action.occurredAt > now) return false;
     const actionKey = dayKey(action.occurredAt, timeZone);
     return actionKey >= startKey && actionKey <= endKey;
   });

@@ -23,7 +23,8 @@
     "test:onboarding:clients": "MONOLOGUE_NATIVE_TESTS=1 vitest run tests/onboarding-clients.test.ts",
     "test:onboarding:sessions": "MONOLOGUE_SESSION_TESTS=1 vitest run tests/onboarding-sessions.test.ts",
     "test:onboarding:install": "MONOLOGUE_INSTALL_TESTS=1 vitest run tests/onboarding-install.test.ts",
-    "test:onboarding:app-server": "MONOLOGUE_APP_SERVER_TESTS=1 vitest run tests/onboarding-protocol.test.ts"
+    "test:onboarding:app-server": "MONOLOGUE_APP_SERVER_TESTS=1 vitest run tests/onboarding-protocol.test.ts",
+    "test:browser": "prisma generate && playwright test"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.5",
@@ -41,6 +42,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "@tailwindcss/postcss": "latest",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",

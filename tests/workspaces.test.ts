@@ -20,6 +20,7 @@ import { isWorkspaceDev } from "@/lib/runtime";
 import { requireSameOrigin } from "@/lib/workspace-http";
 import { listBriefingConnections } from "@/lib/briefing-connections";
 import { mcpResource } from "@/lib/mcp-oauth";
+import { getWorkspaceActivity } from "@/lib/workspace-activity";
 
 let directory: string;
 beforeAll(async () => {
@@ -43,6 +44,46 @@ const bearer = (key: string) => new Request("http://localhost/api/actions", { he
 const settings = { emailEnabled: true, slackEnabled: true, slackChannel: "#updates", hour: 9, timeZone: "America/Los_Angeles" };
 
 describe("shared workspaces", () => {
+  it("aggregates only the requested workspace, across bounded batches, without private action content", async () => {
+    await fixture.db.user.create({ data: { id: "activity-owner", name: "Fixture", email: "activity-owner@example.test", emailVerified: true } });
+    const workspace = await createSharedWorkspace("activity-owner", "Activity test");
+    const personal = await ensurePersonalWorkspace("activity-owner");
+    const now = new Date("2026-10-14T12:00:00Z");
+    for (const id of ["matrix-agent-a", "matrix-agent-b"]) await fixture.db.agent.create({ data: { id, workspaceId: workspace.id, name: "Same name" } });
+    // Cross the batch boundary to detect skipped or double-counted persisted rows.
+    await fixture.db.action.createMany({ data: Array.from({ length: 503 }, (_, i) => ({
+      workspaceId: workspace.id, agentId: i % 2 ? "matrix-agent-a" : "matrix-agent-b", agentName: "Same name",
+      verb: "Sent", summary: "PRIVATE CUSTOMER CONTENT", metadata: { secret: "PRIVATE METADATA" },
+      category: "communication", system: "Email", status: "completed", occurredAt: new Date("2026-10-13T12:00:00Z"),
+    })) });
+    for (const [workspaceId, status, occurredAt] of [[personal.id, "completed", now], [workspace.id, "pending", now], [workspace.id, "failed", now], [workspace.id, "completed", new Date("2026-10-14T12:00:00.001Z")], [workspace.id, "completed", new Date("2026-09-16T23:59:59Z")]] as const) {
+      await fixture.db.action.create({ data: { workspaceId, status, occurredAt, agentName: "Excluded", verb: "Sent", summary: "Excluded", category: "communication", system: "Email" } });
+    }
+    const result = await getWorkspaceActivity(workspace.id, now, "UTC");
+    expect(result).toMatchObject({ totalActions: 503, activeAgents: 2, activeDays: 1 });
+    expect(result).not.toHaveProperty("agents");
+    expect(result).not.toHaveProperty("apps");
+    expect(result).not.toHaveProperty("categories");
+    expect(JSON.stringify(result)).not.toMatch(/PRIVATE|matrix-agent|workspaceId|reportedBy|metadata|summary/);
+    expect((await getWorkspaceActivity(personal.id, now)).totalActions).toBe(1);
+    expect(await workspaceAccess(fixture.db, workspace.id, "outsider")).toBeNull();
+  });
+  it("continues a workspace streak beyond the matrix window and breaks on a full missing day", async () => {
+    await fixture.db.user.create({ data: { id: "streak-owner", name: "Streak fixture", email: "streak@example.test", emailVerified: true } });
+    const workspace = await createSharedWorkspace("streak-owner", "Long streak");
+    const other = await createSharedWorkspace("streak-owner", "Other streak");
+    const now = new Date("2026-10-14T12:00:00Z");
+    const days = Array.from({ length: 40 }, (_, index) => new Date(now.getTime() - index * 86400000));
+    const record = { agentName: "Fixture", verb: "Updated", summary: "Private calendar", category: "calendar", system: "Calendar", status: "completed" };
+    await fixture.db.action.createMany({ data: days.flatMap(occurredAt => Array.from({ length: 15 }, () => ({ ...record, workspaceId: workspace.id, occurredAt }))) });
+    expect(await getWorkspaceActivity(workspace.id, now)).toMatchObject({ currentStreak: 40, totalActions: 420, activeDays: 28 });
+    await fixture.db.action.deleteMany({ where: { workspaceId: workspace.id, occurredAt: now } });
+    expect(await getWorkspaceActivity(workspace.id, now)).toMatchObject({ currentStreak: 39, totalActions: 405 });
+    await fixture.db.action.deleteMany({ where: { workspaceId: workspace.id, occurredAt: days[1] } });
+    await fixture.db.action.create({ data: { ...record, workspaceId: other.id, occurredAt: days[1] } });
+    await fixture.db.action.create({ data: { ...record, workspaceId: workspace.id, occurredAt: days[1], status: "pending" } });
+    expect(await getWorkspaceActivity(workspace.id, now)).toMatchObject({ currentStreak: 0, totalActions: 390 });
+  });
   it("backfills existing personal ownership without moving its feed", async () => {
     const workspace = await ensurePersonalWorkspace("legacy-owner");
     expect(workspace).toMatchObject({ id: "legacy-workspace", name: "Existing feed", kind: "personal", personalOwnerId: "legacy-owner" });
