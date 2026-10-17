@@ -39,7 +39,7 @@ export function shareCardSnapshot(data: ShareCardData, options: { includeNames: 
 
 export function shareSummary(data: ShareCardData) {
   const summary = data.kind === "activity"
-    ? `My AI crew this month. ${data.totalActions} reported completed actions · ${data.activeAgents} active agents · ${data.currentStreak}-day current streak. ${data.periodLabel} (${data.timeZone}), 28 calendar days. Recorded activity may be incomplete.`
+    ? `My AI crew this month. ${data.totalActions} reported completed actions · ${data.activeAgents} active agents · ${data.currentStreak}-day current streak. ${data.periodLabel} (${data.timeZone}), 28 calendar days.`
     : data.kind === "recap"
     ? `My AI crew reported ${data.totalChanges} completed actions from ${data.periodLabel}. ${data.activeAgents} agents were active.${data.activeAgents ? ` Most active: ${data.topAgent}.` : ""}`
     : `${data.agentName} has ${data.totalActions} recorded actions since ${data.activeSince}.`;

@@ -46,7 +46,6 @@ export function ActivityMatrix({ snapshot, setup, children }: { snapshot: Activi
   return <section className="activity-section" aria-labelledby={`${id}-heading`}>
     <div className="activity-heading">
       <h2 id={`${id}-heading`}>Your agents’ activity</h2>
-      <p>Totals for the last 28 days · {snapshot.timeZone}</p>
     </div>
     <dl className="activity-stats" aria-label="28-day totals and current activity streak">
       <div className="activity-total"><dd>{snapshot.totalActions.toLocaleString("en-US")}</dd><dt>reported completed actions</dt></div>
@@ -77,6 +76,5 @@ export function ActivityMatrix({ snapshot, setup, children }: { snapshot: Activi
       </section>
       {children}
     </div>
-    <p className="activity-note">Recorded activity may be incomplete. Days with zero mean no completed actions were recorded. Streaks count consecutive active days; today stays open until the day ends.</p>
   </section>;
 }
