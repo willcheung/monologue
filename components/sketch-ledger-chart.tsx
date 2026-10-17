@@ -18,11 +18,11 @@ export function SketchLedgerChart({ days, agents, periodLabel }: { days: Day[]; 
     const max = Math.max(1, ...days.map((day) => day.count));
     const baseline = 184;
     const plotHeight = 138;
-    const barWidth = 45;
-    const step = 91;
-    const startX = 28;
+    const barWidth = 24;
+    const step = 48;
+    const startX = 18;
 
-    svg.appendChild(chart.line(16, baseline, 674, baseline, { stroke:"#34322d", strokeWidth:1.5, roughness:1.1, seed:91 }));
+    svg.appendChild(chart.line(8, baseline, 342, baseline, { stroke:"#34322d", strokeWidth:1.5, roughness:1.1, seed:91 }));
 
     days.forEach((day, dayIndex) => {
       const x = startX + dayIndex * step;
@@ -74,7 +74,7 @@ export function SketchLedgerChart({ days, agents, periodLabel }: { days: Day[]; 
   }, [agents, days]);
 
   return <div className="sketch-ledger-chart">
-    <svg ref={svgRef} viewBox="0 0 700 240" role="img" aria-label={`Hand-drawn completed actions by agent and day from ${periodLabel}`} />
+    <svg ref={svgRef} viewBox="0 0 350 240" role="img" aria-label={`Hand-drawn completed actions by agent and day from ${periodLabel}`} />
     <div className="sketch-chart-legend">{agents.map((agent, index) => <span key={agent.id ?? agent.name}><i style={{ background:agentColor(index) }} />{agent.name}</span>)}</div>
   </div>;
 }

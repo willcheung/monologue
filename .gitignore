@@ -4,6 +4,8 @@ node_modules
 prisma/*.db
 prisma/*.db-journal
 coverage
+playwright-report/
+test-results/
 *.tsbuildinfo
 .DS_Store
 __pycache__/

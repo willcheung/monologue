@@ -59,7 +59,7 @@ describe("weekly agent ledger", () => {
       action(new Date(range.from.getTime() - 1).toISOString()),
       action(range.from.toISOString()), action(range.to.toISOString()),
       action(new Date(range.to.getTime() + 1).toISOString()),
-    ], now, "America/Los_Angeles");
+    ], range.to, "America/Los_Angeles");
     expect(ledger.totalChanges).toBe(2);
   });
   it("keeps calendar-day boundaries correct through daylight-saving changes", () => {

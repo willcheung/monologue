@@ -42,3 +42,13 @@ jobs:
       - run: npm run test:libsql
       - run: npm run test:reporter
       - run: npm run build
+      - name: Install browser runtime
+        run: npx --no-install playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Preserve browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-results
+          path: test-results/
+          if-no-files-found: ignore

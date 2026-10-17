@@ -7,7 +7,7 @@ export async function getWeeklyLedger(workspaceId: string, now = new Date(), tim
   // calendar-day boundaries. This safely covers every UTC offset.
   const start = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000);
   const actions = await db.action.findMany({
-    where: { workspaceId, occurredAt: { gte:start } },
+    where: { workspaceId, occurredAt: { gte:start, lte:now } },
     select: {
       occurredAt: true,
       status: true,
