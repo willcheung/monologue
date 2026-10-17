@@ -223,6 +223,7 @@ export function StaticShareCard({ data: originalData, label = "Share" }: { data:
   const trigger = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const headingId = useId();
+  const heading = data.kind === "activity" ? "Share your activity" : data.kind === "recap" ? "Share your week" : "Share agent profile";
   const actionLock = useRef(false);
   const fileName = data.kind === "activity" ? "monologue-28-day-activity.png" : data.kind === "recap" ? "monologue-7-day-recap.png" : `monologue-${data.agentName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
   const imageReady = preview?.data === data;
@@ -248,8 +249,10 @@ export function StaticShareCard({ data: originalData, label = "Share" }: { data:
     let url: string | undefined;
     async function prepare() {
       try {
-        const font = getComputedStyle(document.body).getPropertyValue("--font-display").trim();
-        const sans = getComputedStyle(document.body).getPropertyValue("--font-sans").trim();
+        // Loading the whole stack also loads Next's optional local Arial face,
+        // which rejects on systems without Arial even when Gaegu is available.
+        const font = getComputedStyle(document.body).getPropertyValue("--font-display").trim().split(",")[0];
+        const sans = getComputedStyle(document.body).getPropertyValue("--font-sans").trim().split(",")[0];
         await Promise.all([document.fonts.load(`700 56px ${font}`), document.fonts.load(`400 24px ${font}`), document.fonts.load(`400 20px ${sans}`), document.fonts.load(`700 20px ${sans}`)]);
         if (cancelled) return;
         const blob = renderPng(data);
@@ -341,8 +344,8 @@ export function StaticShareCard({ data: originalData, label = "Share" }: { data:
       <button className="share-scrim" type="button" tabIndex={-1} aria-label="Close share preview" onClick={() => setOpen(false)} />
       <section className="share-dialog">
         <div className="share-dialog-content">
-        <div className="share-dialog-heading"><div><span className="kicker">Static snapshot</span><h2 id={headingId}>Share without sharing access.</h2><p>This card is an image. It cannot update or reveal future activity.</p></div><button ref={closeButton} type="button" aria-label="Close" onClick={() => setOpen(false)}><X size={20} /></button></div>
-        <div className="share-privacy-options">{data.kind !== "activity" && <><label><input type="checkbox" disabled={busy} checked={includeNames} onChange={(event) => { setIncludeNames(event.target.checked); setNotice(""); }} />Include agent names</label><label><input type="checkbox" disabled={busy} checked={includeApps} onChange={(event) => { setIncludeApps(event.target.checked); setNotice(""); }} />Include apps and action types</label></>}<small>Review the preview before sharing. Saved or shared images cannot be revoked.</small></div>
+        <div className="share-dialog-heading"><div><h2 id={headingId}>{heading}</h2><p>Your feed stays private.</p></div><button ref={closeButton} type="button" aria-label="Close" onClick={() => setOpen(false)}><X size={20} /></button></div>
+        {data.kind !== "activity" && <div className="share-privacy-options"><label><input type="checkbox" disabled={busy} checked={includeNames} onChange={(event) => { setIncludeNames(event.target.checked); setNotice(""); }} />Include agent names</label><label><input type="checkbox" disabled={busy} checked={includeApps} onChange={(event) => { setIncludeApps(event.target.checked); setNotice(""); }} />Include apps and action types</label></div>}
         <div className="activity-image-preview">
           {preview?.data === data ? <Image unoptimized src={preview.url} width={1200} height={630} alt={shareSummary(data)} /> : <p role="status">{previewError || "Preparing your image…"}</p>}
         </div>

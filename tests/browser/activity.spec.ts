@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 
 const fixture = "/recap?workspaceId=browser-activity";
 const matrix = (page: Page) => page.getByRole("region", { name: "Your agents’ activity" });
-const dialog = (page: Page) => page.getByRole("dialog", { name: "Share without sharing access." });
+const dialog = (page: Page) => page.getByRole("dialog", { name: /^Share (your activity|your week|agent profile)$/ });
 const shareText = (page: Page) => dialog(page).getByRole("textbox", { name: "Sharing text" });
 
 test.beforeEach(async ({ page }) => {
@@ -46,6 +46,27 @@ test("28 dates align to weekday rows and chronological weeks, with pointer, keyb
   if (isMobile) await days.nth(12).tap(); else await days.nth(12).hover();
   await expect(section.getByRole("status")).toContainText("20 reported completed actions");
   await section.screenshot({ path: testInfo.outputPath("activity-matrix.png"), style: ".site-header { visibility: hidden; }" });
+});
+
+test("share images use the bundled font when an optional system fallback is unavailable", async ({ page }) => {
+  await page.goto(fixture);
+  expect(await page.evaluate(async () => {
+    const missing = new FontFace("Unavailable share fallback", 'local("__monologue_missing_system_font__")');
+    document.fonts.add(missing);
+    const display = getComputedStyle(document.body).getPropertyValue("--font-display").trim();
+    document.body.style.setProperty("--font-display", `${display}, "Unavailable share fallback"`);
+    try { await missing.load(); return false; } catch { return true; }
+  })).toBe(true);
+  await matrix(page).getByRole("button", { name: "Share activity", exact: true }).click();
+  await expect(dialog(page).getByRole("button", { name: "Save image" })).toBeEnabled();
+  expect(await page.evaluate(() => {
+    const primary = getComputedStyle(document.body).getPropertyValue("--font-display").trim().split(",")[0];
+    return document.fonts.check(`700 56px ${primary}`) && document.fonts.check(`400 24px ${primary}`);
+  })).toBe(true);
+  const previewBytes = await dialog(page).locator("img").evaluate(async image => Array.from(new Uint8Array(await (await fetch((image as HTMLImageElement).src)).arrayBuffer())));
+  const download = page.waitForEvent("download");
+  await dialog(page).getByRole("button", { name: "Save image" }).click();
+  expect(await readFile((await (await download).path())!)).toEqual(Buffer.from(previewBytes));
 });
 
 test("the share dialog contains focus, closes on Escape and restores the trigger", async ({ page }) => {
