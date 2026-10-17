@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { Copy, Download, Share2, X } from "lucide-react";
+import { Download, Share2, X } from "lucide-react";
 import rough from "roughjs";
 import { agentColor } from "@/lib/agent-colors";
 import { SHARE_SITE_LABEL, SHARE_SETUP_URL, shareCardSnapshot, shareSummary, type ShareCardData } from "@/lib/share-card";
@@ -260,7 +260,7 @@ export function StaticShareCard({ data: originalData, label = "Share" }: { data:
         setPreview({ data, blob, url });
         setPreviewError("");
       } catch {
-        if (!cancelled) { setPreview(null); setPreviewError("Could not create the image. You can still copy the sharing text."); }
+        if (!cancelled) { setPreview(null); setPreviewError("Could not create the image. Close and try again."); }
       }
     }
     void prepare();
@@ -309,23 +309,7 @@ export function StaticShareCard({ data: originalData, label = "Share" }: { data:
         setNotice("File sharing is unavailable here. Your image download has started.");
       }
     } catch (error) {
-      if ((error as Error).name !== "AbortError") setNotice("Could not share this image. Try Save image or Copy text.");
-    } finally {
-      actionLock.current = false;
-      setBusy(false);
-    }
-  }
-
-  async function copy() {
-    if (actionLock.current) return;
-    actionLock.current = true;
-    setBusy(true);
-    setNotice("");
-    try {
-      await navigator.clipboard.writeText(shareSummary(data));
-      setNotice("Text copied");
-    } catch {
-      setNotice("Could not copy the text. Select and copy the sharing text.");
+      if ((error as Error).name !== "AbortError") setNotice("Could not share this image. Try Save image.");
     } finally {
       actionLock.current = false;
       setBusy(false);
@@ -336,7 +320,7 @@ export function StaticShareCard({ data: originalData, label = "Share" }: { data:
     <button ref={trigger} className="share-trigger" type="button" onClick={() => { setOpen(true); setNotice(""); setPreview(null); setPreviewError(""); setIncludeNames(false); setIncludeApps(false); }}><Share2 size={16} />{label}</button>
     {open && <dialog ref={dialog} className="share-layer" aria-modal="true" aria-labelledby={headingId} onCancel={event => { event.preventDefault(); setOpen(false); }} onKeyDown={event => {
       if (event.key !== "Tab") return;
-      const items = event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), input:not(:disabled), textarea, a[href]');
+      const items = event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), input:not(:disabled), a[href]');
       const first = items[0], last = items[items.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
@@ -350,10 +334,9 @@ export function StaticShareCard({ data: originalData, label = "Share" }: { data:
           {preview?.data === data ? <Image unoptimized src={preview.url} width={1200} height={630} alt={shareSummary(data)} /> : <p role="status">{previewError || "Preparing your image…"}</p>}
         </div>
         <a className="share-brand-link" href={SHARE_SETUP_URL} target="_blank" rel="noreferrer">{SHARE_SITE_LABEL}</a>
-        <label className="share-text">Sharing text<textarea readOnly value={shareSummary(data)} rows={3} onFocus={event => event.currentTarget.select()} /></label>
         </div>
         <div className="share-dialog-footer">
-        <div className="share-actions"><button type="button" disabled={busy || !imageReady} onClick={share}><Share2 size={16} />Share image</button><button type="button" disabled={busy || !imageReady} onClick={download}><Download size={16} />Save image</button><button type="button" disabled={busy} onClick={copy}><Copy size={16} />Copy text</button></div>
+        <div className="share-actions"><button type="button" disabled={busy || !imageReady} onClick={share}><Share2 size={16} />Share image</button><button type="button" disabled={busy || !imageReady} onClick={download}><Download size={16} />Save image</button></div>
         <div className="share-notice" role="status">{notice}</div>
         </div>
       </section>

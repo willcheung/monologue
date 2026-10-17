@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 const fixture = "/recap?workspaceId=browser-activity";
 const matrix = (page: Page) => page.getByRole("region", { name: "Your agents’ activity" });
 const dialog = (page: Page) => page.getByRole("dialog", { name: /^Share (your activity|your week|agent profile)$/ });
-const shareText = (page: Page) => dialog(page).getByRole("textbox", { name: "Sharing text" });
+const sharePreview = (page: Page) => dialog(page).getByRole("img");
 
 test.beforeEach(async ({ page }) => {
   await page.setExtraHTTPHeaders({ "x-vercel-ip-timezone": "UTC" });
@@ -74,7 +74,7 @@ test("the share dialog contains focus, closes on Escape and restores the trigger
   const close = dialog(page).getByRole("button", { name: "Close", exact: true });
   await expect(close).toBeFocused();
   await page.keyboard.press("Shift+Tab");
-  await expect(dialog(page).getByRole("button", { name: "Copy text" })).toBeFocused();
+  await expect(dialog(page).getByRole("button", { name: "Save image" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(close).toBeFocused();
   for (let i = 0; i < 9; i++) { await page.keyboard.press("Tab"); await expect(dialog(page).locator(":focus")).toHaveCount(1); }
@@ -83,13 +83,12 @@ test("the share dialog contains focus, closes on Escape and restores the trigger
   await expect(matrix(page).getByRole("button", { name: "Share activity" })).toBeFocused();
 });
 
-test("downloads the exact sketch preview PNG without a private breakdown and copies the same snapshot", async ({ page }, testInfo) => {
-  await page.addInitScript(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => { sessionStorage.setItem("copied-share", text); } } }));
+test("downloads the exact sketch preview PNG without a private breakdown", async ({ page }, testInfo) => {
   await openShare(page);
-  await expect(shareText(page)).toHaveValue(/188 reported completed actions · 2 active agents · 6-day current streak/);
-  await expect(shareText(page)).not.toHaveValue(/Fixture|Private activity|customer|metadata|browser-agent|example.test/);
+  await expect(sharePreview(page)).toHaveAttribute("alt", /188 reported completed actions · 2 active agents · 6-day current streak/);
+  await expect(sharePreview(page)).not.toHaveAttribute("alt", /Fixture|Private activity|customer|metadata|browser-agent|example.test/);
   await expect(dialog(page).getByRole("checkbox")).toHaveCount(0);
-  await expect(shareText(page)).not.toHaveValue(/Agents:|Apps:|Action types:/);
+  await expect(sharePreview(page)).not.toHaveAttribute("alt", /Agents:|Apps:|Action types:/);
   await expect(dialog(page).getByRole("button", { name: "Save image" })).toBeEnabled();
   const previewBytes = await dialog(page).locator("img").evaluate(async image => Array.from(new Uint8Array(await (await fetch((image as HTMLImageElement).src)).arrayBuffer())));
   const downloadEvent = page.waitForEvent("download");
@@ -101,13 +100,10 @@ test("downloads the exact sketch preview PNG without a private breakdown and cop
   expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([1200, 630]);
   expect(bytes).toEqual(Buffer.from(previewBytes));
   await download.saveAs(testInfo.outputPath("activity-export.png"));
-  await dialog(page).getByRole("button", { name: "Copy text" }).click();
-  expect(await page.evaluate(() => sessionStorage.getItem("copied-share"))).toBe(await shareText(page).inputValue());
-  await expect(dialog(page).getByRole("status")).toHaveText("Text copied");
   await page.keyboard.press("Escape");
   await matrix(page).getByRole("button", { name: "Share activity" }).click();
   await expect(dialog(page).getByRole("checkbox")).toHaveCount(0);
-  await expect(shareText(page)).not.toHaveValue(/Fixture/);
+  await expect(sharePreview(page)).not.toHaveAttribute("alt", /Fixture/);
 });
 
 test("native cancellation is neutral and unsupported file sharing downloads instead", async ({ page }) => {
@@ -126,7 +122,7 @@ test("native cancellation is neutral and unsupported file sharing downloads inst
   } }));
   await dialog(page).getByRole("button", { name: "Share image" }).click();
   await expect(dialog(page).getByRole("status")).toHaveText("Shared");
-  expect(JSON.parse((await page.evaluate(() => sessionStorage.getItem("native-share")))!)).toEqual({ name: "monologue-28-day-activity.png", type: "image/png", text: await shareText(page).inputValue() });
+  expect(JSON.parse((await page.evaluate(() => sessionStorage.getItem("native-share")))!)).toEqual({ name: "monologue-28-day-activity.png", type: "image/png", text: await sharePreview(page).getAttribute("alt") });
   await page.evaluate(() => Object.defineProperty(navigator, "canShare", { configurable: true, value: () => false }));
   const download = page.waitForEvent("download");
   await dialog(page).getByRole("button", { name: "Share image" }).click();
@@ -134,21 +130,18 @@ test("native cancellation is neutral and unsupported file sharing downloads inst
   await expect(dialog(page).getByRole("status")).toContainText("File sharing is unavailable");
 });
 
-test("clipboard, sharing and image-generation failures never show success", async ({ page }) => {
+test("sharing and image-generation failures never show success", async ({ page }) => {
   await page.addInitScript(() => {
-    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async () => { throw new Error("Denied"); } } });
     Object.defineProperty(navigator, "canShare", { configurable: true, value: () => true });
     Object.defineProperty(navigator, "share", { configurable: true, value: async () => { throw new Error("Denied"); } });
   });
   await openShare(page);
-  await dialog(page).getByRole("button", { name: "Copy text" }).click();
-  await expect(dialog(page).getByRole("status")).toContainText("Could not copy");
   await dialog(page).getByRole("button", { name: "Share image" }).click();
-  await expect(dialog(page).getByRole("status")).toHaveText("Could not share this image. Try Save image or Copy text.");
+  await expect(dialog(page).getByRole("status")).toHaveText("Could not share this image. Try Save image.");
   await page.evaluate(() => { HTMLCanvasElement.prototype.toDataURL = () => { throw new Error("Export unavailable"); }; });
   await page.keyboard.press("Escape");
   await matrix(page).getByRole("button", { name: "Share activity" }).click();
-  await expect(dialog(page).getByText("Could not create the image. You can still copy the sharing text.")).toBeVisible();
+  await expect(dialog(page).getByText("Could not create the image. Close and try again.")).toBeVisible();
   await expect(dialog(page).getByRole("button", { name: "Save image" })).toBeDisabled();
 });
 
@@ -167,7 +160,7 @@ test("workspace selection stays explicit after another tab switches and inaccess
   await page.reload();
   await expect(matrix(page).locator(".activity-total dd")).toHaveText("2");
   await matrix(page).getByRole("button", { name: "Share activity" }).click();
-  await expect(shareText(page)).toHaveValue(/2 reported completed actions · 2 active agents/);
+  await expect(sharePreview(page)).toHaveAttribute("alt", /2 reported completed actions · 2 active agents/);
   await page.keyboard.press("Escape");
   const response = await page.goto("/recap?workspaceId=dev-sam-personal");
   expect(response?.status()).toBe(404);
@@ -218,7 +211,7 @@ test("every share exports its exact branded preview and keeps mobile actions wit
     await page.getByRole("button", { name: label, exact: true }).click();
     const modal = dialog(page);
     await expect(modal.getByRole("button", { name: "Save image" })).toBeEnabled();
-    await expect(shareText(page)).toHaveValue(/https:\/\/www\.monologue\.events\/integrations/);
+    await expect(sharePreview(page)).toHaveAttribute("alt", /https:\/\/www\.monologue\.events\/integrations/);
     expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem("canvas-labels")!).some((label: string) => label.includes("monologue.events")))).toBe(true);
     if (kind === "weekly") {
       // The fixture has two distinct agents with the same private name.
@@ -226,7 +219,9 @@ test("every share exports its exact branded preview and keeps mobile actions wit
       expect(labels).toContain("Agent 1");
       expect(labels).toContain("Agent 2");
     }
-    expect(await shareText(page).evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16);
+    await expect(modal.getByRole("textbox")).toHaveCount(0);
+    await expect(modal.getByRole("button", { name: "Copy text" })).toHaveCount(0);
+    await expect(modal.locator(".share-actions button")).toHaveCount(2);
     await modal.locator(".share-dialog-content").evaluate(element => { element.scrollTop = element.scrollHeight; });
     for (const button of await modal.locator(".share-actions button").all()) {
       const box = (await button.boundingBox())!;

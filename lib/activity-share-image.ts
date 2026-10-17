@@ -66,9 +66,4 @@ export function drawActivityImage(context: CanvasRenderingContext2D, data: Activ
   context.fillStyle = ink;
   context.font = `700 17px ${sans}`;
   context.fillText(`Your agent feed · ${SHARE_SITE_LABEL}`, 60, 594);
-  context.fillStyle = muted;
-  context.textAlign = "right";
-  context.font = `14px ${sans}`;
-  context.fillText("Static snapshot · Recorded activity may be incomplete", 1142, 594);
-  context.textAlign = "left";
 }
