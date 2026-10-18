@@ -36,3 +36,5 @@ __pycache__/
 /tests/*plugin*package*.test.ts
 /docs/CLAUDE_PLUGIN.md
 /docs/OPENAI_PLUGIN_SUBMISSION.md
+
+test-results-auth/

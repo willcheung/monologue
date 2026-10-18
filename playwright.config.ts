@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/browser",
+  testIgnore: "**/auth.spec.ts",
   fullyParallel: false,
   workers: 1,
   forbidOnly: Boolean(process.env.CI),

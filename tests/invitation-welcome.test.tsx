@@ -5,7 +5,7 @@ const fixtures = vi.hoisted(() => ({ info: vi.fn(), context: vi.fn() }));
 vi.mock("@/lib/workspace-invitation-info", () => ({ getWorkspaceInvitationInfo: fixtures.info, invitationToken: (v: unknown) => typeof v === "string" ? v : null }));
 vi.mock("@/lib/workspace", () => ({ getWorkspaceContext: fixtures.context }));
 vi.mock("@/lib/runtime", () => ({ isCloudMode: () => true }));
-vi.mock("@/lib/auth", () => ({ googleSignInConfigured: true }));
+vi.mock("@/lib/auth", () => ({ googleSignInConfigured: true, passwordSignInConfigured: false }));
 vi.mock("@/lib/legal-content", () => ({ legalDocumentsConfigured: () => true }));
 vi.mock("@/components/header", () => ({ Header: () => null }));
 vi.mock("@/components/google-sign-in-button", () => ({ GoogleSignInButton: ({ callbackURL }: { callbackURL: string }) => <button data-callback={callbackURL}>Continue with Google</button> }));

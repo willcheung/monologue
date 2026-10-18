@@ -252,6 +252,19 @@ model Verification {
   @@map("verification")
 }
 
+// Better Auth's durable throttle store, shared by hosted instances.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  // Unix milliseconds are exact within JS's safe integer range. Float also
+  // accepts the REAL values written by the pinned Prisma libSQL adapter.
+  lastRequest Float
+
+  @@index([lastRequest])
+  @@map("rateLimit")
+}
+
 model WorkspaceMember {
   id String @id @default(cuid())
   workspaceId String

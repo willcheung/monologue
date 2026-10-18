@@ -21,3 +21,5 @@ docs/
 .claude-plugin/
 .mcp.json
 scripts/package-*-plugin.mjs
+
+test-results-auth/

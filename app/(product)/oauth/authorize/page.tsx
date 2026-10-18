@@ -11,7 +11,7 @@ import { OAuthConsent } from "@/components/oauth-consent";
 import { isNativeCallback, type OAuthConsentResult } from "@/lib/oauth-completion";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Connect Monologue", robots: { index: false, follow: false }, referrer: "no-referrer" };
+export const metadata: Metadata = { title: "Connect Monologue", robots: { index: false, follow: false }, referrer: "same-origin" };
 export default async function OAuthAuthorizePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const input = await searchParams;
   let validated;
