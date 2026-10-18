@@ -16,7 +16,7 @@
     "db:seed": "node --env-file=.env --import tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "test:mcp": "vitest run tests/mcp.test.ts",
-    "test:libsql": "MCP_TEST_LIBSQL=1 vitest run tests/mcp.test.ts tests/workspaces.test.ts tests/api-routes.test.ts",
+    "test:libsql": "MCP_TEST_LIBSQL=1 vitest run tests/mcp.test.ts tests/workspaces.test.ts tests/api-routes.test.ts tests/password-auth.test.ts",
     "test:reporter": "python3 -m unittest discover -s tests -p '*_test.py'",
     "dev:workspace": "node scripts/workspace-dev.mjs",
     "test:onboarding": "vitest run tests/agent-onboarding.test.tsx tests/setup-context.test.ts tests/setup-prompt.test.ts tests/agent-setup.test.ts tests/mcp-setup.test.tsx tests/mcp-consent.test.tsx tests/oauth-completion.test.tsx tests/onboarding-protocol.test.ts tests/mcp.test.ts tests/api-routes.test.ts",

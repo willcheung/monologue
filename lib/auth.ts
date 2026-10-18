@@ -17,6 +17,7 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   secret: process.env.BETTER_AUTH_SECRET ?? localOnlySecret,
   trustedOrigins: [process.env.BETTER_AUTH_URL ?? "http://localhost:3000"],
+  disabledPaths: passwordConfigured ? ["/change-password", "/request-password-reset", "/reset-password"] : undefined,
   emailAndPassword: {
     enabled: passwordConfigured,
     disableSignUp: true,
@@ -63,6 +64,29 @@ export const auth = betterAuth({
     }),
   },
 });
+
+// The provider throttles before resolving a route. Keep attacker-chosen paths
+// out of its durable store; only finite static endpoints and configured social
+// callbacks may reach it. Recovery links are unavailable in this operator-only mode.
+if (passwordConfigured) {
+  const supportedPaths = new Set(Object.values(auth.api).flatMap(endpoint =>
+    "path" in endpoint && typeof endpoint.path === "string" && !endpoint.path.includes(":")
+      ? [`/api/auth${endpoint.path}`] : []));
+  for (const provider of Object.keys(auth.options.socialProviders)) supportedPaths.add(`/api/auth/callback/${provider}`);
+  const providerHandler = auth.handler;
+  let nextPruneAt = 0;
+  auth.handler = async request => {
+    if (!supportedPaths.has(new URL(request.url).pathname)) return new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } });
+    const now = Date.now();
+    if (now >= nextPruneAt) {
+      nextPruneAt = now + 60_000;
+      // Retain much longer than any configured throttle window. Cleanup runs
+      // even when every client is new; the index bounds its scan to old rows.
+      await db.rateLimit.deleteMany({ where: { lastRequest: { lt: now - 24 * 60 * 60 * 1000 } } });
+    }
+    return providerHandler(request);
+  };
+}
 
 export const googleSignInConfigured = googleConfigured;
 export const passwordSignInConfigured = passwordConfigured;

@@ -45,10 +45,13 @@ jobs:
       - name: Install browser runtime
         run: npx --no-install playwright install --with-deps chromium
       - run: npm run test:browser
+      - run: npm run test:browser:auth
       - name: Preserve browser failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: browser-test-results
-          path: test-results/
+          path: |
+            test-results/
+            test-results-auth/
           if-no-files-found: ignore

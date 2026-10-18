@@ -261,6 +261,7 @@ model RateLimit {
   // accepts the REAL values written by the pinned Prisma libSQL adapter.
   lastRequest Float
 
+  @@index([lastRequest])
   @@map("rateLimit")
 }
 

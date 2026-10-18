@@ -178,6 +178,12 @@ change single-user mode. Existing deployments retain their Google configuration.
 
 Password login uses Better Auth's password hashes, origin/CSRF checks and browser
 sessions. Public password signup is disabled and email verification is required.
+Unknown auth paths are rejected before persistent throttling. Supported auth
+routes use a finite path set from the provider; expired buckets are pruned at
+most once per minute per process with a 24-hour retention period. Public password
+change and reset routes are disabled in this mode so credential rotation remains
+an operator task.
+
 Only separately provisioned, verified identities with a provider credential can
 sign in. An existing Google identity does not acquire a password by entering its
 email. Keep the provider's verified-email account-linking protections; do not

@@ -137,6 +137,35 @@ describe("Provider password sign-in boundary", () => {
     } finally { vi.stubEnv("VERCEL", ""); }
   });
 
+  it("rejects arbitrary auth paths before any durable throttle writes", async () => {
+    for (let index = 0; index < 12; index++) {
+      const response = await auth.handler(new Request(`${origin}/api/auth/not-a-route-${index}`));
+      expect(response.status).toBe(404);
+    }
+    expect(await fixture.db.rateLimit.count()).toBe(0);
+    expect((await auth.handler(new Request(`${origin}/api/auth/callback/not-configured`))).status).toBe(404);
+    expect(await fixture.db.rateLimit.count()).toBe(0);
+  });
+
+  it("prunes stale throttle buckets on a new supported request", async () => {
+    await fixture.db.rateLimit.create({ data: { id: "stale", key: "old-client-unused-path", count: 1, lastRequest: Date.now() - 25 * 60 * 60 * 1000 } });
+    vi.resetModules();
+    const fresh = (await import("@/lib/auth")).auth;
+    expect((await fresh.handler(new Request(`${origin}/api/auth/ok`))).status).toBe(200);
+    expect(await fixture.db.rateLimit.findUnique({ where: { id: "stale" } })).toBeNull();
+  });
+
+  it("blocks public credential changes and recovery even for an authenticated account", async () => {
+    const response = await login();
+    expect(response.status).toBe(200);
+    const sessionCookie = cookie(response);
+    const credential = await fixture.db.account.findFirstOrThrow({ where: { userId: "login", providerId: "credential" } });
+    expect((await post(auth, "change-password", { currentPassword: password, newPassword: "Disposable-replacement-test-only!" }, { cookie: sessionCookie })).status).toBe(404);
+    expect((await post(auth, "request-password-reset", { email: "login@example.test" })).status).toBe(404);
+    expect((await post(auth, "reset-password", { token: "not-a-reset-token", newPassword: "Disposable-replacement-test-only!" })).status).toBe(404);
+    expect((await fixture.db.account.findUniqueOrThrow({ where: { id: credential.id } })).password === credential.password).toBe(true);
+  });
+
   it("sets Secure cookies on an HTTPS origin", async () => {
     const httpsOrigin = "https://auth.example.test";
     const secure = betterAuth({ ...auth.options, baseURL: httpsOrigin, trustedOrigins: [httpsOrigin] });

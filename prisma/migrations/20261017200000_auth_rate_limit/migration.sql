@@ -6,3 +6,5 @@ CREATE TABLE "rateLimit" (
 );
 
 CREATE UNIQUE INDEX "rateLimit_key_key" ON "rateLimit"("key");
+
+CREATE INDEX "rateLimit_lastRequest_idx" ON "rateLimit"("lastRequest");
