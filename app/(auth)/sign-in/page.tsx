@@ -47,10 +47,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
         {legalDocumentsConfigured() && <p className="auth-legal-notice">{passwordSignInConfigured ? "By signing in" : <>By clicking <strong>Continue with Google</strong></>}, you agree to the <Link href="/terms">Terms of Service</Link> and acknowledge the <Link href="/privacy">Privacy Policy</Link>.</p>}
         {!googleSignInConfigured && <p className="setup-note">Google sign-in is ready in code. Add the Google OAuth environment variables to activate it.</p>}
         <small>Google sign-in requests only your basic identity.</small>
-        {passwordSignInConfigured && <>
-          <p className="auth-divider">or use email</p>
-          <PasswordSignInForm callbackURL={unavailableInvite ? "/feed" : callbackURL} />
-        </>}
+        {passwordSignInConfigured && <PasswordSignInForm callbackURL={unavailableInvite ? "/feed" : callbackURL} />}
         <Link href="/">← Back home</Link>
       </section>
     </main>

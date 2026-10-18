@@ -4,6 +4,13 @@ import { expect, test, type Page, type APIRequestContext } from "@playwright/tes
 const origin = "http://localhost:3102";
 const email = "password@example.test";
 const password = "Disposable-browser-password-only!";
+test.beforeAll(async ({ request }) => {
+  // Compile the protected destination before browser navigation: development
+  // compilation can replace client chunks, whereas production builds are ready.
+  const response = await request.get("/feed");
+  expect(response.status()).toBe(200);
+  expect(new URL(response.url()).pathname).toBe("/sign-in");
+});
 test.beforeEach(async ({ page }, testInfo) => {
   const testIndex = testInfo.title.startsWith("password") ? 1 : testInfo.title.startsWith("denying") ? 2 : 3;
   const projectIndex = testInfo.project.name === "mobile" ? 10 : 0;
@@ -13,6 +20,7 @@ test.beforeEach(async ({ page }, testInfo) => {
 });
 async function signIn(page: Page) {
   await page.waitForLoadState("networkidle");
+  if (!await page.getByLabel("Email", { exact: true }).isVisible()) await page.getByRole("button", { name: "Sign in with email", exact: true }).click();
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByLabel("Password", { exact: true }).press("Enter");
@@ -40,7 +48,7 @@ test("password sign-in preserves OAuth, explicit consent connects scoped MCP, an
   const flow = await authorization(context.request);
   await page.route("https://client.example.test/callback**", route => route.fulfill({ contentType: "text/html", body: "<h1>Local client callback</h1>" }));
   await page.goto(flow.path);
-  await expect(page.getByRole("form", { name: "Sign in with email" })).toBeVisible();
+  await expect(page.getByRole("form", { name: "Sign in with email" })).toBeHidden();
   const next = new URL(page.url()).searchParams.get("next")!;
   expect(new URL(next, origin).searchParams.get("state")).toBe(flow.state);
   await signIn(page);
@@ -82,6 +90,7 @@ test("password sign-in preserves OAuth, explicit consent connects scoped MCP, an
   await expect(page.getByText("Booked a table for Saturday dinner.", { exact: true })).toHaveCount(0);
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Workspaces" }).click();
+  await expect(page.getByRole("button", { name: "Workspaces" })).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByLabel("Switch workspace").getByRole("listitem")).toHaveCount(1);
   await page.screenshot({ path: testInfo.outputPath("password-login-feed.png") });
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
@@ -114,13 +123,48 @@ test("denying consent creates no connection and returns the original state", asy
 test("failed login is accessible, recoverable, and an unsafe return falls back to the feed", async ({ page }, testInfo) => {
   await page.goto("/sign-in?next=https%3A%2F%2Fattacker.example%2F");
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Sign in with email", exact: true }).click();
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill("incorrect-password");
-  await page.getByRole("button", { name: "Sign in with email", exact: true }).click();
+  await page.getByRole("form", { name: "Sign in with email" }).getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("form", { name: "Sign in with email" }).getByRole("alert")).toHaveText("Unable to sign in. Check your email and password.");
   await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("password-login-error.png") });
   await signIn(page);
   await expect(page).toHaveURL(`${origin}/feed`);
+});
+
+test("email disclosure supports keyboard and clears hidden credentials", async ({ page }, testInfo) => {
+  await page.goto("/sign-in");
+  await page.waitForLoadState("networkidle");
+  const disclosure = page.getByRole("button", { name: "Sign in with email", exact: true });
+  const form = page.getByRole("form", { name: "Sign in with email" });
+  const emailField = page.getByLabel("Email", { exact: true });
+  const passwordField = page.getByLabel("Password", { exact: true });
+  await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+  await expect(form).toBeHidden();
+  await page.screenshot({ path: testInfo.outputPath("email-login-collapsed.png"), fullPage: true });
+  await disclosure.focus();
+  await disclosure.press("Enter");
+  await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+  await expect(emailField).toBeFocused();
+  await expect(form).toContainText("Existing email accounts only. Email sign-up is not available.");
+  await emailField.press("Tab");
+  await expect(passwordField).toBeFocused();
+  await emailField.fill(email);
+  await passwordField.fill("Disposable-not-submitted-password!");
+  await disclosure.focus();
+  await disclosure.press("Space");
+  await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+  await expect(disclosure).toBeFocused();
+  await expect(form).toBeHidden();
+  await disclosure.press("Space");
+  await expect(emailField).toBeFocused();
+  await expect(emailField).toHaveValue("");
+  await expect(passwordField).toHaveValue("");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: testInfo.outputPath("email-login-expanded.png"), fullPage: true });
 });
