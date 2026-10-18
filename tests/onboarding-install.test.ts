@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { spawn, execFile, type ChildProcess } from "node:child_process";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
@@ -15,6 +15,7 @@ import { buildSetupPrompt } from "@/lib/setup-prompt";
 import { loopbackServer } from "./helpers/loopback-server";
 import { prepareInstallProfile, runInstallSession, installedSkillFiles } from "./helpers/install-session";
 import type { SessionClient } from "./helpers/agent-session";
+import { migrateFixture } from "./helpers/migrate-fixture";
 
 const enabled = process.env.MONOLOGUE_INSTALL_TESTS === "1";
 const clients: SessionClient[] = ["claude-code", "codex"];
@@ -44,12 +45,9 @@ describe.skipIf(!enabled)("copied instructions → native OAuth → fresh-sessio
       probe.listen(3112, "127.0.0.1", () => probe.close(error => error ? reject(error) : resolve()));
     });
     directory = await mkdtemp(join(tmpdir(), "monologue-install-"));
-    db = new PrismaClient({ datasourceUrl: `file:${join(directory, "app.db")}` });
-    for (const migration of (await readdir("prisma/migrations")).sort()) {
-      if (migration === "migration_lock.toml") continue;
-      const sql = await readFile(`prisma/migrations/${migration}/migration.sql`, "utf8");
-      for (const statement of sql.split(";").map(value => value.trim()).filter(Boolean)) await db.$executeRawUnsafe(statement);
-    }
+    const datasourceUrl = `file:${join(directory, "app.db")}`;
+    await migrateFixture(datasourceUrl);
+    db = new PrismaClient({ datasourceUrl });
     await db.user.create({ data: { id: "dev-owner", name: "Install QA", email: "install-qa@example.test" } });
     await db.workspace.create({ data: { id: workspace.id, name: workspace.name, ownerId: "dev-owner", personalOwnerId: "dev-owner" } });
     await db.workspace.create({ data: { id: "install-qa-other", name: "Other QA workspace", kind: "team", ownerId: "dev-owner" } });

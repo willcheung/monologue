@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, isAbsolute, join } from "node:path";
 import { PrismaClient } from "@prisma/client";
@@ -11,6 +11,7 @@ import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 import { codexAppServer } from "./helpers/codex-app-server";
 import { loopbackServer } from "./helpers/loopback-server";
+import { migrateFixture } from "./helpers/migrate-fixture";
 
 const fixture = vi.hoisted(() => ({ db: undefined as unknown as PrismaClient }));
 vi.mock("@/lib/db", () => ({ get db() { return fixture.db; } }));
@@ -27,12 +28,9 @@ let directory: string;
 let server: Awaited<ReturnType<typeof loopbackServer>>;
 beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "monologue-onboarding-"));
-  fixture.db = new PrismaClient({ datasourceUrl: `file:${join(directory, "test.db")}` });
-  for (const migration of (await readdir("prisma/migrations")).sort()) {
-    if (migration === "migration_lock.toml") continue;
-    const sql = await readFile(`prisma/migrations/${migration}/migration.sql`, "utf8");
-    for (const statement of sql.split(";").map(s => s.trim()).filter(Boolean)) await fixture.db.$executeRawUnsafe(statement);
-  }
+  const datasourceUrl = `file:${join(directory, "test.db")}`;
+  await migrateFixture(datasourceUrl);
+  fixture.db = new PrismaClient({ datasourceUrl });
   for (const id of ["chosen", "foreign"]) {
     await fixture.db.user.create({ data: { id, name: `Fixture ${id}`, email: `${id}@example.test` } });
     await fixture.db.workspace.create({ data: { id, name: `Fixture ${id}`, ownerId: id } });
