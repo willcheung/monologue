@@ -24,7 +24,8 @@
     "test:onboarding:sessions": "MONOLOGUE_SESSION_TESTS=1 vitest run tests/onboarding-sessions.test.ts",
     "test:onboarding:install": "MONOLOGUE_INSTALL_TESTS=1 vitest run tests/onboarding-install.test.ts",
     "test:onboarding:app-server": "MONOLOGUE_APP_SERVER_TESTS=1 vitest run tests/onboarding-protocol.test.ts",
-    "test:browser": "prisma generate && playwright test"
+    "test:browser": "prisma generate && playwright test",
+    "test:browser:auth": "prisma generate && playwright test --config playwright.auth.config.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.5",

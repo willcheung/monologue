@@ -3,8 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
+import { PasswordSignInForm } from "@/components/password-sign-in-form";
 import { Header } from "@/components/header";
-import { googleSignInConfigured } from "@/lib/auth";
+import { googleSignInConfigured, passwordSignInConfigured } from "@/lib/auth";
 import { safeInternalPath, invitationTokenFromNext } from "@/lib/redirects";
 import { isCloudMode } from "@/lib/runtime";
 import { legalDocumentsConfigured } from "@/lib/legal-content";
@@ -34,7 +35,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
         {invitation ? <>
           <h1>{invitation.invitedByUser.name || "Your teammate"} invited you to {invitation.workspace.name}.</h1>
           <p>See what your team’s AI agents did in one shared feed. Give your agents the context to coordinate work.</p>
-          <p className="auth-invitation-note">Your personal feed stays private. Use the Google account that received the invitation.</p>
+          <p className="auth-invitation-note">Your personal feed stays private. Use the account that received the invitation.</p>
         </> : unavailableInvite ? <>
           <h1>This invitation is unavailable.</h1>
           <p>It may have expired, been cancelled, or already been used. Ask the person who invited you for a new link.</p>
@@ -43,9 +44,13 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
           <p>Sign in to open your private agent feed.</p>
         </>}
         <GoogleSignInButton configured={googleSignInConfigured} callbackURL={unavailableInvite ? "/feed" : callbackURL} />
-        {legalDocumentsConfigured() && <p className="auth-legal-notice">By clicking <strong>Continue with Google</strong>, you agree to the <Link href="/terms">Terms of Service</Link> and acknowledge the <Link href="/privacy">Privacy Policy</Link>.</p>}
+        {legalDocumentsConfigured() && <p className="auth-legal-notice">{passwordSignInConfigured ? "By signing in" : <>By clicking <strong>Continue with Google</strong></>}, you agree to the <Link href="/terms">Terms of Service</Link> and acknowledge the <Link href="/privacy">Privacy Policy</Link>.</p>}
         {!googleSignInConfigured && <p className="setup-note">Google sign-in is ready in code. Add the Google OAuth environment variables to activate it.</p>}
         <small>Google sign-in requests only your basic identity.</small>
+        {passwordSignInConfigured && <>
+          <p className="auth-divider">or use email</p>
+          <PasswordSignInForm callbackURL={unavailableInvite ? "/feed" : callbackURL} />
+        </>}
         <Link href="/">← Back home</Link>
       </section>
     </main>

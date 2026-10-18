@@ -4,6 +4,10 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
+import { hashPassword } from "better-auth/crypto";
+
+const authTest = process.argv.includes("--auth");
+const port = authTest ? "3102" : "3101";
 
 // Own a fresh database on every run; never reuse a developer or hosted database.
 const directory = realpathSync(mkdtempSync(join(tmpdir(), "monologue-browser-")));
@@ -11,7 +15,7 @@ mkdirSync(join(directory, "prisma"));
 const databaseUrl = `file:${join(directory, "prisma/workspace-dev.db")}`;
 writeFileSync(join(directory, "prisma/workspace-dev.db"), "");
 const env = { ...process.env, NODE_ENV: "development", MONOLOGUE_MODE: "cloud", MONOLOGUE_WORKSPACE_DEV: "1", MONOLOGUE_DEMO_MODE: "0", DATABASE_URL: databaseUrl,
-  BETTER_AUTH_URL: "http://localhost:3101", BETTER_AUTH_SECRET: randomBytes(48).toString("base64url"), MONOLOGUE_MCP_ENABLED: "1", NEXT_TELEMETRY_DISABLED: "1" };
+  BETTER_AUTH_URL: `http://localhost:${port}`, BETTER_AUTH_SECRET: randomBytes(48).toString("base64url"), MONOLOGUE_MCP_ENABLED: "1", NEXT_TELEMETRY_DISABLED: "1" };
 for (const key of ["TURSO_DATABASE_URL", "TURSO_AUTH_TOKEN", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "MONOLOGUE_API_KEY", "RESEND_API_KEY", "MONOLOGUE_EMAIL_FROM", "VERCEL", "VERCEL_ENV", "VERCEL_URL", "SENTRY_DSN", "NEXT_PUBLIC_SENTRY_DSN", "SENTRY_AUTH_TOKEN", "SENTRY_ORG", "SENTRY_PROJECT"]) env[key] = "";
 function run(args, cwd = process.cwd()) {
   return new Promise((resolveRun, reject) => {
@@ -42,13 +46,33 @@ try {
       })) });
     }
   } finally { await db.$disconnect(); }
+  if (authTest) {
+    const fixtureDb = new PrismaClient({ datasourceUrl: databaseUrl });
+    try {
+      const id = "browser-password-user";
+      await fixtureDb.user.create({ data: { id, name: "Local sample account", email: "password@example.test", emailVerified: true,
+        accounts: { create: { id: "browser-password-account", accountId: id, providerId: "credential", password: await hashPassword("Disposable-browser-password-only!") } } } });
+      await fixtureDb.workspace.create({ data: { id: "browser-password-workspace", name: "Personal", ownerId: id, personalOwnerId: id,
+        members: { create: { userId: id, role: "owner" } }, actions: { create: { id: "browser-password-sample", agentName: "Sample agent", verb: "Updated", summary: "Updated a sample document.", category: "other", status: "completed", system: "Local fixture" } } } });
+    } finally { await fixtureDb.$disconnect(); }
+    // Exercise real cloud auth against a disposable local libSQL database. The
+    // development identity cookie must not authenticate this fixture.
+    env.MONOLOGUE_WORKSPACE_DEV = "0";
+    env.MONOLOGUE_PASSWORD_SIGN_IN = "1";
+    env.TURSO_DATABASE_URL = databaseUrl;
+    env.TURSO_AUTH_TOKEN = "disposable-local-file-only";
+    env.GOOGLE_CLIENT_ID = "dummy-browser-google-client";
+    env.GOOGLE_CLIENT_SECRET = "dummy-browser-google-secret";
+  } else {
+    env.MONOLOGUE_PASSWORD_SIGN_IN = "0";
+  }
   // Build the same source in our fixture directory: a test must not share a
   // Next.js cache, lock or environment files with an existing development server.
   for (const entry of ["app", "components", "lib", "public", "skills", "package.json", "package-lock.json", "tsconfig.json", "next.config.ts", "postcss.config.mjs", "instrumentation.ts", "instrumentation-client.ts", "sentry.server.config.ts", "sentry.edge.config.ts"]) {
     cpSync(resolve(entry), join(directory, entry), { recursive: true });
   }
   symlinkSync(resolve("node_modules"), join(directory, "node_modules"), "dir");
-  server = spawn(process.execPath, [resolve("node_modules/next/dist/bin/next"), "dev", "--webpack", "--hostname", "127.0.0.1", "--port", "3101"], { cwd: directory, env, stdio: "inherit" });
+  server = spawn(process.execPath, [resolve("node_modules/next/dist/bin/next"), "dev", "--webpack", "--hostname", "127.0.0.1", "--port", port], { cwd: directory, env, stdio: "inherit" });
   for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => server.kill(signal));
   server.on("exit", code => {
     rmSync(directory, { recursive: true, force: true });

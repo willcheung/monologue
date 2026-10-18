@@ -7,6 +7,9 @@ import { isCloudMode, requireCloudEnvironment } from "./runtime";
 requireCloudEnvironment();
 
 const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+// Deployment opt-in; provision verified accounts separately. Never enable signup
+// just to create credentials, or attach a password to an existing Google user.
+const passwordConfigured = isCloudMode() && process.env.MONOLOGUE_PASSWORD_SIGN_IN === "1";
 const localOnlySecret = "monologue-single-user-auth-disabled-secret";
 
 export const auth = betterAuth({
@@ -14,6 +17,23 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   secret: process.env.BETTER_AUTH_SECRET ?? localOnlySecret,
   trustedOrigins: [process.env.BETTER_AUTH_URL ?? "http://localhost:3000"],
+  emailAndPassword: {
+    enabled: passwordConfigured,
+    disableSignUp: true,
+    requireEmailVerification: true,
+    minPasswordLength: 16,
+    maxPasswordLength: 128,
+    revokeSessionsOnPasswordReset: true,
+  },
+  // A shared store is necessary on serverless hosts. Apply the additive
+  // migration before enabling password sign-in. Keep provider defaults otherwise.
+  rateLimit: passwordConfigured ? {
+    enabled: true,
+    storage: "database",
+    window: 60,
+    max: 100,
+    customRules: { "/sign-in/email": { window: 60, max: 5 } },
+  } : undefined,
   socialProviders: googleConfigured ? {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -32,7 +52,17 @@ export const auth = betterAuth({
       },
     },
   },
-  advanced: { database: { joins: true } },
+  advanced: {
+    database: { joins: true },
+    disableCSRFCheck: false,
+    disableOriginCheck: false,
+    // Vercel overwrites this header. Do not trust caller-supplied forwarding
+    // headers for password throttling on the hosted deployment.
+    ...(passwordConfigured && process.env.VERCEL === "1" && {
+      ipAddress: { ipAddressHeaders: ["x-vercel-forwarded-for"] },
+    }),
+  },
 });
 
 export const googleSignInConfigured = googleConfigured;
+export const passwordSignInConfigured = passwordConfigured;

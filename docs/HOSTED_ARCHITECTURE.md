@@ -168,6 +168,41 @@ Replace the example domains with your own deployment origins. Redirect URIs must
 
 Workspace selection is based on explicit membership. Enterprise SSO and Google Workspace domain restrictions remain outside this implementation.
 
+## Optional provisioned-account password sign-in
+
+Set `MONOLOGUE_PASSWORD_SIGN_IN=1` in cloud mode to offer email/password alongside
+Google. Apply committed migrations first: Better Auth uses the `rateLimit` table
+for shared throttling across instances (five email login attempts per minute per
+client IP, including successful logins). The option defaults off and does not
+change single-user mode. Existing deployments retain their Google configuration.
+
+Password login uses Better Auth's password hashes, origin/CSRF checks and browser
+sessions. Public password signup is disabled and email verification is required.
+Only separately provisioned, verified identities with a provider credential can
+sign in. An existing Google identity does not acquire a password by entering its
+email. Keep the provider's verified-email account-linking protections; do not
+broaden trusted providers or allow different-email linking for this path.
+
+Provisioning, mailbox verification and password recovery/rotation are controlled
+operator tasks; there is no public password enrollment or reset UI. Never turn on
+public signup temporarily for provisioning. Credentials and synthetic data must
+be isolated from customer workspaces. Rotation must revoke the identity's browser
+sessions and agent grants as well as replace the password hash. Turning the login
+option off blocks new password logins but does not revoke existing access.
+
+The form carries the validated internal `next` URL through the provider login so
+OAuth state, PKCE challenge, resource, scopes and callback reach the existing
+consent flow unchanged. Password login grants no agent permissions by itself.
+
+On Vercel the password-enabled configuration trusts only the platform-overwritten
+`x-vercel-forwarded-for` IP header. Self-hosted deployments must restrict origin
+access to a trusted reverse proxy and overwrite forwarded client-IP headers.
+Confirm rate-limit behavior through the actual host before enabling the option.
+
+Run `npm run test:browser:auth` for real local cloud-session login and OAuth checks
+against a fresh local libSQL database, without development account impersonation.
+These checks do not establish Google callback or hosted-client compatibility.
+
 ## Hosted data ownership
 
 The hosted data model adds `Workspace`, `Agent`, and `ApiKey` records and places `workspaceId` on every `Action`. An Agent is the stable identity behind one or more connections; its display name, platform, skill version, and connecting user are server-owned context rather than trusted action fields.

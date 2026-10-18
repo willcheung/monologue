@@ -497,3 +497,15 @@ dialog.share-layer:not([open]) { display: none; }
   .activity-stats dd { font-size: 32px; }
   .activity-stats dt { font-size: 16px; }
 }
+
+/* Optional provisioned-account sign-in, using the shared auth surface. */
+.auth-divider { display:flex; align-items:center; gap:12px; margin:24px 0 18px; font-size:12px; }
+.auth-divider::before,.auth-divider::after { content:""; flex:1; height:1px; background:var(--line); }
+.password-sign-in { display:grid; gap:10px; text-align:left; }
+.password-sign-in label { font-size:13px; font-weight:650; }
+.password-sign-in input { width:100%; min-width:0; min-height:46px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); font:inherit; font-size:16px; }
+.password-sign-in input:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+.password-sign-in button { width:100%; margin-top:6px; cursor:pointer; font-size:14px; }
+.password-sign-in button:disabled { opacity:.6; cursor:wait; }
+.password-sign-in [role=alert] { margin:2px 0; color:var(--ink); font-size:13px; line-height:1.5; }
+.password-sign-in small { margin-top:4px; text-align:center; }
