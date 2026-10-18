@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
 import { createClient as createLibsqlClient } from "@libsql/client";
+import { migrateFixture } from "./helpers/migrate-fixture";
 
 const fixture = vi.hoisted(() => ({ metadata: vi.fn(), db: undefined as unknown as import("@prisma/client").PrismaClient }));
 vi.mock("@/lib/db", () => ({ get db() { return fixture.db; } }));
@@ -34,14 +35,10 @@ beforeAll(async () => {
   vi.stubEnv("MONOLOGUE_MODE", "cloud");
   directory = mkdtempSync(path.join(tmpdir(), "monologue-mcp-test-"));
   const datasourceUrl = `file:${path.join(directory, "test.db")}`;
+  await migrateFixture(datasourceUrl);
   fixture.db = process.env.MCP_TEST_LIBSQL === "1"
     ? new PrismaClient({ adapter: new PrismaLibSQL({ url: datasourceUrl }) })
     : new PrismaClient({ datasourceUrl });
-  for (const name of readdirSync("prisma/migrations").sort()) {
-    if (name === "migration_lock.toml") continue;
-    const sql = readFileSync(`prisma/migrations/${name}/migration.sql`, "utf8");
-    for (const statement of sql.split(";").map(s => s.trim()).filter(Boolean)) await fixture.db.$executeRawUnsafe(statement);
-  }
   await fixture.db.user.create({ data: { id: "u1", name: "Test One", email: "one@example.test" } });
   await fixture.db.user.create({ data: { id: "u2", name: "Test Two", email: "two@example.test" } });
   await fixture.db.workspace.create({ data: { id: "w1", name: "Feed One", ownerId: "u1" } });

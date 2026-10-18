@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
@@ -21,24 +21,29 @@ import { requireSameOrigin } from "@/lib/workspace-http";
 import { listBriefingConnections } from "@/lib/briefing-connections";
 import { mcpResource } from "@/lib/mcp-oauth";
 import { getWorkspaceActivity } from "@/lib/workspace-activity";
+import { migrateFixture } from "./helpers/migrate-fixture";
 
 let directory: string;
 beforeAll(async () => {
   vi.stubEnv("MONOLOGUE_MODE", "cloud");
   directory = mkdtempSync(path.join(tmpdir(), "monologue-workspace-test-"));
   const url = `file:${path.join(directory, "test.db")}`;
-  fixture.db = process.env.MCP_TEST_LIBSQL === "1" ? new PrismaClient({ adapter: new PrismaLibSQL({ url }) }) : new PrismaClient({ datasourceUrl: url });
-  const migrations = readdirSync("prisma/migrations").filter(name => name !== "migration_lock.toml").sort();
-  for (const name of migrations) {
+  await migrateFixture(url, async (client, name) => {
     if (name === "20261004000000_workspaces") {
-      await fixture.db.$executeRawUnsafe('INSERT INTO "user" (id,name,email,emailVerified,updatedAt) VALUES (\'legacy-owner\',\'Legacy\',\'legacy@example.test\',1,CURRENT_TIMESTAMP)');
-      await fixture.db.$executeRawUnsafe('INSERT INTO "Workspace" (id,name,ownerId,updatedAt) VALUES (\'legacy-workspace\',\'Existing feed\',\'legacy-owner\',CURRENT_TIMESTAMP)');
+      await client.execute('INSERT INTO "user" (id,name,email,emailVerified,updatedAt) VALUES (\'legacy-owner\',\'Legacy\',\'legacy@example.test\',1,CURRENT_TIMESTAMP)');
+      await client.execute('INSERT INTO "Workspace" (id,name,ownerId,updatedAt) VALUES (\'legacy-workspace\',\'Existing feed\',\'legacy-owner\',CURRENT_TIMESTAMP)');
     }
-    for (const statement of readFileSync(`prisma/migrations/${name}/migration.sql`, "utf8").split(";").map(value => value.trim()).filter(Boolean)) await fixture.db.$executeRawUnsafe(statement);
-  }
+  });
+  fixture.db = process.env.MCP_TEST_LIBSQL === "1" ? new PrismaClient({ adapter: new PrismaLibSQL({ url }) }) : new PrismaClient({ datasourceUrl: url });
   for (const id of ["owner", "member", "third", "outsider", "unverified"]) await fixture.db.user.create({ data: { id, name: id, email: `${id}@example.test`, emailVerified: id !== "unverified" } });
 });
-afterAll(async () => { await fixture.db.$disconnect(); rmSync(directory, { recursive: true, force: true }); vi.unstubAllEnvs(); });
+afterAll(async () => {
+  try { await fixture.db?.$disconnect(); }
+  finally {
+    try { if (directory) rmSync(directory, { recursive: true, force: true }); }
+    finally { vi.unstubAllEnvs(); }
+  }
+});
 const report = { source: "self_reported" as const, agentName: "Codex", verb: "Sent", summary: "Fixture: sent a customer message", category: "communication" as const, status: "completed" as const, system: "Email", externalId: "same-action-id" };
 const bearer = (key: string) => new Request("http://localhost/api/actions", { headers: { Authorization: `Bearer ${key}` } });
 const settings = { emailEnabled: true, slackEnabled: true, slackChannel: "#updates", hour: 9, timeZone: "America/Los_Angeles" };

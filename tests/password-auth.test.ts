@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -7,6 +7,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
 import { betterAuth } from "better-auth";
 import { hashPassword } from "better-auth/crypto";
+import { migrateFixture } from "./helpers/migrate-fixture";
 
 const fixture = vi.hoisted(() => ({ db: undefined as unknown as PrismaClient }));
 vi.mock("@/lib/db", () => ({ get db() { return fixture.db; } }));
@@ -24,13 +25,10 @@ const cookie = (response: Response) => response.headers.getSetCookie().map(value
 beforeAll(async () => {
   directory = mkdtempSync(join(tmpdir(), "monologue-password-"));
   const url = `file:${join(directory, "auth.db")}`;
+  await migrateFixture(url);
   fixture.db = process.env.MCP_TEST_LIBSQL === "1"
     ? new PrismaClient({ adapter: new PrismaLibSQL({ url }) })
     : new PrismaClient({ datasourceUrl: url });
-  for (const name of readdirSync("prisma/migrations").sort()) {
-    if (name === "migration_lock.toml") continue;
-    for (const sql of readFileSync(`prisma/migrations/${name}/migration.sql`, "utf8").split(";").map(value => value.trim()).filter(Boolean)) await fixture.db.$executeRawUnsafe(sql);
-  }
   for (const [key, value] of Object.entries({ MONOLOGUE_MODE: "cloud", MONOLOGUE_PASSWORD_SIGN_IN: "1", BETTER_AUTH_URL: origin,
     BETTER_AUTH_SECRET: "disposable-local-auth-test-secret-at-least-32-chars", GOOGLE_CLIENT_ID: "dummy-local-google-client", GOOGLE_CLIENT_SECRET: "dummy-local-google-secret", TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: "local-file-only", VERCEL: "" })) vi.stubEnv(key, value);
   auth = (await import("@/lib/auth")).auth;
