@@ -72,7 +72,14 @@ try {
     cpSync(resolve(entry), join(directory, entry), { recursive: true });
   }
   symlinkSync(resolve("node_modules"), join(directory, "node_modules"), "dir");
-  server = spawn(process.execPath, [resolve("node_modules/next/dist/bin/next"), "dev", "--webpack", "--hostname", "127.0.0.1", "--port", port], { cwd: directory, env, stdio: "inherit" });
+  const next = resolve("node_modules/next/dist/bin/next");
+  if (authTest) {
+    // Auth requests must not race the development server's manifest rewrites.
+    // Build before listening, using only this fixture's source and local database.
+    env.NODE_ENV = "production";
+    await run([next, "build", "--webpack"], directory);
+  }
+  server = spawn(process.execPath, [next, authTest ? "start" : "dev", ...(!authTest ? ["--webpack"] : []), "--hostname", "127.0.0.1", "--port", port], { cwd: directory, env, stdio: "inherit" });
   for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => server.kill(signal));
   server.on("exit", code => {
     rmSync(directory, { recursive: true, force: true });
