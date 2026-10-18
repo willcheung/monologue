@@ -87,6 +87,10 @@ test("password sign-in preserves OAuth, explicit consent connects scoped MCP, an
   expect((await context.request.post("/api/workspaces/select", { data: { workspaceId: "dev-studio" } })).status()).toBe(403);
   await page.goto("/feed");
   await expect(page.getByText("Updated a sample document.", { exact: true })).toBeVisible();
+  const productNav = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(productNav.getByRole("link", { name: "Sign in", exact: true })).toHaveCount(0);
+  await expect(productNav.getByRole("link", { name: "Try free", exact: true })).toHaveCount(0);
+  await expect(productNav.getByRole("link", { name: "Agent feed", exact: true })).toBeVisible();
   await expect(page.getByText("Booked a table for Saturday dinner.", { exact: true })).toHaveCount(0);
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Workspaces" }).click();
@@ -135,6 +139,18 @@ test("failed login is accessible, recoverable, and an unsafe return falls back t
   await signIn(page);
   await expect(page).toHaveURL(`${origin}/feed`);
 });
+
+// Each cold development route compiles independently; keep one check per page.
+for (const path of ["/", "/developers", "/templates", "/integrations", "/integrations/claude-code", "/sign-in"]) {
+  test(`logged-out navigation exposes sign in on ${path}`, async ({ page }) => {
+    await page.goto(path);
+    const navigation = page.getByRole("navigation", { name: "Main navigation" });
+    await expect(navigation.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+    await expect(navigation.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute("href", "/sign-in");
+    await expect(navigation.getByRole("link", { name: "Try free", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
 
 test("email disclosure supports keyboard and clears hidden credentials", async ({ page }, testInfo) => {
   await page.goto("/sign-in");

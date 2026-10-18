@@ -28,7 +28,8 @@ export async function Header({ product = false, signedIn = false, workspaceConte
           </> : <>
             <Link className="nav-marketing-link" href="/#features">Features</Link>
             <Link className="nav-marketing-link" href="/#how-it-works">How it works</Link>
-            <a href="https://github.com/willcheung/monologue">GitHub</a>
+            <a className="nav-marketing-link" href="https://github.com/willcheung/monologue">GitHub</a>
+            {cloud && !signedIn && <Link className="nav-sign-in" href="/sign-in">Sign in</Link>}
             <Link className="nav-cta" href={cloud ? "/sign-in" : "/feed"}>{cloud ? "Try free" : "Open feed"}</Link>
           </>}
         </nav>

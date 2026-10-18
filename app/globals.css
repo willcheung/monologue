@@ -504,6 +504,7 @@ dialog.share-layer:not([open]) { display: none; }
 .email-sign-in-toggle:hover { color:var(--ink); }
 .email-sign-in-toggle:focus-visible { outline:2px solid var(--ink); outline-offset:3px; border-radius:4px; }
 .email-sign-in-toggle:disabled { opacity:.6; cursor:wait; }
+.header-nav .nav-sign-in { display:inline-flex; align-items:center; min-height:44px; white-space:nowrap; }
 .password-sign-in { display:grid; gap:10px; text-align:left; }
 .password-sign-in .password-sign-in-note { margin:8px 0 4px; font-size:13px; line-height:1.5; }
 .password-sign-in label { font-size:13px; font-weight:650; }
