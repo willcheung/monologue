@@ -8,7 +8,7 @@ import { StaticShareCard } from "./static-share-card";
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function ActivityMatrix({ snapshot, setup, children }: { snapshot: ActivitySnapshot; setup?: ReactNode; children: ReactNode }) {
+export function ActivityMatrix({ snapshot, setup, children, showSharing = true }: { snapshot: ActivitySnapshot; setup?: ReactNode; children: ReactNode; showSharing?: boolean }) {
   const id = useId();
   const sketchRef = useRef<SVGSVGElement>(null);
   const legendRef = useRef<SVGSVGElement>(null);
@@ -72,7 +72,7 @@ export function ActivityMatrix({ snapshot, setup, children }: { snapshot: Activi
         <p className="activity-day-detail" role="status" aria-live="polite"><strong>{detail.dateLabel}</strong><span>{detail.count} reported completed {detail.count === 1 ? "action" : "actions"}</span></p>
         <div className="activity-legend" aria-label="Completed actions per day"><span>Daily actions</span><div className="activity-legend-bands"><svg ref={legendRef} viewBox="0 0 300 20" aria-hidden="true" />{ACTIVITY_BANDS.map(band => <span key={band.min}>{band.label}</span>)}</div></div>
         <p id={`${id}-help`} className="activity-help">Select a day for details. Use arrow keys to move between days.</p>
-        <div className="activity-chart-share"><StaticShareCard data={{ kind: "activity", ...snapshot }} label="Share activity" /></div>
+        {showSharing && <div className="activity-chart-share"><StaticShareCard data={{ kind: "activity", ...snapshot }} label="Share activity" /></div>}
       </section>
       {children}
     </div>
