@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Check, Share2, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
 import { ActionIcon } from "@/components/action-icon";
 import { AgentAvatar } from "@/components/agent-avatar";
+import { RecapPreview } from "@/components/recap-preview";
 import { Header } from "@/components/header";
 import { RotatingActionHeadline } from "@/components/rotating-action-headline";
 import { AgentConnectControl } from "@/components/agent-connect-control";
@@ -21,16 +22,6 @@ const crew = [
   { name: "Hermes · Henry", role: "General agent", systems: "GitHub · Vercel", actions: 184 },
   { name: "Muse · Maya", role: "Personal agent", systems: "Gmail · Calendar", actions: 76 },
   { name: "Claude · Cal", role: "Calendar agent", systems: "Google Calendar", actions: 41 },
-];
-
-const recapDays = [
-  { day: "Thu", segments: [12] },
-  { day: "Fri", segments: [18, 22] },
-  { day: "Sat", segments: [14, 12] },
-  { day: "Sun", segments: [12, 18, 10] },
-  { day: "Mon", segments: [20, 16, 24] },
-  { day: "Tue", segments: [22, 20, 28] },
-  { day: "Wed", segments: [9] },
 ];
 
 export default async function MarketingPage() {
@@ -104,20 +95,14 @@ export default async function MarketingPage() {
           </div>)}
         </div>
       </section>
-      <section className="feature-section feature-section-reverse" aria-labelledby="agent-outputs-heading">
+      <section className={`feature-section feature-section-reverse ${styles.recapSection}`} aria-labelledby="agent-outputs-heading">
         <div className="feature-copy">
-          <span className="kicker">Your 7-day recap</span>
+          <span className="kicker">Your activity recap</span>
           <h2 id="agent-outputs-heading">Your week, without the scroll.</h2>
           <p>See what your agents got done, then share a snapshot. Your feed stays private.</p>
-          <Link href={cloud ? "/sign-in?next=%2Frecap" : "/recap"}>See your 7-day recap <ArrowRight size={15} /></Link>
+          <Link href={cloud ? "/sign-in?next=%2Frecap" : "/recap"}>See your recap <ArrowRight size={15} /></Link>
         </div>
-        <div className="recap-preview" aria-label="Example seven-day recap">
-          <div className="recap-preview-total"><span>This week</span><strong>23</strong><small>actions completed</small></div>
-          <div className="recap-preview-chart">
-            <div className="recap-preview-bars">{recapDays.map((item) => <div key={item.day}><span>{item.segments.map((height, index) => <i key={index} style={{ height }} />)}</span><b>{item.day}</b></div>)}</div>
-            <div className="recap-preview-note"><Share2 size={14} /><span>Static image. Your feed stays private.</span></div>
-          </div>
-        </div>
+        <div className={`recap-preview ${styles.recapPreview}`}><RecapPreview /></div>
       </section>
       <section className="steps-section" id="how-it-works">
         <span className="kicker">Up and running quickly</span>

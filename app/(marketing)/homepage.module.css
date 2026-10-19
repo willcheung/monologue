@@ -116,3 +116,67 @@
   }
 
 }
+
+.recapSection {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, .85fr);
+  gap: 48px;
+}
+
+.recapSection .recapPreview {
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.recapPreview {
+  container-type: inline-size;
+}
+
+.recapPreview :global(.activity-section) {
+  margin: 0;
+  padding: 20px;
+  box-shadow: 0 18px 55px rgba(46, 38, 22, .075);
+}
+
+.recapPreview :global(.activity-heading h2) { font-size: 28px; }
+.recapPreview :global(.activity-stats dd) { font-size: 34px; }
+.recapPreview :global(.activity-stats dt) { font-size: 15px; }
+.recapPreview :global(.activity-body) { grid-template-columns: 220px minmax(0, 1fr); gap: 20px; }
+.recapPreview :global(.activity-weekly) { border-top: 0; border-left: 1px solid var(--line); padding: 0 0 0 20px; }
+.recapPreview :global(.activity-weekly-plot) { min-height: 0; }
+.recapPreview :global(.activity-chart-heading h3) { font-size: 25px; }
+.recapPreview :global(.activity-weekly .sketch-chart-legend span) { font-size: 13px; }
+
+/* Keep keyboard guidance accessible without adding homepage instructions. */
+.recapPreview :global(.activity-help) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@container (max-width: 560px) {
+  .recapPreview :global(.activity-body) { grid-template-columns: minmax(0, 1fr); }
+  .recapPreview :global(.activity-weekly) { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
+}
+
+@media (min-width: 701px) and (max-width: 900px) {
+  .recapSection { gap: 24px; }
+}
+
+@media (max-width: 700px) {
+  .recapSection {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+  }
+  .recapPreview :global(.activity-section) { padding: 20px 16px; }
+  .recapPreview :global(.activity-body) { grid-template-columns: minmax(0, 1fr); }
+  .recapPreview :global(.activity-weekly) { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
+}
