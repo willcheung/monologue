@@ -125,6 +125,12 @@ People and agents use different credentials:
 
 A browser session must never double as an agent credential. A global `MONOLOGUE_API_KEY` remains appropriate only for single-user mode.
 
+In cloud mode, an existing valid browser session redirects `/` to `/feed` and
+`/sign-in` to its validated internal `next` destination (default `/feed`). The
+destination retains its own workspace, invitation and consent checks. Anonymous
+visitors keep the public homepage and sign-in form. These entry-page session
+checks do not refresh sessions during server rendering.
+
 ## Google sign-in
 
 The initial hosted sign-in method is **Continue with Google**, implemented with Better Auth's Google provider. In product language this can be called Google sign-in. It is OAuth/OIDC social authentication, not enterprise SAML SSO.

@@ -1,11 +1,12 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const fixtures = vi.hoisted(() => ({ info: vi.fn(), context: vi.fn() }));
+const fixtures = vi.hoisted(() => ({ info: vi.fn(), context: vi.fn(), session: vi.fn() }));
 vi.mock("@/lib/workspace-invitation-info", () => ({ getWorkspaceInvitationInfo: fixtures.info, invitationToken: (v: unknown) => typeof v === "string" ? v : null }));
 vi.mock("@/lib/workspace", () => ({ getWorkspaceContext: fixtures.context }));
 vi.mock("@/lib/runtime", () => ({ isCloudMode: () => true }));
-vi.mock("@/lib/auth", () => ({ googleSignInConfigured: true, passwordSignInConfigured: false }));
+vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: fixtures.session } }, googleSignInConfigured: true, passwordSignInConfigured: false }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/lib/legal-content", () => ({ legalDocumentsConfigured: () => true }));
 vi.mock("@/components/header", () => ({ Header: () => null }));
 vi.mock("@/components/google-sign-in-button", () => ({ GoogleSignInButton: ({ callbackURL }: { callbackURL: string }) => <button data-callback={callbackURL}>Continue with Google</button> }));
@@ -16,8 +17,13 @@ import SignInPage from "@/app/(auth)/sign-in/page";
 import JoinPage from "@/app/(product)/join/page";
 const token = "a".repeat(43), next = `/join?token=${token}`;
 const invitation = { email: "invited@example.test", workspace: { id: "team", name: "Studio" }, invitedByUser: { name: "Taylor" }, acceptedAt: null };
-beforeEach(() => { vi.clearAllMocks(); fixtures.info.mockResolvedValue(invitation); fixtures.context.mockResolvedValue({ user: { id: "member", email: "invited@example.test" }, workspaces: [{ id: "team" }] }); });
+beforeEach(() => { vi.clearAllMocks(); fixtures.session.mockResolvedValue(null); fixtures.info.mockResolvedValue(invitation); fixtures.context.mockResolvedValue({ user: { id: "member", email: "invited@example.test" }, workspaces: [{ id: "team" }] }); });
 describe("invitation welcome", () => {
+  it("sends an existing session to the invitation so its membership and account checks still apply", async () => {
+    fixtures.session.mockResolvedValue({ user: { id: "member" } });
+    await expect(SignInPage({ searchParams: Promise.resolve({ next }) })).rejects.toThrow(`redirect:${next}`);
+    expect(fixtures.info).not.toHaveBeenCalled();
+  });
   it("shows trusted inviter/workspace context, preserves the callback and keeps agreement below the button", async () => {
     const html = renderToStaticMarkup(await SignInPage({ searchParams: Promise.resolve({ next, inviter: "Spoofed name" }) }));
     expect(html).toContain("Taylor"); expect(html).toContain("Studio"); expect(html).not.toContain("Spoofed name");

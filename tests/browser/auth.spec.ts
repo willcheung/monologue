@@ -43,6 +43,9 @@ const rpc = (request: APIRequestContext, token: string, method: string, params: 
 });
 
 test("password sign-in preserves OAuth, explicit consent connects scoped MCP, and logout revokes the browser session", async ({ page, context }, testInfo) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/");
   // No development identity cookie can authenticate the actual cloud fixture.
   await context.addCookies([{ name: "monologue-dev-user", value: "dev-owner", url: origin }]);
   const flow = await authorization(context.request);
@@ -87,6 +90,25 @@ test("password sign-in preserves OAuth, explicit consent connects scoped MCP, an
   expect((await context.request.post("/api/workspaces/select", { data: { workspaceId: "dev-studio" } })).status()).toBe(403);
   await page.goto("/feed");
   await expect(page.getByText("Updated a sample document.", { exact: true })).toBeVisible();
+  // An existing session must bypass both public entry pages, without another login.
+  await page.goto("/");
+  await expect(page).toHaveURL(`${origin}/feed`);
+  await expect(page.getByText("Updated a sample document.", { exact: true })).toBeVisible();
+  await page.goto("/sign-in");
+  await expect(page).toHaveURL(`${origin}/feed`);
+  await page.goto(`/sign-in?next=${encodeURIComponent("/recap?briefing=weekly")}`);
+  await expect(page).toHaveURL(`${origin}/recap?briefing=weekly`);
+  const consentReturn = await authorization(context.request);
+  await page.goto(`/sign-in?next=${encodeURIComponent(consentReturn.path)}`);
+  await expect(page.getByRole("heading", { name: "Connect Local test agent?" })).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("state")).toBe(consentReturn.state);
+  // Reject external destinations and avoid redirecting /sign-in back to itself.
+  for (const next of ["https://attacker.example", "//attacker.example", "/sign-in?next=%2Ffeed", "/sign-in/"]) {
+    const response = await context.request.get(`/sign-in?next=${encodeURIComponent(next)}`, { maxRedirects: 0 });
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe("/feed");
+  }
+  await page.goto("/feed");
   const productNav = page.getByRole("navigation", { name: "Main navigation" });
   await expect(productNav.getByRole("link", { name: "Sign in", exact: true })).toHaveCount(0);
   await expect(productNav.getByRole("link", { name: "Try free", exact: true })).toHaveCount(0);
