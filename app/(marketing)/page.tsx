@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
 import { ActionIcon } from "@/components/action-icon";
 import { AgentAvatar } from "@/components/agent-avatar";
@@ -8,6 +10,7 @@ import { RotatingActionHeadline } from "@/components/rotating-action-headline";
 import { AgentConnectControl } from "@/components/agent-connect-control";
 import { getSetupContext } from "@/lib/setup-context";
 import { isCloudMode } from "@/lib/runtime";
+import { auth } from "@/lib/auth";
 import styles from "./homepage.module.css";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +29,7 @@ const crew = [
 
 export default async function MarketingPage() {
   const cloud = isCloudMode();
+  if (cloud && (await auth.api.getSession({ headers: await headers(), query: { disableRefresh: true } }))?.user) redirect("/feed");
   const setup = await getSetupContext();
   const startHref = cloud ? "/sign-in" : "/feed";
   return <>

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { PasswordSignInForm } from "@/components/password-sign-in-form";
 import { Header } from "@/components/header";
-import { googleSignInConfigured, passwordSignInConfigured } from "@/lib/auth";
+import { auth, googleSignInConfigured, passwordSignInConfigured } from "@/lib/auth";
 import { safeInternalPath, invitationTokenFromNext } from "@/lib/redirects";
 import { isCloudMode } from "@/lib/runtime";
 import { legalDocumentsConfigured } from "@/lib/legal-content";
@@ -22,6 +23,10 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
   const params = await searchParams;
   const requestedNext = typeof params.next === "string" ? params.next : null;
   const callbackURL = safeInternalPath(requestedNext, "/feed");
+  if ((await auth.api.getSession({ headers: await headers(), query: { disableRefresh: true } }))?.user) {
+    const destination = new URL(callbackURL, "https://monologue.invalid");
+    redirect(destination.pathname.replace(/\/+$/, "") === "/sign-in" ? "/feed" : callbackURL);
+  }
   const token = invitationTokenFromNext(callbackURL);
   const record = token ? await getWorkspaceInvitationInfo(token) : null;
   const invitation = record && !record.acceptedAt ? record : null;
